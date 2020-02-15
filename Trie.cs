@@ -34,7 +34,7 @@ class Trie
                 break;
         }
 
-        return curr;
+        return curr;    
     }
 
     private Trie GetTransitnion(char symbol)
