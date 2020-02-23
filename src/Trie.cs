@@ -1,3 +1,6 @@
+/*
+    Trie - construction & traversal.
+*/
 using System.Collections.Generic;
 
 class Trie

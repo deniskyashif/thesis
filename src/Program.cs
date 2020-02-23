@@ -4,16 +4,20 @@ class Program
 {
     static void Main()
     {
-        MinAcDfaTest();
+        FsaTest();
+    }
+
+    static void FsaTest()
+    {
+        var fsa = FsaBuilder.FromWord("abc");
     }
 
     static void MinAcDfaTest()
     {
-        var words = new[]
-        {
+        var dfa = DfaBuilder.ConstructMinAcyclicDFA(new[] {
             "appl", "bapp", "cppe", "cppee", "x"
-        };
-        var dfa = DfaBuilder.ConstructMinAcyclicDFA(words);
+        });
+
         Console.WriteLine(dfa.Search("appl"));
         Console.WriteLine(dfa.Search("bapp"));
         Console.WriteLine(dfa.Search("cppe"));

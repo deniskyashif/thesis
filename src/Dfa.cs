@@ -1,3 +1,7 @@
+/*
+    Direct construction of a minimal, deterministic, acyclic 
+    finite state automaton from a set of strings.
+*/
 using System.Collections.Generic;
 using System.Linq;
 
@@ -84,7 +88,7 @@ static class DfaExtensions
     public static bool Search(this DfaNode node, string word)
     {
         var (endNode, pathLength) = node.Walk(word);
-        return (pathLength == word.Length && endNode.IsFinal);
+        return pathLength == word.Length && endNode.IsFinal;
     }
 }
 
