@@ -152,8 +152,39 @@ namespace Automata.UnitTests
                             FsaBuilder.FromWord("b"))),
                     FsaBuilder.FromWord("c"));
 
-            Assert.True(new[]{"abbac", "ac", "bc", "ababbbbac", "c"}.All(fsa.Recognize));
-            Assert.False(new[]{"ca", "aaba", "", "cc"}.Any(fsa.Recognize));
+            Assert.DoesNotContain(new[] { "ca", "aaba", "", "cc" }, fsa.Recognize);
+            Assert.True(new[] { "abbac", "ac", "bc", "ababbbbac", "c" }.All(fsa.Recognize));
+        }
+
+        [Fact]
+        public void EpsilonFreeConstructionTest()
+        {
+            // a*
+            var fsa = 
+                FsaBuilder.EpsilonFree(
+                    FsaBuilder.Star(FsaBuilder.FromWord("a")));
+
+            Assert.DoesNotContain(fsa.Transitions, t => string.IsNullOrEmpty(t.Via));
+            Assert.DoesNotContain(new[] { "ca", "aaba", "b", "cc" }, fsa.Recognize);
+            Assert.True(new[] { "aaaa", "a", "aa", "", "aaaaaaaa" }.All(fsa.Recognize));
+        }
+
+        [Fact]
+        public void EpsilonFreeConstructionTest1()
+        {
+            // (a|b)*c
+            var fsa =
+                FsaBuilder.EpsilonFree(
+                    FsaBuilder.Concat(
+                        FsaBuilder.Star(
+                            FsaBuilder.Union(
+                                FsaBuilder.FromWord("a"),
+                                FsaBuilder.FromWord("b"))),
+                        FsaBuilder.FromWord("c")));
+
+            Assert.DoesNotContain(fsa.Transitions, t => string.IsNullOrEmpty(t.Via));
+            Assert.True(new[] { "abbac", "ac", "bc", "ababbbbac", "c" }.All(fsa.Recognize));
+            Assert.DoesNotContain(new[] { "ca", "aaba", "", "cc" }, fsa.Recognize);
         }
     }
 }

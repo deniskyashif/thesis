@@ -22,6 +22,7 @@ public class Fsa
         this.FinalStates = finalStates;
         this.Transitions = transitions;
     }
+
     public ISet<State> States { get; private set; }
     public ISet<State> InitialStates { get; private set; }
     public ISet<State> FinalStates { get; private set; }
@@ -33,9 +34,8 @@ public class Fsa
 
         foreach (var symbol in word)
         {
-            var nextStatesViaEpsilon = currentStates.SelectMany(EpsilonClosure);
-            var nextStates = currentStates
-                .Union(nextStatesViaEpsilon)
+            var nextStates = 
+                currentStates.SelectMany(EpsilonClosure)
                 .SelectMany(s => this.GetTransitions(s, symbol.ToString()))
                 .ToHashSet();
 
@@ -45,8 +45,9 @@ public class Fsa
                 break;
         }
 
-        return this.FinalStates.Intersect(currentStates).Any() ||
-            this.FinalStates.Intersect(currentStates.SelectMany(EpsilonClosure)).Any();
+        return this.FinalStates
+            .Intersect(currentStates.SelectMany(EpsilonClosure))
+            .Any();
     }
 
     ISet<State> GetTransitions(State state, string word)
@@ -57,12 +58,11 @@ public class Fsa
             .ToHashSet();
     }
 
-    ISet<State> EpsilonClosure(State state)
+    public ISet<State> EpsilonClosure(State state)
     {
         void TraverseEpsilonTransitions(State current, HashSet<State> visited)
         {
             var epsilonTransitions = this.GetTransitions(current, string.Empty);
-
             foreach (var epsilonState in epsilonTransitions)
             {
                 if (!visited.Contains(epsilonState))
@@ -73,7 +73,7 @@ public class Fsa
             }
         }
 
-        var result = new HashSet<State>();
+        var result = new HashSet<State>() { state };
         TraverseEpsilonTransitions(state, result);
 
         return result;
@@ -133,17 +133,14 @@ public static class FsaBuilder
         var transitions = first.Transitions.Union(second.Transitions).ToHashSet();
 
         foreach (var tr in first.Transitions.Where(t => first.FinalStates.Contains(t.To)))
-        {
             foreach (var state in second.InitialStates)
                 transitions.Add((tr.From, tr.Via, state));
-        }
 
         return new Fsa(
             states: first.States.Union(second.States).ToHashSet(),
             initialStates.ToHashSet(),
             second.FinalStates.ToHashSet(),
-            transitions
-        );
+            transitions);
     }
 
     public static Fsa Union(Fsa first, Fsa second)
@@ -158,24 +155,40 @@ public static class FsaBuilder
     public static Fsa Star(Fsa automaton)
     {
         var initial = new Fsa.State();
+        var initialStates = new HashSet<Fsa.State> { initial };
         var newTransitions = new HashSet<(Fsa.State, string, Fsa.State)>();
 
         foreach (var state in automaton.InitialStates)
             newTransitions.Add((initial, string.Empty, state));
+
         foreach (var state in automaton.FinalStates)
             newTransitions.Add((state, string.Empty, initial));
-
-        var initialStates = new HashSet<Fsa.State> { initial };
 
         return new Fsa(
             states: automaton.States.Union(initialStates).ToHashSet(),
             initialStates,
             finalStates: automaton.FinalStates.Union(initialStates).ToHashSet(),
-            automaton.Transitions.Union(newTransitions).ToHashSet()
-        );
+            automaton.Transitions.Union(newTransitions).ToHashSet());
     }
 
-    public static Fsa Difference(Fsa first, Fsa second)
+    public static Fsa EpsilonFree(Fsa automaton)
+    {
+        var initialStates = automaton.InitialStates
+            .SelectMany(automaton.EpsilonClosure)
+            .ToHashSet();
+
+        var transitions = automaton.Transitions
+            .Where(t => !string.IsNullOrEmpty(t.Via))
+            .SelectMany(t => 
+                automaton
+                    .EpsilonClosure(t.To)
+                    .Select(es => (t.From, t.Via, es)))
+            .ToHashSet();
+        
+        return new Fsa(automaton.States, initialStates, automaton.FinalStates, transitions);
+    }
+
+    public static Fsa Trimmed(Fsa automaton)
     {
         throw new NotImplementedException();
     }
@@ -185,7 +198,7 @@ public static class FsaBuilder
         throw new NotImplementedException();
     }
 
-    public static Fsa RemoveEpsilonTransitions(Fsa first, Fsa second)
+    public static Fsa Difference(Fsa first, Fsa second)
     {
         throw new NotImplementedException();
     }
