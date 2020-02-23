@@ -1,10 +1,21 @@
 ﻿using System;
+using System.Collections.Generic;
 
+struct St { }
 class Program
 {
     static void Main()
     {
-        FsaTest();
+        var s1 = new St();
+        var s2 = new St();
+        var t1 = (s1, 'a', s2);
+        var t2 = (s1, 'a', s2);
+        var t3 = (s2, 'a', s1);
+        var t4 = (s1, 'b', s2);
+
+        Console.WriteLine(t1.Equals(t3));
+        var hs = new HashSet<(St, char, St)>() { t1, t2, t3, t4 };
+        Console.WriteLine(hs.Count);
     }
 
     static void FsaTest()
