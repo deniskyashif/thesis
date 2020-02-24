@@ -106,18 +106,19 @@ public static class FsaBuilder
             transitions);
     }
 
-    public static Fsa UniversalLanguage(IEnumerable<string> alphabet)
+    public static Fsa FromSymbolSet(ISet<string> alphabet)
     {
-        var state = new Fsa.State();
+        var initial = new Fsa.State();
+        var final = new Fsa.State();
         var transitions = new HashSet<(Fsa.State, string, Fsa.State)>();
 
         foreach (var token in alphabet)
-            transitions.Add((state, token, state));
+            transitions.Add((initial, token, final));
 
         return new Fsa(
-            states: new HashSet<Fsa.State> { state },
-            initialStates: new HashSet<Fsa.State> { state },
-            finalStates: new HashSet<Fsa.State> { state },
+            states: new HashSet<Fsa.State> { initial, final },
+            initialStates: new HashSet<Fsa.State> { initial },
+            finalStates: new HashSet<Fsa.State> { final },
             transitions);
     }
 
@@ -171,6 +172,27 @@ public static class FsaBuilder
             automaton.Transitions.Union(newTransitions).ToHashSet());
     }
 
+    public static Fsa Plus(Fsa automaton)
+    {
+        var initial = new Fsa.State();
+        var initialStates = new HashSet<Fsa.State> { initial };
+        var newTransitions = new HashSet<(Fsa.State, string, Fsa.State)>();
+
+        foreach (var state in automaton.InitialStates)
+            newTransitions.Add((initial, string.Empty, state));
+
+        foreach (var state in automaton.FinalStates)
+            newTransitions.Add((state, string.Empty, initial));
+
+        return new Fsa(
+            states: automaton.States.Union(initialStates).ToHashSet(),
+            initialStates,
+            finalStates: automaton.FinalStates.ToHashSet(),
+            automaton.Transitions.Union(newTransitions).ToHashSet());
+    }
+
+    /* Preserves the automaton's language but 
+       does not preserve the language of individual states */
     public static Fsa EpsilonFree(Fsa automaton)
     {
         var initialStates = automaton.InitialStates
@@ -188,17 +210,22 @@ public static class FsaBuilder
         return new Fsa(automaton.States, initialStates, automaton.FinalStates, transitions);
     }
 
-    public static Fsa Trimmed(Fsa automaton)
-    {
-        throw new NotImplementedException();
-    }
-
     public static Fsa Intersect(Fsa first, Fsa second)
     {
         throw new NotImplementedException();
     }
 
     public static Fsa Difference(Fsa first, Fsa second)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static Fsa Determinize(Fsa automaton)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static Fsa Complement(Fsa automaton)
     {
         throw new NotImplementedException();
     }
