@@ -218,6 +218,7 @@ public class FsaTests
 
         Assert.DoesNotContain(fsa.Transitions, t => string.IsNullOrEmpty(t.Via));
         Assert.True(new[] { "abbac", "ac", "bc", "ababbbbac", "aac" }.All(fsa.Recognize));
+        Assert.False(fsa.Recognize("c"));
         Assert.DoesNotContain(new[] { "ca", "aaba", "", "cc", "c" }, fsa.Recognize);
     }
 }

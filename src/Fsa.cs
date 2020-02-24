@@ -9,13 +9,11 @@ using System.Linq;
 
 public class Fsa
 {
-    public class State { }
-
     public Fsa(
-        ISet<State> states,
-        ISet<State> initialStates,
-        ISet<State> finalStates,
-        ISet<(State, string, State)> transitions)
+        ISet<int> states,
+        ISet<int> initialStates,
+        ISet<int> finalStates,
+        ISet<(int, string, int)> transitions)
     {
         this.States = states;
         this.InitialStates = initialStates;
@@ -23,10 +21,10 @@ public class Fsa
         this.Transitions = transitions;
     }
 
-    public ISet<State> States { get; private set; }
-    public ISet<State> InitialStates { get; private set; }
-    public ISet<State> FinalStates { get; private set; }
-    public ISet<(State From, string Via, State To)> Transitions { get; private set; }
+    public ISet<int> States { get; private set; }
+    public ISet<int> InitialStates { get; private set; }
+    public ISet<int> FinalStates { get; private set; }
+    public ISet<(int From, string Via, int To)> Transitions { get; private set; }
 
     public bool Recognize(string word)
     {
@@ -50,7 +48,7 @@ public class Fsa
             .Any();
     }
 
-    ISet<State> GetTransitions(State state, string word)
+    ISet<int> GetTransitions(int state, string word)
     {
         return this.Transitions
             .Where(t => (state, word) == (t.From, t.Via))
@@ -58,9 +56,9 @@ public class Fsa
             .ToHashSet();
     }
 
-    public ISet<State> EpsilonClosure(State state)
+    public ISet<int> EpsilonClosure(int state)
     {
-        void TraverseEpsilonTransitions(State current, HashSet<State> visited)
+        void TraverseEpsilonTransitions(int current, HashSet<int> visited)
         {
             var epsilonTransitions = this.GetTransitions(current, string.Empty);
             foreach (var epsilonState in epsilonTransitions)
@@ -73,7 +71,7 @@ public class Fsa
             }
         }
 
-        var result = new HashSet<State>() { state };
+        var result = new HashSet<int>() { state };
         TraverseEpsilonTransitions(state, result);
 
         return result;
@@ -82,18 +80,40 @@ public class Fsa
 
 public static class FsaBuilder
 {
+    private static int NewState(ISet<int> states) => states.Count;
+
+    private static ISet<int> KNewStates(int k, ISet<int> states)
+    {
+        var newStates = new HashSet<int>();
+        
+        for (int i = 0; i < k; i++)
+            newStates.Add(states.Count + i);
+        
+        return newStates;
+    }
+
+    private static Fsa RemapStates(Fsa automaton, int k)
+    {
+        var states = automaton.States.Select(s => s + k).ToHashSet();
+        var initial = automaton.InitialStates.Select(s => s + k).ToHashSet();
+        var final = automaton.FinalStates.Select(s => s + k).ToHashSet();
+        var transitions = automaton.Transitions.Select(t => (t.From + k, t.Via, t.To + k)).ToHashSet();
+
+        return new Fsa(states, initial, final, transitions);
+    }
+
     public static Fsa FromEpsilon() => FromWord(string.Empty);
 
     public static Fsa FromWord(string word)
     {
-        var state = new Fsa.State();
-        var states = new HashSet<Fsa.State> { state };
-        var initialStates = new HashSet<Fsa.State> { state };
-        var transitions = new HashSet<(Fsa.State, string, Fsa.State)>();
+        var state = 0;
+        var states = new HashSet<int> { state };
+        var initialStates = new HashSet<int> { state };
+        var transitions = new HashSet<(int, string, int)>();
 
         foreach (var symbol in word)
         {
-            var next = new Fsa.State();
+            var next = state + 1;
             transitions.Add((state, symbol.ToString(), next));
             states.Add(next);
             state = next;
@@ -102,29 +122,30 @@ public static class FsaBuilder
         return new Fsa(
             states,
             initialStates,
-            finalStates: new HashSet<Fsa.State> { state },
+            finalStates: new HashSet<int> { state },
             transitions);
     }
 
     public static Fsa SymbolSet(ISet<string> alphabet)
     {
-        var initial = new Fsa.State();
-        var final = new Fsa.State();
-        var transitions = new HashSet<(Fsa.State, string, Fsa.State)>();
+        var initial = 0;
+        var final = 1;
+        var transitions = new HashSet<(int, string, int)>();
 
         foreach (var token in alphabet)
             transitions.Add((initial, token, final));
 
         return new Fsa(
-            states: new HashSet<Fsa.State> { initial, final },
-            initialStates: new HashSet<Fsa.State> { initial },
-            finalStates: new HashSet<Fsa.State> { final },
+            states: new HashSet<int> { initial, final },
+            initialStates: new HashSet<int> { initial },
+            finalStates: new HashSet<int> { final },
             transitions);
     }
 
     public static Fsa Concat(Fsa first, Fsa second)
     {
         var firstFinalStates = first.FinalStates;
+        second = RemapStates(second, first.States.Count);
         var secondInitialStates = second.InitialStates;
 
         var initialStates = first.InitialStates.Intersect(first.FinalStates).Any()
@@ -146,6 +167,7 @@ public static class FsaBuilder
 
     public static Fsa Union(Fsa first, Fsa second)
     {
+        second = RemapStates(second, first.States.Count);
         return new Fsa(
             states: first.States.Union(second.States).ToHashSet(),
             initialStates: first.InitialStates.Union(second.InitialStates).ToHashSet(),
@@ -155,9 +177,9 @@ public static class FsaBuilder
 
     public static Fsa Star(Fsa automaton)
     {
-        var initial = new Fsa.State();
-        var initialStates = new HashSet<Fsa.State> { initial };
-        var newTransitions = new HashSet<(Fsa.State, string, Fsa.State)>();
+        var initial = NewState(automaton.States);
+        var initialStates = new HashSet<int> { initial };
+        var newTransitions = new HashSet<(int, string, int)>();
 
         foreach (var state in automaton.InitialStates)
             newTransitions.Add((initial, string.Empty, state));
@@ -174,9 +196,9 @@ public static class FsaBuilder
 
     public static Fsa Plus(Fsa automaton)
     {
-        var initial = new Fsa.State();
-        var initialStates = new HashSet<Fsa.State> { initial };
-        var newTransitions = new HashSet<(Fsa.State, string, Fsa.State)>();
+        var initial = NewState(automaton.States);
+        var initialStates = new HashSet<int> { initial };
+        var newTransitions = new HashSet<(int, string, int)>();
 
         foreach (var state in automaton.InitialStates)
             newTransitions.Add((initial, string.Empty, state));
@@ -193,7 +215,7 @@ public static class FsaBuilder
 
     public static Fsa Option(Fsa automaton)
     {
-        var state = new[] { new Fsa.State() };
+        var state = new[] { NewState(automaton.States) };
 
         return new Fsa(
             automaton.States.Union(state).ToHashSet(),

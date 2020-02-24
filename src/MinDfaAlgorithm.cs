@@ -5,7 +5,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-class DfaNode
+public class DfaNode
 {
     private SortedDictionary<char, DfaNode> transitions = new SortedDictionary<char, DfaNode>();
 
@@ -49,7 +49,7 @@ class DfaNode
     }
 }
 
-static class DfaExtensions
+public static class DfaExtensions
 {
     public static DfaNode Insert(this DfaNode node, string word)
     {
@@ -85,14 +85,14 @@ static class DfaExtensions
         return (curr, i);
     }
 
-    public static bool Search(this DfaNode node, string word)
+    public static bool Recognize(this DfaNode node, string word)
     {
         var (endNode, pathLength) = node.Walk(word);
         return pathLength == word.Length && endNode.IsFinal;
     }
 }
 
-static class DfaBuilder
+public static class DfaBuilder
 {
     public static DfaNode ConstructMinAcyclicDFA(IEnumerable<string> words)
     {

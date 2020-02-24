@@ -3,7 +3,7 @@
 */
 using System.Collections.Generic;
 
-class Trie
+public class Trie
 {
     private IDictionary<char, Trie> transitions = new Dictionary<char, Trie>();
 
