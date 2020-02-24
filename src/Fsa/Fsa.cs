@@ -3,17 +3,16 @@
     Construction and closure operations
 */
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
 public class Fsa
 {
     public Fsa(
-        ISet<int> states,
-        ISet<int> initialStates,
-        ISet<int> finalStates,
-        ISet<(int, string, int)> transitions)
+        IReadOnlyList<int> states,
+        IReadOnlyList<int> initialStates,
+        IReadOnlyList<int> finalStates,
+        IReadOnlyList<(int, string, int)> transitions)
     {
         this.States = states;
         this.InitialStates = initialStates;
@@ -21,21 +20,20 @@ public class Fsa
         this.Transitions = transitions;
     }
 
-    public ISet<int> States { get; private set; }
-    public ISet<int> InitialStates { get; private set; }
-    public ISet<int> FinalStates { get; private set; }
-    public ISet<(int From, string Via, int To)> Transitions { get; private set; }
+    public IReadOnlyList<int> States { get; private set; }
+    public IReadOnlyList<int> InitialStates { get; private set; }
+    public IReadOnlyList<int> FinalStates { get; private set; }
+    public IReadOnlyList<(int From, string Via, int To)> Transitions { get; private set; }
 
     public bool Recognize(string word)
     {
-        var currentStates = this.InitialStates;
+        IEnumerable<int> currentStates = this.InitialStates;
 
         foreach (var symbol in word)
         {
             var nextStates =
                 currentStates.SelectMany(EpsilonClosure)
-                .SelectMany(s => this.GetTransitions(s, symbol.ToString()))
-                .ToHashSet();
+                .SelectMany(s => this.GetTransitions(s, symbol.ToString()));
 
             currentStates = nextStates;
 
@@ -48,15 +46,14 @@ public class Fsa
             .Any();
     }
 
-    ISet<int> GetTransitions(int state, string word)
+    IEnumerable<int> GetTransitions(int state, string word)
     {
         return this.Transitions
             .Where(t => (state, word) == (t.From, t.Via))
-            .Select(t => t.To)
-            .ToHashSet();
+            .Select(t => t.To);
     }
 
-    public ISet<int> EpsilonClosure(int state)
+    public IEnumerable<int> EpsilonClosure(int state)
     {
         void TraverseEpsilonTransitions(int current, HashSet<int> visited)
         {
