@@ -31,7 +31,7 @@ public class FsaTests
     [Fact]
     public void FromSymbolSetFsaTest()
     {
-        var fsa = FsaBuilder.FromSymbolSet(new HashSet<string> { "a", "b", "c" });
+        var fsa = FsaBuilder.SymbolSet(new HashSet<string> { "a", "b", "c" });
 
         Assert.Equal(2, fsa.States.Count);
         Assert.False(fsa.Recognize(""));
@@ -128,6 +128,32 @@ public class FsaTests
         Assert.False(fsa.Recognize(string.Empty));
         Assert.False(fsa.Recognize("ab"));
         Assert.True(new[] { "a", "aaa", "aaaaaaaaa", "aa" }.All(fsa.Recognize));
+    }
+
+    [Fact]
+    public void OptionFsaTest()
+    {
+        var fsa = FsaBuilder.Option(FsaBuilder.FromWord("ab"));
+
+        Assert.Equal(4, fsa.States.Count);
+        Assert.Equal(2, fsa.InitialStates.Count);
+        Assert.Equal(2, fsa.FinalStates.Count);
+        Assert.False(fsa.Recognize("b"));
+        Assert.False(fsa.Recognize("a"));
+        Assert.True(new[] { "ab", "" }.All(fsa.Recognize));
+    }
+
+    [Fact]
+    public void AllFsaTest()
+    {
+        var fsa = FsaBuilder.All(new HashSet<string> { "a", "b", "c" });
+
+        Assert.Equal(3, fsa.States.Count);
+        Assert.Equal(1, fsa.InitialStates.Count);
+        Assert.Equal(2, fsa.FinalStates.Count);
+        Assert.False(fsa.Recognize("d"));
+        Assert.False(fsa.Recognize("ad"));
+        Assert.True(new[] { "ab", "", "abc", "bbbac", "cba", "cbcbbcaaaaacb" }.All(fsa.Recognize));
     }
 
     [Fact]
