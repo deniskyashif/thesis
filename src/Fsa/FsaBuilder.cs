@@ -4,7 +4,10 @@ using System.Linq;
 
 public static class FsaBuilder
 {
-    private static int NewState(IReadOnlyList<int> states) => states.Count;
+    static int NewState(IReadOnlyList<int> states) => states.Count;
+
+    static IEnumerable<int> KNewStates(int k, IReadOnlyList<int> states)
+            => Enumerable.Range(states.Count, k);
 
     // Creates a new Fsa by renaming the states 
     private static Fsa Remap(Fsa automaton, int k)
@@ -161,11 +164,6 @@ public static class FsaBuilder
         return new Fsa(automaton.States.ToArray(), initial, automaton.FinalStates.ToArray(), transitions);
     }
 
-    public static Fsa Reverse(Fsa automaton)
-    {
-        throw new NotImplementedException();
-    }
-
     public static Fsa Trim(Fsa automaton)
     {
         var rel = automaton.Transitions
@@ -208,11 +206,13 @@ public static class FsaBuilder
             newTransitions);
     }
 
+    public static Dfsa Trim(Dfsa automaton)
+    {
+        throw new NotImplementedException();
+    }
+
     public static Fsa Expand(Fsa automaton)
     {
-        IEnumerable<int> KNewStates(int k, int startAfter)
-            => Enumerable.Range(startAfter, k);
-
         var multiSymbolTransitions = automaton.Transitions.Where(t => t.Via.Length > 1);
 
         var newStates = automaton.States;
@@ -222,7 +222,7 @@ public static class FsaBuilder
         {
             var wordLen = tr.Via.Length;
             var stateSeq = new[]{ tr.From }
-                .Concat(KNewStates(wordLen - 1, newStates.Count))
+                .Concat(KNewStates(wordLen - 1, newStates))
                 .Concat(new[] { tr.To })
                 .ToArray();
 
@@ -263,6 +263,11 @@ public static class FsaBuilder
     }
 
     public static Fsa Complement(Fsa automaton)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static Fsa Reverse(Fsa automaton)
     {
         throw new NotImplementedException();
     }
