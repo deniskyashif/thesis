@@ -208,7 +208,41 @@ public static class FsaBuilder
             newTransitions);
     }
 
-    public static Fsa Determinize(Fsa automaton)
+    public static Fsa Expand(Fsa automaton)
+    {
+        IEnumerable<int> KNewStates(int k, int startAfter)
+            => Enumerable.Range(startAfter, k);
+
+        var multiSymbolTransitions = automaton.Transitions.Where(t => t.Via.Length > 1);
+
+        var newStates = automaton.States;
+        IEnumerable<(int, string, int)> newTransitions = automaton.Transitions;
+
+        foreach (var tr in multiSymbolTransitions)
+        {
+            var wordLen = tr.Via.Length;
+            var stateSeq = new[]{ tr.From }
+                .Concat(KNewStates(wordLen - 1, newStates.Count))
+                .Concat(new[] { tr.To })
+                .ToArray();
+
+            newStates = newStates.Union(stateSeq).ToList();
+            var path = Enumerable.Range(0, stateSeq.Length - 1)
+                    .Select(i => (stateSeq[i], tr.Via[i].ToString(), stateSeq[i+1]));
+
+            newTransitions = newTransitions
+                .Except(new[] { tr })
+                .Union(path);
+        }
+
+        return new Fsa(
+            newStates,
+            automaton.InitialStates.ToArray(),
+            automaton.FinalStates.ToArray(),
+            newTransitions.ToArray());
+    }
+
+    public static Dfsa Determinize(Fsa automaton)
     {
         throw new NotImplementedException();
     }

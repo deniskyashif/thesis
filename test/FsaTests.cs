@@ -237,4 +237,19 @@ public class FsaTests
         Assert.True(fsa.Recognize("a"));
         Assert.False(fsa.Recognize("ab"));
     }
+
+    [Fact]
+    public void ExpandFsaTest()
+    {
+        var fsa = FsaBuilder.Expand(
+            FsaBuilder.FromSymbolSet(new HashSet<string> { "abcd" }));
+
+        Assert.Equal(5, fsa.States.Count);
+        Assert.Equal(4, fsa.Transitions.Count);
+        Assert.Single(fsa.InitialStates);
+        Assert.Single(fsa.FinalStates);
+        Assert.True(fsa.Recognize("abcd"));
+        Assert.False(fsa.Recognize("abc"));
+        Assert.False(fsa.Recognize("ab"));
+    }
 }
