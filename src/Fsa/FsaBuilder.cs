@@ -166,9 +166,46 @@ public static class FsaBuilder
         throw new NotImplementedException();
     }
 
-    public static Fsa Trim(Fsa first, Fsa second)
+    public static Fsa Trim(Fsa automaton)
     {
-        throw new NotImplementedException();
+        var rel = automaton.Transitions
+            .Select(t => (t.From, t.To))
+            .TransitiveClosure();
+
+        var newStates = automaton.InitialStates
+            .Union(
+                rel.Where(x => automaton.InitialStates.Contains(x.Item1))
+                    .Select(x => x.Item2))
+            .Intersect(
+                automaton.FinalStates
+                    .Union(
+                        rel.Where(x => automaton.FinalStates.Contains(x.Item2))
+                            .Select(x => x.Item1)))
+            .ToArray();
+
+        var newTransitions = automaton.Transitions
+            .Where(t => newStates.Contains(t.From) && newStates.Contains(t.To))
+            .Select(t => (
+                Array.IndexOf(newStates, t.From),
+                t.Via,
+                Array.IndexOf(newStates, t.To)))
+            .ToArray();
+
+        var newInitial = newStates
+            .Intersect(automaton.InitialStates)
+            .Select(s => Array.IndexOf(newStates, s))
+            .ToArray();
+
+        var newFinal = newStates
+            .Intersect(automaton.FinalStates)
+            .Select(s => Array.IndexOf(newStates, s)).ToArray()
+            .ToArray();
+
+        return new Fsa(
+            newStates.Select(s => Array.IndexOf(newStates, s)).ToArray(),
+            newInitial,
+            newFinal,
+            newTransitions);
     }
 
     public static Fsa Determinize(Fsa automaton)

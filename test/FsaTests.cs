@@ -190,7 +190,7 @@ public class FsaTests
     }
 
     [Fact]
-    public void EpsilonFreeConstructionTest()
+    public void EpsilonFreeSimpleConstructionTest()
     {
         // a*
         var fsa =
@@ -203,7 +203,7 @@ public class FsaTests
     }
 
     [Fact]
-    public void EpsilonFreeConstructionTest1()
+    public void EpsilonFreeConstructionTest()
     {
         // (a|b)+c
         var fsa =
@@ -219,5 +219,22 @@ public class FsaTests
         Assert.True(new[] { "abbac", "ac", "bc", "ababbbbac", "aac" }.All(fsa.Recognize));
         Assert.False(fsa.Recognize("c"));
         Assert.DoesNotContain(new[] { "ca", "aaba", "", "cc", "c" }, fsa.Recognize);
+    }
+
+    [Fact]
+    public void TrimFsaTest()
+    {
+        var states = new[] { 1, 2, 3, 4 };
+        var initial = new[] { 2, 3 };
+        var final = new[] { 4 };
+        var transitions = new[] { (3, "a", 4), (2, "b", 1) };
+        var fsa = FsaBuilder.Trim(new Fsa(states, initial, final, transitions));
+
+        Assert.Equal(2, fsa.States.Count);
+        Assert.Single(fsa.Transitions);
+        Assert.Single(fsa.InitialStates);
+        Assert.Single(fsa.FinalStates);
+        Assert.True(fsa.Recognize("a"));
+        Assert.False(fsa.Recognize("ab"));
     }
 }
