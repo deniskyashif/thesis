@@ -1,8 +1,7 @@
-/*
+/*  
     Finite-State Automaton -
-    Construction and closure operations
+    Construction and closure operations 
 */
-
 using System.Collections.Generic;
 using System.Linq;
 
@@ -46,12 +45,10 @@ public class Fsa
             .Any();
     }
 
-    IEnumerable<int> GetTransitions(int state, string word)
-    {
-        return this.Transitions
+    IEnumerable<int> GetTransitions(int state, string word) => 
+        this.Transitions
             .Where(t => (state, word) == (t.From, t.Via))
             .Select(t => t.To);
-    }
 
     public IEnumerable<int> EpsilonClosure(int state)
     {

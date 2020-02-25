@@ -4,10 +4,10 @@ using System.Linq;
 
 public static class FsaBuilder
 {
-    private static int NewState(IEnumerable<int> states) => states.Count();
+    private static int NewState(IReadOnlyList<int> states) => states.Count;
 
     // Creates a new Fsa by renaming the states 
-    private static Fsa RemapStates(Fsa automaton, int k)
+    private static Fsa Remap(Fsa automaton, int k)
     {
         var states = automaton.States.Select(s => s + k).ToArray();
         var initial = automaton.InitialStates.Select(s => s + k).ToArray();
@@ -41,7 +41,7 @@ public static class FsaBuilder
             transitions);
     }
 
-    public static Fsa SymbolSet(ISet<string> alphabet)
+    public static Fsa FromSymbolSet(ISet<string> alphabet)
     {
         var initial = 0;
         var final = 1;
@@ -60,7 +60,7 @@ public static class FsaBuilder
     public static Fsa Concat(Fsa first, Fsa second)
     {
         var firstFinalStates = first.FinalStates;
-        second = RemapStates(second, first.States.Count());
+        second = Remap(second, first.States.Count);
         var secondInitialStates = second.InitialStates;
 
         var initialStates = first.InitialStates.Intersect(first.FinalStates).Any()
@@ -82,7 +82,7 @@ public static class FsaBuilder
 
     public static Fsa Union(Fsa first, Fsa second)
     {
-        second = RemapStates(second, first.States.Count());
+        second = Remap(second, first.States.Count);
         return new Fsa(
             states: first.States.Union(second.States).ToArray(),
             initialStates: first.InitialStates.Union(second.InitialStates).ToArray(),
@@ -140,13 +140,13 @@ public static class FsaBuilder
     }
 
     public static Fsa All(ISet<string> alphabet) 
-        => FsaBuilder.Star(FsaBuilder.SymbolSet(alphabet));
+        => FsaBuilder.Star(FsaBuilder.FromSymbolSet(alphabet));
 
     /* Preserves the automaton's language but 
        does not preserve the language of individual states */
     public static Fsa EpsilonFree(Fsa automaton)
     {
-        var initialStates = automaton.InitialStates
+        var initial = automaton.InitialStates
             .SelectMany(automaton.EpsilonClosure)
             .ToArray();
 
@@ -158,11 +158,12 @@ public static class FsaBuilder
                     .Select(es => (t.From, t.Via, es)))
             .ToArray();
 
-        return new Fsa(
-            automaton.States.ToArray(), 
-            initialStates, 
-            automaton.FinalStates.ToArray(), 
-            transitions);
+        return new Fsa(automaton.States.ToArray(), initial, automaton.FinalStates.ToArray(), transitions);
+    }
+
+    public static Fsa Reverse(Fsa automaton)
+    {
+        throw new NotImplementedException();
     }
 
     public static Fsa Trim(Fsa first, Fsa second)
@@ -171,6 +172,11 @@ public static class FsaBuilder
     }
 
     public static Fsa Determinize(Fsa automaton)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static Fsa Product(Fsa first, Fsa second)
     {
         throw new NotImplementedException();
     }

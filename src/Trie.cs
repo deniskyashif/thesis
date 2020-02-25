@@ -23,7 +23,7 @@ public class Trie
         curr.IsFinal = true;
     }
 
-    public bool Search(string word) => Traverse(word)?.IsFinal ?? false;
+    public bool Recognize(string word) => Traverse(word)?.IsFinal ?? false;
 
     public bool StartsWith(string prefix) => Traverse(prefix) != null;
 

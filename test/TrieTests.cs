@@ -8,12 +8,12 @@ public class TrieTests
         var trie = new Trie();
         trie.Insert("apple");
 
-        Assert.True(trie.Search("apple"));
-        Assert.False(trie.Search("app"));
+        Assert.True(trie.Recognize("apple"));
+        Assert.False(trie.Recognize("app"));
         Assert.True(trie.StartsWith("app"));
 
         trie.Insert("app");
 
-        Assert.True(trie.Search("app"));
+        Assert.True(trie.Recognize("app"));
     }
 }

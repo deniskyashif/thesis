@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -31,7 +30,7 @@ public class FsaTests
     [Fact]
     public void FromSymbolSetFsaTest()
     {
-        var fsa = FsaBuilder.SymbolSet(new HashSet<string> { "a", "b", "c" });
+        var fsa = FsaBuilder.FromSymbolSet(new HashSet<string> { "a", "b", "c" });
 
         Assert.Equal(2, fsa.States.Count);
         Assert.False(fsa.Recognize(""));
