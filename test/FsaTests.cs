@@ -294,9 +294,28 @@ public class FsaTests
         var dfsa = FsaBuilder.Determ(fsa);
 
         Assert.Equal(new[] { 0, 1, 2, 3 }, dfsa.States);
-        // Assert.Equal(6, dfsa.Transitions.Count);
-        
         Assert.True(new[] { "aa", "aab", "bbabab", "bab" }.All(dfsa.Recognize));
         Assert.DoesNotContain(new[] { "", "a", "caa", "bb", "ba" }, dfsa.Recognize);
+    }
+
+    [Fact]
+    public void DetermEpsilonFsaTest()
+    {
+        // (a|abc)*
+        var states = new[] { 0, 1, 2, 3 };
+        var initial =  new[] { 0 };
+        var final = new[] { 1, 3 };
+        var transitions = new (int, string, int)[] 
+        {
+            (0, "a", 1),
+            (0, "a", 2),
+            (2, "bc", 3)
+        };
+        var fsa = FsaBuilder.Star(new Fsa(states, initial, final, transitions));
+        var dfsa = FsaBuilder.Determ(fsa);
+
+        Assert.Equal(new[] { 0, 1, 2, 3 }, dfsa.States);
+        Assert.True(new[] { "", "a", "aabc", "aaabcaaabc", "aaaaa", "abcabcabc" }.All(dfsa.Recognize));
+        Assert.DoesNotContain(new[] { "ab", "ac", "bca", "aab", "baaca" }, dfsa.Recognize);
     }
 }

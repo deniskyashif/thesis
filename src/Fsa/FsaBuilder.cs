@@ -281,13 +281,13 @@ public static class FsaBuilder
     public static Dfsa Determ(Fsa automaton)
     {
         var fsa = Expand(EpsilonFree(automaton));
-        var stateTransitionMap = automaton.Transitions
+        var stateTransitionMap = fsa.Transitions
             .GroupBy(t => t.From, t => (t.Via, t.To))
             .ToDictionary(g => g.Key, g => g.ToArray());
 
         var subsetStates = new List<List<int>>
         {
-            automaton.InitialStates.ToList()
+            fsa.InitialStates.ToList()
         };
         var transitions = new Dictionary<(int, string), int>();
 
@@ -320,7 +320,7 @@ public static class FsaBuilder
         // DFA state names are the indices of the state subsets
         var renamedStates = Enumerable.Range(0, subsetStates.Count).ToArray();
         var finalStates = renamedStates
-            .Where(index => subsetStates[index].Intersect(automaton.FinalStates).Any())
+            .Where(index => subsetStates[index].Intersect(fsa.FinalStates).Any())
             .ToArray();
 
         return (new Dfsa(renamedStates, 0, finalStates, transitions));
