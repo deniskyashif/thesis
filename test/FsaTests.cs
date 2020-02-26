@@ -217,7 +217,6 @@ public class FsaTests
 
         Assert.DoesNotContain(fsa.Transitions, t => string.IsNullOrEmpty(t.Via));
         Assert.True(new[] { "abbac", "ac", "bc", "ababbbbac", "aac" }.All(fsa.Recognize));
-        Assert.False(fsa.Recognize("c"));
         Assert.DoesNotContain(new[] { "ca", "aaba", "", "cc", "c" }, fsa.Recognize);
     }
 
@@ -239,6 +238,29 @@ public class FsaTests
     }
 
     [Fact]
+    public void TrimDfsaTest()
+    {
+        // a|b+
+        var states = new[] { 0, 1, 2, 3 };
+        var initial =  0;
+        var final = new[] { 1, 2 };
+        var transitions = new Dictionary<(int, string), int> 
+        {
+            { (0, "a"), 1 },
+            { (0, "b"), 2 },
+            { (2, "b"), 2 },
+        };
+        var dfsa = FsaBuilder.Trim(new Dfsa(states, initial, final, transitions));
+
+        Assert.Equal(3, dfsa.States.Count);
+        Assert.Equal(3, dfsa.Transitions.Count);
+        Assert.True(dfsa.Recognize("a"));
+        Assert.True(dfsa.Recognize("b"));
+        Assert.True(dfsa.Recognize("bbbbb"));
+        Assert.False(dfsa.Recognize("ab"));
+    }
+
+    [Fact]
     public void ExpandFsaTest()
     {
         var fsa = FsaBuilder.Expand(
@@ -251,5 +273,30 @@ public class FsaTests
         Assert.True(fsa.Recognize("abcd"));
         Assert.False(fsa.Recognize("abc"));
         Assert.False(fsa.Recognize("ab"));
+    }
+
+    [Fact]
+    public void DetermFsaTest()
+    {
+        // (a|b)*a(a|b)
+        var states = new[] { 0, 1, 2 };
+        var initial =  new[] { 0 };
+        var final = new[] { 2 };
+        var transitions = new (int, string, int)[] 
+        {
+            (0, "a", 0),
+            (0, "b", 0),
+            (0, "a", 1),
+            (1, "a", 2),
+            (1, "b", 2),
+        };
+        var fsa = new Fsa(states, initial, final, transitions);
+        var dfsa = FsaBuilder.Determ(fsa);
+
+        Assert.Equal(new[] { 0, 1, 2, 3 }, dfsa.States);
+        // Assert.Equal(6, dfsa.Transitions.Count);
+        
+        Assert.True(new[] { "aa", "aab", "bbabab", "bab" }.All(dfsa.Recognize));
+        Assert.DoesNotContain(new[] { "", "a", "caa", "bb", "ba" }, dfsa.Recognize);
     }
 }

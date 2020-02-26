@@ -55,4 +55,17 @@ public class RelationExtensionsTests
 
         Assert.Equal(expected, actual);
     }
+
+    [Fact]
+    public void TransitiveClosureTest2()
+    {
+        var r = new[] { (0, 0), (0, 1), (1, 2) };
+        var actual = r.TransitiveClosure().OrderBy(x => x.Item1).ThenBy(x => x.Item2);
+        var expected = new[]
+        {
+            (0, 0), (0, 1), (0, 2), (1, 2)
+        }.OrderBy(x => x.Item1).ThenBy(x => x.Item2);
+
+        Assert.Equal(expected, actual);
+    }
 }

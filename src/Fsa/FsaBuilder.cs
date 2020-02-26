@@ -86,6 +86,7 @@ public static class FsaBuilder
     public static Fsa Union(Fsa first, Fsa second)
     {
         second = Remap(second, first.States.Count);
+
         return new Fsa(
             states: first.States.Union(second.States).ToArray(),
             initialStates: first.InitialStates.Union(second.InitialStates).ToArray(),
@@ -142,7 +143,7 @@ public static class FsaBuilder
             automaton.Transitions.ToArray());
     }
 
-    public static Fsa All(ISet<string> alphabet) 
+    public static Fsa All(ISet<string> alphabet)
         => FsaBuilder.Star(FsaBuilder.FromSymbolSet(alphabet));
 
     /* Preserves the automaton's language but 
@@ -166,18 +167,19 @@ public static class FsaBuilder
 
     public static Fsa Trim(Fsa automaton)
     {
-        var rel = automaton.Transitions
+        var reachableStates = automaton.Transitions
             .Select(t => (t.From, t.To))
+            .Distinct()
             .TransitiveClosure();
 
         var newStates = automaton.InitialStates
             .Union(
-                rel.Where(x => automaton.InitialStates.Contains(x.Item1))
+                reachableStates.Where(x => automaton.InitialStates.Contains(x.Item1))
                     .Select(x => x.Item2))
             .Intersect(
                 automaton.FinalStates
                     .Union(
-                        rel.Where(x => automaton.FinalStates.Contains(x.Item2))
+                        reachableStates.Where(x => automaton.FinalStates.Contains(x.Item2))
                             .Select(x => x.Item1)))
             .ToArray();
 
@@ -208,7 +210,41 @@ public static class FsaBuilder
 
     public static Dfsa Trim(Dfsa automaton)
     {
-        throw new NotImplementedException();
+        var reachableStates = automaton.Transitions
+            .Select(t => (t.Key.From, t.Value))
+            .TransitiveClosure();
+
+        var newStates = new[] { automaton.InitialState }
+            .Union(
+                reachableStates
+                    .Where(pair => pair.Item1 == automaton.InitialState)
+                    .Select(pair => pair.Item2))
+            .Intersect(
+                automaton.FinalStates.Union(
+                    reachableStates
+                        .Where(pair => automaton.FinalStates.Contains(pair.Item2))
+                        .Select(pair => pair.Item1)))
+            .ToArray();
+
+        if (newStates.Length == 0)
+            return new Dfsa(
+                new[] { 1 },
+                1,
+                Array.Empty<int>(),
+                new Dictionary<(int, string), int>());
+
+        // States are renamed to their indices in the newStates array
+        var newTransitions = automaton.Transitions
+            .Where(t => newStates.Contains(t.Key.From) && newStates.Contains(t.Value))
+            .ToDictionary(
+                t => (Array.IndexOf(newStates, t.Key.From), t.Key.Via), // key
+                t => Array.IndexOf(newStates, t.Value)); // value
+
+        return new Dfsa(
+            newStates.Select(s => Array.IndexOf(newStates, s)).ToArray(),
+            Array.IndexOf(newStates, automaton.InitialState),
+            newStates.Intersect(automaton.FinalStates).Select(s => Array.IndexOf(newStates, s)).ToArray(),
+            newTransitions);
     }
 
     public static Fsa Expand(Fsa automaton)
@@ -221,14 +257,14 @@ public static class FsaBuilder
         foreach (var tr in multiSymbolTransitions)
         {
             var wordLen = tr.Via.Length;
-            var stateSeq = new[]{ tr.From }
+            var stateSeq = new[] { tr.From }
                 .Concat(KNewStates(wordLen - 1, newStates))
                 .Concat(new[] { tr.To })
                 .ToArray();
 
             newStates = newStates.Union(stateSeq).ToList();
             var path = Enumerable.Range(0, stateSeq.Length - 1)
-                    .Select(i => (stateSeq[i], tr.Via[i].ToString(), stateSeq[i+1]));
+                    .Select(i => (stateSeq[i], tr.Via[i].ToString(), stateSeq[i + 1]));
 
             newTransitions = newTransitions
                 .Except(new[] { tr })
@@ -242,9 +278,52 @@ public static class FsaBuilder
             newTransitions.ToArray());
     }
 
-    public static Dfsa Determinize(Fsa automaton)
+    public static Dfsa Determ(Fsa automaton)
     {
-        throw new NotImplementedException();
+        var fsa = Expand(EpsilonFree(automaton));
+        var stateTransitionMap = automaton.Transitions
+            .GroupBy(t => t.From, t => (t.Via, t.To))
+            .ToDictionary(g => g.Key, g => g.ToArray());
+
+        var subsetStates = new List<List<int>>
+        {
+            automaton.InitialStates.ToList()
+        };
+        var transitions = new Dictionary<(int, string), int>();
+
+        for (var n = 0; n < subsetStates.Count; n++)
+        {
+            var N = subsetStates[n]
+                .Where(s => stateTransitionMap.ContainsKey(s))
+                .SelectMany(s => stateTransitionMap[s])
+                .Distinct();
+
+            var symbolToStates = N
+                .GroupBy(p => p.Via, p => p.To)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            foreach (var state in symbolToStates.Select(p => p.Value).ToList())
+            {
+                // Check if the subset is already added
+                if (!subsetStates.Any(ss => ss.Count == state.Count && ss.All(x => state.Contains(x))))
+                    subsetStates.Add(state);
+            };
+
+            foreach (var pair in symbolToStates)
+            {
+                transitions.Add(
+                    (n, pair.Key), 
+                    subsetStates.FindIndex(ss => ss.Count == pair.Value.Count && ss.All(x => pair.Value.Contains(x))));
+            }
+        }
+
+        // DFA state names are the indices of the state subsets
+        var renamedStates = Enumerable.Range(0, subsetStates.Count).ToArray();
+        var finalStates = renamedStates
+            .Where(index => subsetStates[index].Intersect(automaton.FinalStates).Any())
+            .ToArray();
+
+        return (new Dfsa(renamedStates, 0, finalStates, transitions));
     }
 
     public static Fsa Product(Fsa first, Fsa second)
