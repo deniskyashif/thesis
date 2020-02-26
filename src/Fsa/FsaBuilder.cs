@@ -278,52 +278,46 @@ public static class FsaBuilder
             newTransitions.ToArray());
     }
 
-    public static Dfsa Determ(Fsa automaton)
+    public static Dfsa Determinize(Fsa automaton)
     {
         var fsa = Expand(EpsilonFree(automaton));
+        
         var stateTransitionMap = fsa.Transitions
             .GroupBy(t => t.From, t => (t.Via, t.To))
             .ToDictionary(g => g.Key, g => g.ToArray());
 
-        var subsetStates = new List<List<int>>
+        var subsetStates = new List<int[]> { fsa.InitialStates.ToArray() };
+        var dfsaTransitions = new Dictionary<(int, string), int>();
+
+        for (var n = 0; n < subsetStates.Count; n++) // we break from the loop when there is no unexamined state
         {
-            fsa.InitialStates.ToList()
-        };
-        var transitions = new Dictionary<(int, string), int>();
+            var symbolToStates = subsetStates[n] // take the last unexamined subset state
+                .Where(s => stateTransitionMap.ContainsKey(s)) // keep only the items with outgoing transitions
+                .SelectMany(s => stateTransitionMap[s]) // flatten into a set of (symbol, target) pairs
+                .Distinct()
+                .GroupBy(p => p.Via, p => p.To) // group them by symbol (fsa has only symbol transitions becase of "Expand")
+                .ToDictionary(g => g.Key, g => g.ToArray()); // convert to dictionary of type <symbol, set of states>
 
-        for (var n = 0; n < subsetStates.Count; n++)
-        {
-            var N = subsetStates[n]
-                .Where(s => stateTransitionMap.ContainsKey(s))
-                .SelectMany(s => stateTransitionMap[s])
-                .Distinct();
-
-            var symbolToStates = N
-                .GroupBy(p => p.Via, p => p.To)
-                .ToDictionary(g => g.Key, g => g.ToList());
-
-            foreach (var state in symbolToStates.Select(p => p.Value).ToList())
-            {
-                // Check if the subset is already added
-                if (!subsetStates.Any(ss => ss.Count == state.Count && ss.All(x => state.Contains(x))))
+            foreach (var state in symbolToStates.Select(p => p.Value)) // the newly formed state sets are in the Dfsa
+                if (!subsetStates.Any(ss => ss.SequenceEqual(state))) // check if it has been added
                     subsetStates.Add(state);
-            };
 
             foreach (var pair in symbolToStates)
-            {
-                transitions.Add(
-                    (n, pair.Key), 
-                    subsetStates.FindIndex(ss => ss.Count == pair.Value.Count && ss.All(x => pair.Value.Contains(x))));
-            }
+                dfsaTransitions.Add(
+                    (n, pair.Key), // n is the index of the currently examined subset state, pair.Key (symbol) is the trans. label
+                    subsetStates.FindIndex(ss => ss.SequenceEqual(pair.Value))); // goes to the index of the subset
         }
 
         // DFA state names are the indices of the state subsets
         var renamedStates = Enumerable.Range(0, subsetStates.Count).ToArray();
+        
+        // if a state subset contains a final state from the original automaton
+        // then it is marked as final in the deterministic automaton
         var finalStates = renamedStates
             .Where(index => subsetStates[index].Intersect(fsa.FinalStates).Any())
             .ToArray();
 
-        return (new Dfsa(renamedStates, 0, finalStates, transitions));
+        return new Dfsa(renamedStates, 0, finalStates, dfsaTransitions);
     }
 
     public static Fsa Product(Fsa first, Fsa second)

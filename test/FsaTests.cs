@@ -285,13 +285,13 @@ public class FsaTests
         var transitions = new (int, string, int)[] 
         {
             (0, "a", 0),
-            (0, "b", 0),
-            (0, "a", 1),
             (1, "a", 2),
             (1, "b", 2),
+            (0, "a", 1),
+            (0, "b", 0),
         };
         var fsa = new Fsa(states, initial, final, transitions);
-        var dfsa = FsaBuilder.Determ(fsa);
+        var dfsa = FsaBuilder.Determinize(fsa);
 
         Assert.Equal(new[] { 0, 1, 2, 3 }, dfsa.States);
         Assert.True(new[] { "aa", "aab", "bbabab", "bab" }.All(dfsa.Recognize));
@@ -308,14 +308,37 @@ public class FsaTests
         var transitions = new (int, string, int)[] 
         {
             (0, "a", 1),
+            (2, "bc", 3),
             (0, "a", 2),
-            (2, "bc", 3)
         };
         var fsa = FsaBuilder.Star(new Fsa(states, initial, final, transitions));
-        var dfsa = FsaBuilder.Determ(fsa);
+        var dfsa = FsaBuilder.Determinize(fsa);
 
         Assert.Equal(new[] { 0, 1, 2, 3 }, dfsa.States);
         Assert.True(new[] { "", "a", "aabc", "aaabcaaabc", "aaaaa", "abcabcabc" }.All(dfsa.Recognize));
         Assert.DoesNotContain(new[] { "ab", "ac", "bca", "aab", "baaca" }, dfsa.Recognize);
+    }
+
+    [Fact]
+    public void DetermEpsilonFsaTest1()
+    {
+        // (a|abc)*
+        var states = new[] { 0, 1 };
+        var initial =  new[] { 0 };
+        var final = new[] { 1 };
+        var transitions = new (int, string, int)[] 
+        {
+            (0, "a", 0),
+            (0, "b", 0),
+            (0, "aaa", 1),
+            (1, "a", 1),
+            (1, "b", 1),
+        };
+        var fsa = new Fsa(states, initial, final, transitions);
+        var dfsa = FsaBuilder.Determinize(fsa);
+
+        // Assert.Equal(new[] { 0, 1, 2, 3 }, dfsa.States);
+        Assert.True(new[] { "aaa", "aaaab", "aaabb", "aaabaaa", "bbaaabababb", "baaabaaabaaabb" }.All(dfsa.Recognize));
+        Assert.DoesNotContain(new[] { "aab", "abaab", "", "baaac", "ababaab" }, dfsa.Recognize);
     }
 }
