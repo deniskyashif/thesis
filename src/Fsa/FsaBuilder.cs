@@ -320,9 +320,35 @@ public static class FsaBuilder
         return new Dfsa(renamedStates, 0, finalStates, dfsaTransitions);
     }
 
-    public static Fsa Product(Fsa first, Fsa second)
+    public static (IList<(int, int)> States, IDictionary<(int, string), int> Transitions) 
+        Product(Dfsa first, Dfsa second)
     {
-        throw new NotImplementedException();
+        var stateTransitionMapOfFirst = first.Transitions
+            .GroupBy(kvp => kvp.Key.From, kvp => (kvp.Key.Via, kvp.Value))
+            .ToDictionary(g => g.Key, g => g.ToArray());
+
+        var productStates = new List<(int, int)> { (first.InitialState, second.InitialState) };
+        var transitions = new Dictionary<(int, string), int>();
+
+        for (var n = 0; n < productStates.Count; n++)
+        {
+            var (p1, p2) = productStates[n];
+            var departingTransitions = stateTransitionMapOfFirst.ContainsKey(p1) 
+                ? stateTransitionMapOfFirst[p1]
+                    .Where(pair => second.Transitions.ContainsKey((p2, pair.Via)))
+                    .Select(pair => (pair.Via, (pair.Value, second.Transitions[(p2, pair.Via)])))
+                : Array.Empty<(string, (int, int))>();
+            
+            foreach (var prodState in departingTransitions.Select(pair => pair.Item2))
+                if (!productStates.Contains(prodState))
+                    productStates.Add(prodState);
+            
+            // Tramsitions refer to states by their index in the states list
+            foreach (var pair in departingTransitions)
+                transitions.Add((n, pair.Via), productStates.IndexOf(pair.Item2));
+        }
+
+        return (productStates, transitions);
     }
 
     public static Fsa Intersect(Fsa first, Fsa second)

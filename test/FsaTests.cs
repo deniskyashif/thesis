@@ -242,9 +242,9 @@ public class FsaTests
     {
         // a|b+
         var states = new[] { 0, 1, 2, 3 };
-        var initial =  0;
+        var initial = 0;
         var final = new[] { 1, 2 };
-        var transitions = new Dictionary<(int, string), int> 
+        var transitions = new Dictionary<(int, string), int>
         {
             { (0, "a"), 1 },
             { (0, "b"), 2 },
@@ -280,9 +280,9 @@ public class FsaTests
     {
         // (a|b)*a(a|b)
         var states = new[] { 0, 1, 2 };
-        var initial =  new[] { 0 };
+        var initial = new[] { 0 };
         var final = new[] { 2 };
-        var transitions = new (int, string, int)[] 
+        var transitions = new (int, string, int)[]
         {
             (0, "a", 0),
             (1, "a", 2),
@@ -303,9 +303,9 @@ public class FsaTests
     {
         // (a|abc)*
         var states = new[] { 0, 1, 2, 3 };
-        var initial =  new[] { 0 };
+        var initial = new[] { 0 };
         var final = new[] { 1, 3 };
-        var transitions = new (int, string, int)[] 
+        var transitions = new (int, string, int)[]
         {
             (0, "a", 1),
             (2, "bc", 3),
@@ -324,9 +324,9 @@ public class FsaTests
     {
         // (a|abc)*
         var states = new[] { 0, 1 };
-        var initial =  new[] { 0 };
+        var initial = new[] { 0 };
         var final = new[] { 1 };
-        var transitions = new (int, string, int)[] 
+        var transitions = new (int, string, int)[]
         {
             (0, "a", 0),
             (0, "b", 0),
@@ -340,5 +340,49 @@ public class FsaTests
         // Assert.Equal(new[] { 0, 1, 2, 3 }, dfsa.States);
         Assert.True(new[] { "aaa", "aaaab", "aaabb", "aaabaaa", "bbaaabababb", "baaabaaabaaabb" }.All(dfsa.Recognize));
         Assert.DoesNotContain(new[] { "aab", "abaab", "", "baaac", "ababaab" }, dfsa.Recognize);
+    }
+
+    [Fact]
+    public void ProductDfsaTest()
+    {
+        var first = new Dfsa(
+            new[] { 0, 1 },
+            0,
+            new[] { 0 },
+            new Dictionary<(int, string), int>
+            {
+                {(0, "b"), 0 },
+                {(0, "a"), 1 },
+                {(1, "b"), 1 },
+                {(1, "a"), 0 },
+            });
+        var second = new Dfsa(
+            new[] { 2, 3 },
+            2,
+            new[] { 2 },
+            new Dictionary<(int, string), int>
+            {
+                    {(2, "a"), 2 },
+                    {(2, "b"), 3 },
+                    {(3, "a"), 3 },
+                    {(3, "b"), 2 },
+            });
+
+        var (states, transitions) = FsaBuilder.Product(first, second);
+
+        Assert.Equal(new[] { (0, 2), (0, 3), (1, 2), (1, 3) }, states);
+        Assert.Equal(
+            new Dictionary<(int, string), int>()
+            {
+                { (0, "a"), 2 },
+                { (0, "b"), 1 },
+                { (1, "a"), 3 },
+                { (1, "b"), 0 },
+                { (2, "a"), 0 },
+                { (2, "b"), 3 },
+                { (3, "a"), 1 },
+                { (3, "b"), 2 },
+            },
+            transitions);
     }
 }
