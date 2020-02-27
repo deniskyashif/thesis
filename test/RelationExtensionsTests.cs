@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
@@ -34,7 +35,7 @@ public class RelationExtensionsTests
     [Fact]
     public void TransitiveClosureTest()
     {
-        var r = new[] { (1, 2), (2, 3), (4, 5) };
+        var r = new HashSet<(int, int)> { (1, 2), (2, 3), (4, 5) };
         var actual = r.TransitiveClosure().OrderBy(x => x.Item1).ThenBy(x => x.Item2);
         var expected = new[] { (1, 2), (2, 3), (4, 5), (1, 3) }
             .OrderBy(x => x.Item1)
@@ -46,7 +47,7 @@ public class RelationExtensionsTests
     [Fact]
     public void TransitiveClosureTest1()
     {
-        var r = new[] { (1, 2), (2, 3), (3, 4), (4, 5) };
+        var r = new HashSet<(int, int)> { (1, 2), (2, 3), (3, 4), (4, 5) };
         var actual = r.TransitiveClosure().OrderBy(x => x.Item1).ThenBy(x => x.Item2);
         var expected = new[]
         {
@@ -59,7 +60,7 @@ public class RelationExtensionsTests
     [Fact]
     public void TransitiveClosureTest2()
     {
-        var r = new[] { (0, 0), (0, 1), (1, 2) };
+        var r = new HashSet<(int, int)> { (0, 0), (0, 1), (1, 2) };
         var actual = r.TransitiveClosure().OrderBy(x => x.Item1).ThenBy(x => x.Item2);
         var expected = new[]
         {

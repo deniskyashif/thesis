@@ -3,18 +3,18 @@ using System.Linq;
 
 public static class StateExtensions
 {
-    public static ISet<(int, int)> TransitiveClosure(this IEnumerable<(int, int)> rel)
+    public static ISet<(int, int)> TransitiveClosure(this ISet<(int, int)> rel)
     {
         var currentRel = rel;
-        var nextRel = currentRel.Union(rel.Compose(currentRel)).ToList();
+        var nextRel = currentRel.Union(rel.Compose(currentRel)).ToHashSet();
 
         while (currentRel.Count() < nextRel.Count)
         {
             currentRel = nextRel;
-            nextRel = rel.Union(rel.Compose(currentRel)).ToList();
+            nextRel = rel.Union(rel.Compose(currentRel)).ToHashSet();
         }
 
-        return currentRel.ToHashSet();
+        return currentRel;
     }
 
     public static IEnumerable<(int, int)> Compose(

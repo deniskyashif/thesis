@@ -337,7 +337,6 @@ public class FsaTests
         var fsa = new Fsa(states, initial, final, transitions);
         var dfsa = FsaBuilder.Determinize(fsa);
 
-        // Assert.Equal(new[] { 0, 1, 2, 3 }, dfsa.States);
         Assert.True(new[] { "aaa", "aaaab", "aaabb", "aaabaaa", "bbaaabababb", "baaabaaabaaabb" }.All(dfsa.Recognize));
         Assert.DoesNotContain(new[] { "aab", "abaab", "", "baaac", "ababaab" }, dfsa.Recognize);
     }
@@ -345,6 +344,7 @@ public class FsaTests
     [Fact]
     public void ProductDfsaTest()
     {
+        // even number of "b"'s & any number of "a"'s
         var first = new Dfsa(
             new[] { 0, 1 },
             0,
@@ -356,6 +356,7 @@ public class FsaTests
                 {(1, "b"), 1 },
                 {(1, "a"), 0 },
             });
+        // even number of "a"'s & any number of "b"'s
         var second = new Dfsa(
             new[] { 2, 3 },
             2,
@@ -368,7 +369,9 @@ public class FsaTests
                     {(3, "b"), 2 },
             });
 
-        var (states, transitions) = FsaBuilder.Product(first, second);
+        var (states, transitions) = FsaBuilder.Product(
+            (first.InitialState, first.Transitions), 
+            (second.InitialState, second.Transitions));
 
         Assert.Equal(new[] { (0, 2), (0, 3), (1, 2), (1, 3) }, states);
         Assert.Equal(
@@ -384,5 +387,131 @@ public class FsaTests
                 { (3, "b"), 2 },
             },
             transitions);
+    }
+
+    [Fact]
+    public void IntersectDfsaTest()
+    {
+        // even number of "a"'s & any number of "b"'s
+        var first = new Dfsa(
+            new[] { 0, 1 },
+            0,
+            new[] { 0 },
+            new Dictionary<(int, string), int>
+            {
+                {(0, "b"), 0 },
+                {(0, "a"), 1 },
+                {(1, "b"), 1 },
+                {(1, "a"), 0 },
+            });
+        // even number of "b"'s & any number of "a"'s
+        var second = new Dfsa(
+            new[] { 2, 3 },
+            2,
+            new[] { 2 },
+            new Dictionary<(int, string), int>
+            {
+                    {(2, "a"), 2 },
+                    {(2, "b"), 3 },
+                    {(3, "a"), 3 },
+                    {(3, "b"), 2 },
+            });
+
+        Assert.True(new[] { "", "aaaa", "aab", "baabaa", "baba", "abab", "bbbaa" }.All(first.Recognize));
+        Assert.True(new[] { "", "aa", "bb", "abab", "aabb", "baba", "bbaa", "bbaaaaaaabb" }.All(second.Recognize));
+
+        // even number of "a"'s and "b"'s
+        var dfsa = FsaBuilder.Intersect(first, second);
+        Assert.True(new[] { "abab", "aaaabbbb", "bbabba", "bbaa", "aabbaa", "aabb" }.All(dfsa.Recognize));
+        Assert.DoesNotContain(new[] { "aaa", "aaabb", "aaabaabb", "aaabb", "baaba", "bbbaa" }, dfsa.Recognize);
+    }
+
+    [Fact]
+    public void DifferenceOfFsaTest()
+    {
+        var fsa = FsaBuilder.FromSymbolSet(new HashSet<string> { "a", "b", "c" });
+        var first = FsaBuilder.Star(fsa);
+        var second = FsaBuilder.Plus(fsa);
+        var words = new[] { "abc", "a", "aa", "abc", "c", "ccba" };
+
+        Assert.True(words.All(first.Recognize));
+        Assert.True(words.All(second.Recognize));
+        Assert.True(first.Recognize(""));
+        Assert.False(second.Recognize(""));
+
+        var diff = FsaBuilder.Difference(first, second);
+
+        Assert.True(diff.Recognize(""));
+        Assert.DoesNotContain(words, diff.Recognize);
+    }
+
+    [Fact]
+    public void DifferenceOfFsaTest1()
+    {
+        // a*b
+        var first =
+            FsaBuilder.Concat(
+                FsaBuilder.Star(
+                    FsaBuilder.FromWord("a")),
+                FsaBuilder.FromWord("b"));
+        // ab|b
+        var second = FsaBuilder.FromWord("b");
+        
+        Assert.True(new[] { "ab", "b", "aaaaab", "aab" }.All(first.Recognize));
+        Assert.True(new[] { "b" }.All(second.Recognize));
+        Assert.False(second.Recognize("ab"));
+
+        var diff = FsaBuilder.Difference(first, second);
+
+        Assert.True(new[] { "ab", "aaaaab", "aab" }.All(diff.Recognize));
+        Assert.False(diff.Recognize("b"));
+    }
+
+    [Fact]
+    public void DifferenceOfFsaTest2()
+    {
+        var universal = FsaBuilder.Star(
+            FsaBuilder.FromSymbolSet(new HashSet<string> { "a", "b", "c" }));
+
+        // ab+c
+        var fsa =
+            FsaBuilder.Concat(
+                FsaBuilder.Concat(
+                    FsaBuilder.FromWord("a"),
+                    FsaBuilder.Plus(FsaBuilder.FromWord("b"))),
+                FsaBuilder.FromWord("c"));
+
+        // not in ab+c
+        var diff = FsaBuilder.Difference(universal, fsa);
+
+        Assert.True(diff.Recognize(string.Empty));
+        Assert.True(diff.Recognize("ab"));
+        Assert.True(diff.Recognize("ac"));
+        Assert.True(diff.Recognize("cab"));
+        Assert.False(diff.Recognize("abc"));
+        Assert.False(diff.Recognize("abbbbc"));
+    }
+
+    [Fact]
+    public void DfsaToFsaTest()
+    {
+        // a|b+
+        var states = new[] { 0, 1, 2, 3 };
+        var final = new[] { 1, 2 };
+        var transitions = new Dictionary<(int, string), int>
+        {
+            { (0, "a"), 1 },
+            { (0, "b"), 2 },
+            { (2, "b"), 2 },
+        };
+        var dfsa = new Dfsa(states, 0, final, transitions);
+        var fsa = FsaBuilder.ToFsa(dfsa);
+
+        Assert.Equal(states, fsa.States);
+        Assert.Equal(new[] { 0 }, fsa.InitialStates);
+        Assert.Equal(final, fsa.FinalStates);
+        Assert.Equal(
+            new[] { (0, "a", 1), (0, "b", 2), (2, "b", 2) },
+            fsa.Transitions);
     }
 }
