@@ -11,24 +11,24 @@ public class Fsa
 {
     public Fsa(
         IEnumerable<int> states,
-        IEnumerable<int> initialStates,
-        IEnumerable<int> finalStates,
+        IEnumerable<int> initial,
+        IEnumerable<int> final,
         IEnumerable<(int, string, int)> transitions)
     {
         this.States = states.ToImmutableHashSet();
-        this.InitialStates = initialStates.ToImmutableHashSet();
-        this.FinalStates = finalStates.ToImmutableHashSet();
+        this.Initial = initial.ToImmutableHashSet();
+        this.Final = final.ToImmutableHashSet();
         this.Transitions = transitions.ToImmutableHashSet();
     }
 
     public IImmutableSet<int> States { get; private set; }
-    public IImmutableSet<int> InitialStates { get; private set; }
-    public IImmutableSet<int> FinalStates { get; private set; }
+    public IImmutableSet<int> Initial { get; private set; }
+    public IImmutableSet<int> Final { get; private set; }
     public IImmutableSet<(int From, string Via, int To)> Transitions { get; private set; }
 
     public bool Recognize(string word)
     {
-        IEnumerable<int> currentStates = this.InitialStates;
+        IEnumerable<int> currentStates = this.Initial;
 
         foreach (var symbol in word)
         {
@@ -42,7 +42,7 @@ public class Fsa
                 break;
         }
 
-        return this.FinalStates
+        return this.Final
             .Intersect(currentStates.SelectMany(EpsilonClosure))
             .Any();
     }

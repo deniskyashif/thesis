@@ -35,8 +35,8 @@ public class RelationExtensionsTests
     [Fact]
     public void TransitiveClosureTest()
     {
-        var r = new HashSet<(int, int)> { (1, 2), (2, 3), (4, 5) };
-        var actual = r.TransitiveClosure().OrderBy(x => x.Item1).ThenBy(x => x.Item2);
+        var rel = new HashSet<(int, int)> { (1, 2), (2, 3), (4, 5) };
+        var actual = rel.TransitiveClosure().OrderBy(x => x.Item1).ThenBy(x => x.Item2);
         var expected = new[] { (1, 2), (2, 3), (4, 5), (1, 3) }
             .OrderBy(x => x.Item1)
             .ThenBy(x => x.Item2);
