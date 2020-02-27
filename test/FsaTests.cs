@@ -238,17 +238,37 @@ public class FsaTests
     }
 
     [Fact]
+    public void DfaRecognizeTest()
+    {
+        // a|bc+
+        var states = new[] { 0, 1, 2, 3 };
+        var initial = 0;
+        var final = new[] { 1, 3 };
+        var transitions = new Dictionary<(int, char), int>()
+        {
+            { (0, 'a'), 1 },
+            { (0, 'b'), 2 },
+            { (2, 'c'), 3 },
+            { (3, 'c'), 3 }
+        };
+        var dfsa = new Dfsa(states, initial, final, transitions);
+
+        Assert.True(new[] { "a", "bc", "bcccc" }.All(dfsa.Recognize));
+        Assert.DoesNotContain(new[] { "aa", "ab", "abc", "b", "abcc", "c" }, dfsa.Recognize);
+    }
+
+    [Fact]
     public void TrimDfsaTest()
     {
         // a|b+
         var states = new[] { 0, 1, 2, 3 };
         var initial = 0;
         var final = new[] { 1, 2 };
-        var transitions = new Dictionary<(int, string), int>
+        var transitions = new Dictionary<(int, char), int>
         {
-            { (0, "a"), 1 },
-            { (0, "b"), 2 },
-            { (2, "b"), 2 },
+            { (0, 'a'), 1 },
+            { (0, 'b'), 2 },
+            { (2, 'b'), 2 },
         };
         var dfsa = FsaBuilder.Trim(new Dfsa(states, initial, final, transitions));
 
@@ -351,24 +371,24 @@ public class FsaTests
             new[] { 0, 1 },
             0,
             new[] { 0 },
-            new Dictionary<(int, string), int>
+            new Dictionary<(int, char), int>
             {
-                {(0, "b"), 0 },
-                {(0, "a"), 1 },
-                {(1, "b"), 1 },
-                {(1, "a"), 0 },
+                {(0, 'b'), 0 },
+                {(0, 'a'), 1 },
+                {(1, 'b'), 1 },
+                {(1, 'a'), 0 },
             });
         // even number of "a"'s & any number of "b"'s
         var second = new Dfsa(
             new[] { 2, 3 },
             2,
             new[] { 2 },
-            new Dictionary<(int, string), int>
+            new Dictionary<(int, char), int>
             {
-                    {(2, "a"), 2 },
-                    {(2, "b"), 3 },
-                    {(3, "a"), 3 },
-                    {(3, "b"), 2 },
+                    {(2, 'a'), 2 },
+                    {(2, 'b'), 3 },
+                    {(3, 'a'), 3 },
+                    {(3, 'b'), 2 },
             });
 
         var (states, transitions) = FsaBuilder.Product(
@@ -380,7 +400,7 @@ public class FsaTests
         Assert.Equal(8, transitions.Count);
 
         var stateIndices = Enumerable.Range(0, states.Count);
-        Assert.True(stateIndices.All(s => transitions[(s, "a")] != transitions[(s, "b")]));
+        Assert.True(stateIndices.All(s => transitions[(s, 'a')] != transitions[(s, 'b')]));
     }
 
     [Fact]
@@ -391,24 +411,24 @@ public class FsaTests
             new[] { 0, 1 },
             0,
             new[] { 0 },
-            new Dictionary<(int, string), int>
+            new Dictionary<(int, char), int>
             {
-                {(0, "b"), 0 },
-                {(0, "a"), 1 },
-                {(1, "b"), 1 },
-                {(1, "a"), 0 },
+                {(0, 'b'), 0 },
+                {(0, 'a'), 1 },
+                {(1, 'b'), 1 },
+                {(1, 'a'), 0 },
             });
         // even number of "b"'s & any number of "a"'s
         var second = new Dfsa(
             new[] { 2, 3 },
             2,
             new[] { 2 },
-            new Dictionary<(int, string), int>
+            new Dictionary<(int, char), int>
             {
-                    {(2, "a"), 2 },
-                    {(2, "b"), 3 },
-                    {(3, "a"), 3 },
-                    {(3, "b"), 2 },
+                    {(2, 'a'), 2 },
+                    {(2, 'b'), 3 },
+                    {(3, 'a'), 3 },
+                    {(3, 'b'), 2 },
             });
 
         Assert.True(new[] { string.Empty, "aaaa", "aab", "baabaa", "baba", "abab", "bbbaa" }.All(first.Recognize));
@@ -489,11 +509,11 @@ public class FsaTests
         // a|b+
         var states = new[] { 0, 1, 2, 3 };
         var final = new[] { 1, 2 };
-        var transitions = new Dictionary<(int, string), int>
+        var transitions = new Dictionary<(int, char), int>
         {
-            { (0, "a"), 1 },
-            { (0, "b"), 2 },
-            { (2, "b"), 2 },
+            { (0, 'a'), 1 },
+            { (0, 'b'), 2 },
+            { (2, 'b'), 2 },
         };
         var dfsa = new Dfsa(states, 0, final, transitions);
         var fsa = FsaBuilder.ToFsa(dfsa);

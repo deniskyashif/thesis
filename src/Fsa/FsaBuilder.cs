@@ -228,7 +228,7 @@ public static class FsaBuilder
                 new[] { 1 },
                 1,
                 Array.Empty<int>(),
-                new Dictionary<(int, string), int>());
+                new Dictionary<(int, char), int>());
 
         // States are renamed to their indices in the newStates array
         var newTransitions = automaton.Transitions
@@ -280,7 +280,7 @@ public static class FsaBuilder
             .ToDictionary(g => g.Key, g => g.ToArray());
 
         var subsetStates = new List<int[]> { fsa.InitialStates.ToArray() };
-        var dfsaTransitions = new Dictionary<(int, string), int>();
+        var dfsaTransitions = new Dictionary<(int, char), int>();
 
         for (var n = 0; n < subsetStates.Count; n++) // we break from the loop when there is no unexamined state
         {
@@ -288,7 +288,7 @@ public static class FsaBuilder
                 .Where(s => stateTransitionMap.ContainsKey(s)) // keep only the items with outgoing transitions
                 .SelectMany(s => stateTransitionMap[s]) // flatten into a set of (symbol, target) pairs
                 .Distinct()
-                .GroupBy(p => p.Via, p => p.To) // group them by symbol (fsa has only symbol transitions becase of "Expand")
+                .GroupBy(p => p.Via.Single(), p => p.To) // group them by symbol (fsa has only symbol transitions becase of "Expand")
                 .ToDictionary(g => g.Key, g => g.ToArray()); // convert to dictionary of type <symbol, set of states>
 
             foreach (var state in symbolToStates.Select(p => p.Value)) // the newly formed state sets are in the Dfsa
@@ -313,17 +313,17 @@ public static class FsaBuilder
         return new Dfsa(renamedStates, 0, finalStates, dfsaTransitions);
     }
 
-    public static (IReadOnlyList<(int, int)> States, IReadOnlyDictionary<(int, string), int> Transitions)
+    public static (IReadOnlyList<(int, int)> States, IReadOnlyDictionary<(int From, char Via), int> Transitions)
         Product(
-            (int InitialState, IReadOnlyDictionary<(int From, string Via), int> Transitions) first,
-            (int InitialState, IReadOnlyDictionary<(int From, string Via), int> Transitions) second)
+            (int InitialState, IReadOnlyDictionary<(int From, char Via), int> Transitions) first,
+            (int InitialState, IReadOnlyDictionary<(int From, char Via), int> Transitions) second)
     {
         var stateTransitionMapOfFirst = first.Transitions
             .GroupBy(kvp => kvp.Key.From, kvp => (kvp.Key.Via, kvp.Value))
             .ToDictionary(g => g.Key, g => g);
 
         var productStates = new List<(int, int)> { (first.InitialState, second.InitialState) };
-        var transitions = new Dictionary<(int, string), int>();
+        var transitions = new Dictionary<(int, char), int>();
 
         for (var n = 0; n < productStates.Count; n++)
         {
@@ -332,7 +332,7 @@ public static class FsaBuilder
                 ? stateTransitionMapOfFirst[p1]
                     .Where(pair => second.Transitions.ContainsKey((p2, pair.Via)))
                     .Select(pair => (pair.Via, (pair.Value, second.Transitions[(p2, pair.Via)])))
-                : Array.Empty<(string, (int, int))>();
+                : Array.Empty<(char, (int, int))>();
 
             foreach (var prodState in departingTransitions.Select(pair => pair.Item2))
                 if (!productStates.Contains(prodState))
@@ -373,7 +373,7 @@ public static class FsaBuilder
         var combinedAlphabet = first.Transitions.Select(t => t.Key.Via)
             .Concat(second.Transitions.Select(t => t.Key.Via))
             .Distinct();
-        var secondTransitionsAsTotalFn = new Dictionary<(int, string), int>();
+        var secondTransitionsAsTotalFn = new Dictionary<(int, char), int>();
 
         // Make the function total by adding the missing transitions to the invalid state of "-1"
         foreach (var state in second.States.Concat(new [] { -1 }))
@@ -417,5 +417,5 @@ public static class FsaBuilder
             new[] { automaton.InitialState },
             automaton.FinalStates,
             automaton.Transitions
-                .Select(kvp => (kvp.Key.From, kvp.Key.Via, To: kvp.Value)));
+                .Select(kvp => (kvp.Key.From, kvp.Key.Via.ToString(), To: kvp.Value)));
 }
