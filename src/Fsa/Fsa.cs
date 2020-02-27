@@ -2,27 +2,29 @@
     Finite-State Automaton -
     Construction and closure operations 
 */
+
+using System.Collections.Immutable;
 using System.Collections.Generic;
 using System.Linq;
 
 public class Fsa
 {
     public Fsa(
-        IReadOnlyList<int> states,
-        IReadOnlyList<int> initialStates,
-        IReadOnlyList<int> finalStates,
-        IReadOnlyList<(int, string, int)> transitions)
+        IEnumerable<int> states,
+        IEnumerable<int> initialStates,
+        IEnumerable<int> finalStates,
+        IEnumerable<(int, string, int)> transitions)
     {
-        this.States = states;
-        this.InitialStates = initialStates;
-        this.FinalStates = finalStates;
-        this.Transitions = transitions;
+        this.States = states.ToImmutableHashSet();
+        this.InitialStates = initialStates.ToImmutableHashSet();
+        this.FinalStates = finalStates.ToImmutableHashSet();
+        this.Transitions = transitions.ToImmutableHashSet();
     }
 
-    public IReadOnlyList<int> States { get; private set; }
-    public IReadOnlyList<int> InitialStates { get; private set; }
-    public IReadOnlyList<int> FinalStates { get; private set; }
-    public IReadOnlyList<(int From, string Via, int To)> Transitions { get; private set; }
+    public IImmutableSet<int> States { get; private set; }
+    public IImmutableSet<int> InitialStates { get; private set; }
+    public IImmutableSet<int> FinalStates { get; private set; }
+    public IImmutableSet<(int From, string Via, int To)> Transitions { get; private set; }
 
     public bool Recognize(string word)
     {

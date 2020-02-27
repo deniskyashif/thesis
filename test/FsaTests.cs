@@ -33,7 +33,7 @@ public class FsaTests
         var fsa = FsaBuilder.FromSymbolSet(new HashSet<string> { "a", "b", "c" });
 
         Assert.Equal(2, fsa.States.Count);
-        Assert.False(fsa.Recognize(""));
+        Assert.False(fsa.Recognize(string.Empty));
         Assert.False(fsa.Recognize("d"));
         Assert.False(fsa.Recognize("ab"));
         Assert.True(new[] { "b", "a", "c" }.All(fsa.Recognize));
@@ -98,7 +98,7 @@ public class FsaTests
         Assert.Single(fsa.InitialStates);
         Assert.Equal(2, fsa.FinalStates.Count);
         Assert.False(fsa.Recognize("ab"));
-        Assert.True(new[] { "aaaa", "a", "aa", "", "aaaaaaaa" }.All(fsa.Recognize));
+        Assert.True(new[] { "aaaa", "a", "aa", string.Empty, "aaaaaaaa" }.All(fsa.Recognize));
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public class FsaTests
         Assert.Equal(2, fsa.FinalStates.Count);
         Assert.False(fsa.Recognize("b"));
         Assert.False(fsa.Recognize("a"));
-        Assert.True(new[] { "ab", "" }.All(fsa.Recognize));
+        Assert.True(new[] { "ab", string.Empty }.All(fsa.Recognize));
     }
 
     [Fact]
@@ -152,7 +152,7 @@ public class FsaTests
         Assert.Equal(2, fsa.FinalStates.Count);
         Assert.False(fsa.Recognize("d"));
         Assert.False(fsa.Recognize("ad"));
-        Assert.True(new[] { "ab", "", "abc", "bbbac", "cba", "cbcbbcaaaaacb" }.All(fsa.Recognize));
+        Assert.True(new[] { "ab", string.Empty, "abc", "bbbac", "cba", "cbcbbcaaaaacb" }.All(fsa.Recognize));
     }
 
     [Fact]
@@ -185,7 +185,7 @@ public class FsaTests
                         FsaBuilder.FromWord("b"))),
                 FsaBuilder.FromWord("c"));
 
-        Assert.DoesNotContain(new[] { "ca", "aaba", "", "cc" }, fsa.Recognize);
+        Assert.DoesNotContain(new[] { "ca", "aaba", string.Empty, "cc" }, fsa.Recognize);
         Assert.True(new[] { "abbac", "ac", "bc", "ababbbbac", "c" }.All(fsa.Recognize));
     }
 
@@ -199,7 +199,7 @@ public class FsaTests
 
         Assert.DoesNotContain(fsa.Transitions, t => string.IsNullOrEmpty(t.Via));
         Assert.DoesNotContain(new[] { "ca", "aaba", "b", "cc" }, fsa.Recognize);
-        Assert.True(new[] { "aaaa", "a", "aa", "", "aaaaaaaa" }.All(fsa.Recognize));
+        Assert.True(new[] { "aaaa", "a", "aa", string.Empty, "aaaaaaaa" }.All(fsa.Recognize));
     }
 
     [Fact]
@@ -217,7 +217,7 @@ public class FsaTests
 
         Assert.DoesNotContain(fsa.Transitions, t => string.IsNullOrEmpty(t.Via));
         Assert.True(new[] { "abbac", "ac", "bc", "ababbbbac", "aac" }.All(fsa.Recognize));
-        Assert.DoesNotContain(new[] { "ca", "aaba", "", "cc", "c" }, fsa.Recognize);
+        Assert.DoesNotContain(new[] { "ca", "aaba", string.Empty, "cc", "c" }, fsa.Recognize);
     }
 
     [Fact]
@@ -293,9 +293,10 @@ public class FsaTests
         var fsa = new Fsa(states, initial, final, transitions);
         var dfsa = FsaBuilder.Determinize(fsa);
 
-        Assert.Equal(new[] { 0, 1, 2, 3 }, dfsa.States);
+        Assert.Equal(4, dfsa.States.Count);
+        Assert.True(new[] { 0, 1, 2, 3 }.All(dfsa.States.Contains));
         Assert.True(new[] { "aa", "aab", "bbabab", "bab" }.All(dfsa.Recognize));
-        Assert.DoesNotContain(new[] { "", "a", "caa", "bb", "ba" }, dfsa.Recognize);
+        Assert.DoesNotContain(new[] { string.Empty, "a", "caa", "bb", "ba" }, dfsa.Recognize);
     }
 
     [Fact]
@@ -314,8 +315,9 @@ public class FsaTests
         var fsa = FsaBuilder.Star(new Fsa(states, initial, final, transitions));
         var dfsa = FsaBuilder.Determinize(fsa);
 
-        Assert.Equal(new[] { 0, 1, 2, 3 }, dfsa.States);
-        Assert.True(new[] { "", "a", "aabc", "aaabcaaabc", "aaaaa", "abcabcabc" }.All(dfsa.Recognize));
+        Assert.Equal(4, dfsa.States.Count);
+        Assert.True(new[] { 0, 1, 2, 3 }.All(dfsa.States.Contains));
+        Assert.True(new[] { string.Empty, "a", "aabc", "aaabcaaabc", "aaaaa", "abcabcabc" }.All(dfsa.Recognize));
         Assert.DoesNotContain(new[] { "ab", "ac", "bca", "aab", "baaca" }, dfsa.Recognize);
     }
 
@@ -338,7 +340,7 @@ public class FsaTests
         var dfsa = FsaBuilder.Determinize(fsa);
 
         Assert.True(new[] { "aaa", "aaaab", "aaabb", "aaabaaa", "bbaaabababb", "baaabaaabaaabb" }.All(dfsa.Recognize));
-        Assert.DoesNotContain(new[] { "aab", "abaab", "", "baaac", "ababaab" }, dfsa.Recognize);
+        Assert.DoesNotContain(new[] { "aab", "abaab", string.Empty, "baaac", "ababaab" }, dfsa.Recognize);
     }
 
     [Fact]
@@ -370,23 +372,15 @@ public class FsaTests
             });
 
         var (states, transitions) = FsaBuilder.Product(
-            (first.InitialState, first.Transitions), 
+            (first.InitialState, first.Transitions),
             (second.InitialState, second.Transitions));
 
-        Assert.Equal(new[] { (0, 2), (0, 3), (1, 2), (1, 3) }, states);
-        Assert.Equal(
-            new Dictionary<(int, string), int>()
-            {
-                { (0, "a"), 2 },
-                { (0, "b"), 1 },
-                { (1, "a"), 3 },
-                { (1, "b"), 0 },
-                { (2, "a"), 0 },
-                { (2, "b"), 3 },
-                { (3, "a"), 1 },
-                { (3, "b"), 2 },
-            },
-            transitions);
+        Assert.Equal(4, states.Count);
+        Assert.True(new[] { (0, 2), (0, 3), (1, 2), (1, 3) }.All(states.Contains));
+        Assert.Equal(8, transitions.Count);
+
+        var stateIndices = Enumerable.Range(0, states.Count);
+        Assert.True(stateIndices.All(s => transitions[(s, "a")] != transitions[(s, "b")]));
     }
 
     [Fact]
@@ -417,8 +411,8 @@ public class FsaTests
                     {(3, "b"), 2 },
             });
 
-        Assert.True(new[] { "", "aaaa", "aab", "baabaa", "baba", "abab", "bbbaa" }.All(first.Recognize));
-        Assert.True(new[] { "", "aa", "bb", "abab", "aabb", "baba", "bbaa", "bbaaaaaaabb" }.All(second.Recognize));
+        Assert.True(new[] { string.Empty, "aaaa", "aab", "baabaa", "baba", "abab", "bbbaa" }.All(first.Recognize));
+        Assert.True(new[] { string.Empty, "aa", "bb", "abab", "aabb", "baba", "bbaa", "bbaaaaaaabb" }.All(second.Recognize));
 
         // even number of "a"'s and "b"'s
         var dfsa = FsaBuilder.Intersect(first, second);
@@ -436,12 +430,12 @@ public class FsaTests
 
         Assert.True(words.All(first.Recognize));
         Assert.True(words.All(second.Recognize));
-        Assert.True(first.Recognize(""));
-        Assert.False(second.Recognize(""));
+        Assert.True(first.Recognize(string.Empty));
+        Assert.False(second.Recognize(string.Empty));
 
         var diff = FsaBuilder.Difference(first, second);
 
-        Assert.True(diff.Recognize(""));
+        Assert.True(diff.Recognize(string.Empty));
         Assert.DoesNotContain(words, diff.Recognize);
     }
 
@@ -456,7 +450,7 @@ public class FsaTests
                 FsaBuilder.FromWord("b"));
         // ab|b
         var second = FsaBuilder.FromWord("b");
-        
+
         Assert.True(new[] { "ab", "b", "aaaaab", "aab" }.All(first.Recognize));
         Assert.True(new[] { "b" }.All(second.Recognize));
         Assert.False(second.Recognize("ab"));
@@ -484,10 +478,7 @@ public class FsaTests
         // not in ab+c
         var diff = FsaBuilder.Difference(universal, fsa);
 
-        Assert.True(diff.Recognize(string.Empty));
-        Assert.True(diff.Recognize("ab"));
-        Assert.True(diff.Recognize("ac"));
-        Assert.True(diff.Recognize("cab"));
+        Assert.True(new[] { string.Empty, "ab", "ac", "cab" }.All(diff.Recognize));
         Assert.False(diff.Recognize("abc"));
         Assert.False(diff.Recognize("abbbbc"));
     }
@@ -507,11 +498,17 @@ public class FsaTests
         var dfsa = new Dfsa(states, 0, final, transitions);
         var fsa = FsaBuilder.ToFsa(dfsa);
 
-        Assert.Equal(states, fsa.States);
+        Assert.Equal(states.Length, fsa.States.Count);
+        Assert.True(final.All(fsa.FinalStates.Contains));
+
         Assert.Equal(new[] { 0 }, fsa.InitialStates);
-        Assert.Equal(final, fsa.FinalStates);
-        Assert.Equal(
+
+        Assert.Equal(final.Length, fsa.FinalStates.Count);
+        Assert.All(final, s => fsa.FinalStates.Contains(s));
+
+        Assert.Equal(3, fsa.Transitions.Count);
+        Assert.All(
             new[] { (0, "a", 1), (0, "b", 2), (2, "b", 2) },
-            fsa.Transitions);
+            t => fsa.Transitions.Contains(t));
     }
 }

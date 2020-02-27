@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 
 public static class FsaBuilder
 {
-    static int NewState(IReadOnlyList<int> states) => states.Count;
+    static int NewState(IImmutableSet<int> states) => states.Count;
 
-    static IEnumerable<int> KNewStates(int k, IReadOnlyList<int> states)
+    static IEnumerable<int> KNewStates(int k, IImmutableSet<int> states)
         => Enumerable.Range(states.Count, k);
 
     // Creates a new Fsa by renaming the states 
@@ -253,7 +254,7 @@ public static class FsaBuilder
         var multiSymbolTransitions = automaton.Transitions.Where(t => t.Via.Length > 1);
 
         var newStates = automaton.States;
-        IEnumerable<(int, string, int)> newTransitions = automaton.Transitions;
+        var newTransitions = automaton.Transitions;
 
         foreach (var tr in multiSymbolTransitions)
         {
@@ -263,7 +264,7 @@ public static class FsaBuilder
                 .Concat(new[] { tr.To })
                 .ToArray();
 
-            newStates = newStates.Union(stateSeq).ToList();
+            newStates = newStates.Union(stateSeq);
             var path = Enumerable.Range(0, stateSeq.Length - 1)
                     .Select(i => (stateSeq[i], tr.Via[i].ToString(), stateSeq[i + 1]));
 
