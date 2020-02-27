@@ -13,10 +13,10 @@ public static class FsaBuilder
     // Creates a new Fsa by renaming the states 
     private static Fsa Remap(Fsa automaton, int k)
     {
-        var states = automaton.States.Select(s => s + k).ToArray();
-        var initial = automaton.InitialStates.Select(s => s + k).ToArray();
-        var final = automaton.FinalStates.Select(s => s + k).ToArray();
-        var transitions = automaton.Transitions.Select(t => (t.From + k, t.Via, t.To + k)).ToArray();
+        var states = automaton.States.Select(s => s + k);
+        var initial = automaton.InitialStates.Select(s => s + k);
+        var final = automaton.FinalStates.Select(s => s + k);
+        var transitions = automaton.Transitions.Select(t => (t.From + k, t.Via, t.To + k));
 
         return new Fsa(states, initial, final, transitions);
     }
@@ -78,9 +78,9 @@ public static class FsaBuilder
                 transitions.Add((tr.From, tr.Via, state));
 
         return new Fsa(
-            states: first.States.Union(second.States).ToArray(),
-            initialStates.ToArray(),
-            second.FinalStates.ToArray(),
+            states: first.States.Union(second.States),
+            initialStates,
+            second.FinalStates,
             transitions);
     }
 
@@ -89,10 +89,10 @@ public static class FsaBuilder
         second = Remap(second, first.States.Count);
 
         return new Fsa(
-            states: first.States.Union(second.States).ToArray(),
-            initialStates: first.InitialStates.Union(second.InitialStates).ToArray(),
-            finalStates: first.FinalStates.Union(second.FinalStates).ToArray(),
-            transitions: first.Transitions.Union(second.Transitions).ToArray());
+            states: first.States.Union(second.States),
+            initialStates: first.InitialStates.Union(second.InitialStates),
+            finalStates: first.FinalStates.Union(second.FinalStates),
+            transitions: first.Transitions.Union(second.Transitions));
     }
 
     public static Fsa Star(Fsa automaton)
@@ -108,10 +108,10 @@ public static class FsaBuilder
             newTransitions.Add((state, string.Empty, initial));
 
         return new Fsa(
-            states: automaton.States.Union(initialStates).ToArray(),
+            states: automaton.States.Union(initialStates),
             initialStates,
-            finalStates: automaton.FinalStates.Union(initialStates).ToArray(),
-            automaton.Transitions.Union(newTransitions).ToArray());
+            finalStates: automaton.FinalStates.Union(initialStates),
+            automaton.Transitions.Union(newTransitions));
     }
 
     public static Fsa Plus(Fsa automaton)
@@ -127,10 +127,10 @@ public static class FsaBuilder
             newTransitions.Add((state, string.Empty, initial));
 
         return new Fsa(
-            states: automaton.States.Union(initialStates).ToArray(),
+            states: automaton.States.Union(initialStates),
             initialStates,
-            finalStates: automaton.FinalStates.ToArray(),
-            automaton.Transitions.Union(newTransitions).ToArray());
+            finalStates: automaton.FinalStates,
+            automaton.Transitions.Union(newTransitions));
     }
 
     public static Fsa Option(Fsa automaton)
@@ -138,10 +138,10 @@ public static class FsaBuilder
         var state = new[] { NewState(automaton.States) };
 
         return new Fsa(
-            automaton.States.Union(state).ToArray(),
-            automaton.InitialStates.Union(state).ToArray(),
-            automaton.FinalStates.Union(state).ToArray(),
-            automaton.Transitions.ToArray());
+            automaton.States.Union(state),
+            automaton.InitialStates.Union(state),
+            automaton.FinalStates.Union(state),
+            automaton.Transitions);
     }
 
     public static Fsa All(ISet<string> alphabet)
@@ -152,18 +152,16 @@ public static class FsaBuilder
     public static Fsa EpsilonFree(Fsa automaton)
     {
         var initial = automaton.InitialStates
-            .SelectMany(automaton.EpsilonClosure)
-            .ToArray();
+            .SelectMany(automaton.EpsilonClosure);
 
         var transitions = automaton.Transitions
             .Where(t => !string.IsNullOrEmpty(t.Via))
             .SelectMany(t =>
                 automaton
                     .EpsilonClosure(t.To)
-                    .Select(es => (t.From, t.Via, es)))
-            .ToArray();
+                    .Select(es => (t.From, t.Via, es)));
 
-        return new Fsa(automaton.States.ToArray(), initial, automaton.FinalStates.ToArray(), transitions);
+        return new Fsa(automaton.States, initial, automaton.FinalStates, transitions);
     }
 
     public static Fsa Trim(Fsa automaton)
@@ -189,21 +187,18 @@ public static class FsaBuilder
             .Select(t => (
                 Array.IndexOf(newStates, t.From),
                 t.Via,
-                Array.IndexOf(newStates, t.To)))
-            .ToArray();
+                Array.IndexOf(newStates, t.To)));
 
         var newInitial = newStates
             .Intersect(automaton.InitialStates)
-            .Select(s => Array.IndexOf(newStates, s))
-            .ToArray();
+            .Select(s => Array.IndexOf(newStates, s));
 
         var newFinal = newStates
             .Intersect(automaton.FinalStates)
-            .Select(s => Array.IndexOf(newStates, s)).ToArray()
-            .ToArray();
+            .Select(s => Array.IndexOf(newStates, s));
 
         return new Fsa(
-            newStates.Select(s => Array.IndexOf(newStates, s)).ToArray(),
+            newStates.Select(s => Array.IndexOf(newStates, s)),
             newInitial,
             newFinal,
             newTransitions);
@@ -243,9 +238,9 @@ public static class FsaBuilder
                 t => Array.IndexOf(newStates, t.Value)); // value
 
         return new Dfsa(
-            newStates.Select(s => Array.IndexOf(newStates, s)).ToArray(),
+            newStates.Select(s => Array.IndexOf(newStates, s)),
             Array.IndexOf(newStates, automaton.InitialState),
-            newStates.Intersect(automaton.FinalStates).Select(s => Array.IndexOf(newStates, s)).ToArray(),
+            automaton.FinalStates.Intersect(newStates).Select(s => Array.IndexOf(newStates, s)),
             newTransitions);
     }
 
@@ -273,11 +268,7 @@ public static class FsaBuilder
                 .Union(path);
         }
 
-        return new Fsa(
-            newStates,
-            automaton.InitialStates.ToArray(),
-            automaton.FinalStates.ToArray(),
-            newTransitions.ToArray());
+        return new Fsa(newStates, automaton.InitialStates, automaton.FinalStates, newTransitions);
     }
 
     public static Dfsa Determinize(Fsa automaton)
@@ -311,7 +302,7 @@ public static class FsaBuilder
         }
 
         // DFA state names are the indices of the state subsets
-        var renamedStates = Enumerable.Range(0, subsetStates.Count).ToArray();
+        var renamedStates = Enumerable.Range(0, subsetStates.Count);
 
         // if a state subset contains a final state from the original automaton
         // then it is marked as final in the deterministic automaton
@@ -329,7 +320,7 @@ public static class FsaBuilder
     {
         var stateTransitionMapOfFirst = first.Transitions
             .GroupBy(kvp => kvp.Key.From, kvp => (kvp.Key.Via, kvp.Value))
-            .ToDictionary(g => g.Key, g => g.ToArray());
+            .ToDictionary(g => g.Key, g => g);
 
         var productStates = new List<(int, int)> { (first.InitialState, second.InitialState) };
         var transitions = new Dictionary<(int, string), int>();
@@ -360,12 +351,12 @@ public static class FsaBuilder
         var product = Product(
             (first.InitialState, first.Transitions), 
             (second.InitialState, second.Transitions));
-        var states = Enumerable.Range(0, product.States.Count).ToArray();
+
+        var states = Enumerable.Range(0, product.States.Count);
         var final = states
             .Where(s =>
                 first.FinalStates.Contains(product.States[s].Item1) &&
-                second.FinalStates.Contains(product.States[s].Item2))
-            .ToArray();
+                second.FinalStates.Contains(product.States[s].Item2));
 
         return Trim(new Dfsa(states, 0, final, product.Transitions));
     }
@@ -390,17 +381,16 @@ public static class FsaBuilder
                 secondTransitionsAsTotalFn[(state, symbol)] = 
                     second.Transitions.ContainsKey((state, symbol))
                         ? second.Transitions[(state, symbol)]
-                        : -1;
+                        : -1; // leads to an invalid state
 
         var product = Product(
             (first.InitialState, first.Transitions), 
             (second.InitialState, secondTransitionsAsTotalFn));
-        var states = Enumerable.Range(0, product.States.Count).ToArray();
+        var states = Enumerable.Range(0, product.States.Count);
         var final = states
             .Where(s =>
                 first.FinalStates.Contains(product.States[s].Item1) &&
-                !second.FinalStates.Contains(product.States[s].Item2))
-            .ToArray();
+                !second.FinalStates.Contains(product.States[s].Item2));
 
         return Trim(new Dfsa(states, 0, final, product.Transitions));
     }
@@ -427,6 +417,5 @@ public static class FsaBuilder
             new[] { automaton.InitialState },
             automaton.FinalStates,
             automaton.Transitions
-                .Select(kvp => (kvp.Key.From, kvp.Key.Via, To: kvp.Value))
-                .ToArray());
+                .Select(kvp => (kvp.Key.From, kvp.Key.Via, To: kvp.Value)));
 }
