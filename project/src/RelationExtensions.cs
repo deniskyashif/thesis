@@ -8,7 +8,7 @@ public static class StateExtensions
         var currentRel = rel;
         var nextRel = currentRel.Union(rel.Compose(currentRel)).ToHashSet();
 
-        while (currentRel.Count() < nextRel.Count)
+        while (currentRel.Count < nextRel.Count)
         {
             currentRel = nextRel;
             nextRel = rel.Union(rel.Compose(currentRel)).ToHashSet();
@@ -18,13 +18,11 @@ public static class StateExtensions
     }
 
     public static IEnumerable<(int, int)> Compose(
-        this IEnumerable<(int, int)> r1,
-        IEnumerable<(int, int)> r2)
+        this ISet<(int, int)> rel1, ISet<(int, int)> rel2)
     {
-        return r1
-            .SelectMany(
-                t1 => r2
-                    .Where(t2 => t2.Item1 == t1.Item2)
-                    .Select(t2 => (t1.Item1, t2.Item2)));
+        return rel1.SelectMany(
+            pair1 => rel2
+                .Where(pair2 => pair2.Item1 == pair1.Item2)
+                .Select(pair2 => (pair1.Item1, pair2.Item2)));
     }
 }

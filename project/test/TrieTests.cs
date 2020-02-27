@@ -3,7 +3,7 @@ using Xunit;
 public class TrieTests
 {
     [Fact]
-    void TrieConstructionTest()
+    public void TrieConstructionTest()
     {
         var trie = new Trie();
         trie.Insert("apple");
