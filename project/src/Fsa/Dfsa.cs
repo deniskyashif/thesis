@@ -18,7 +18,7 @@ public class Dfsa
     public IImmutableSet<int> States { get; private set; }
     public int Initial { get; private set; }
     public IImmutableSet<int> Final { get; private set; }
-    public IReadOnlyDictionary<(int From, char Via), int> Transitions { get; private set; }
+    public IImmutableDictionary<(int From, char Via), int> Transitions { get; private set; }
 
     public bool Recognize(string word)
     {

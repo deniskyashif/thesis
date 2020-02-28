@@ -7,7 +7,7 @@ public static class FsaBuilder
 {
     static int NewState(IImmutableSet<int> states) => states.Count;
 
-    static IEnumerable<int> KNewStates(int k, IImmutableSet<int> states) => 
+    static IEnumerable<int> KNewStates(int k, IReadOnlyCollection<int> states) => 
         Enumerable.Range(states.Count, k);
 
     // Creates a new Fsa by renaming the states 
@@ -80,10 +80,7 @@ public static class FsaBuilder
             transitions);
     }
 
-    public static Fsa Concat(params Fsa[] automata)
-    {
-        return automata.Aggregate((aggr, fsa) => Concat(aggr, fsa));
-    }
+    public static Fsa Concat(params Fsa[] automata) => automata.Aggregate(Concat);
 
     public static Fsa Union(Fsa first, Fsa second)
     {
@@ -152,8 +149,7 @@ public static class FsaBuilder
        does not preserve the language of individual states */
     public static Fsa EpsilonFree(Fsa automaton)
     {
-        var initial = automaton.Initial
-            .SelectMany(automaton.EpsilonClosure);
+        var initial = automaton.Initial.SelectMany(automaton.EpsilonClosure);
 
         var transitions = automaton.Transitions
             .Where(t => !string.IsNullOrEmpty(t.Via))
@@ -173,14 +169,13 @@ public static class FsaBuilder
             .TransitiveClosure();
 
         var newStates = automaton.Initial
-            .Union(
-                reachableStates.Where(x => automaton.Initial.Contains(x.Item1))
-                    .Select(x => x.Item2))
-            .Intersect(
-                automaton.Final
-                    .Union(
-                        reachableStates.Where(x => automaton.Final.Contains(x.Item2))
-                            .Select(x => x.Item1)))
+            .Union(reachableStates
+                .Where(x => automaton.Initial.Contains(x.Item1))
+                .Select(x => x.Item2))
+            .Intersect(automaton.Final
+                .Union(reachableStates
+                    .Where(x => automaton.Final.Contains(x.Item2))
+                    .Select(x => x.Item1)))
             .ToArray();
 
         var newTransitions = automaton.Transitions
@@ -213,15 +208,13 @@ public static class FsaBuilder
             .TransitiveClosure();
 
         var newStates = new[] { automaton.Initial }
-            .Union(
-                reachableStates
-                    .Where(pair => pair.Item1 == automaton.Initial)
-                    .Select(pair => pair.Item2))
-            .Intersect(
-                automaton.Final.Union(
-                    reachableStates
-                        .Where(pair => automaton.Final.Contains(pair.Item2))
-                        .Select(pair => pair.Item1)))
+            .Union(reachableStates
+                .Where(pair => pair.Item1 == automaton.Initial)
+                .Select(pair => pair.Item2))
+            .Intersect(automaton.Final
+                .Union(reachableStates
+                    .Where(pair => automaton.Final.Contains(pair.Item2))
+                    .Select(pair => pair.Item1)))
             .ToArray();
 
         if (newStates.Length == 0)
@@ -364,10 +357,7 @@ public static class FsaBuilder
     }
 
     public static Fsa Intersect(Fsa first, Fsa second) =>
-        ToFsa(
-            Intersect(
-                Determinize(first),
-                Determinize(second)));
+        ToFsa(Intersect(Determinize(first), Determinize(second)));
 
     public static Dfsa Difference(Dfsa first, Dfsa second)
     {
@@ -400,10 +390,7 @@ public static class FsaBuilder
     }
 
     public static Fsa Difference(Fsa first, Fsa second) =>
-        ToFsa(
-            Difference(
-                Determinize(first),
-                Determinize(second)));
+        ToFsa(Difference(Determinize(first), Determinize(second)));
 
     public static Fsa ToFsa(Dfsa automaton) =>
         new Fsa(
@@ -411,6 +398,5 @@ public static class FsaBuilder
             new[] { automaton.Initial },
             automaton.Final,
             automaton.Transitions
-                .Select(kvp => 
-                    (kvp.Key.From, kvp.Key.Via.ToString(), To: kvp.Value)));
+                .Select(p => (p.Key.From, p.Key.Via.ToString(), To: p.Value)));
 }
