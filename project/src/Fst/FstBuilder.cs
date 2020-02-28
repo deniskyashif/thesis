@@ -91,12 +91,43 @@ public static class FstBuilder
 
     public static Fst EpsilonFree(Fst fst)
     {
-        throw new NotImplementedException();
+        var transitions = fst.Transitions
+            .Where(t => !(string.IsNullOrEmpty(t.In) && string.IsNullOrEmpty(t.Out)))
+            .SelectMany(t =>
+                fst.EpsilonClosure(t.To)
+                    .Select(to => (t.From, t.In, t.Out, to)));
+
+        return new Fst(
+            fst.States,
+            fst.Initial.SelectMany(s => fst.EpsilonClosure(s)),
+            fst.Final,
+            transitions);
     }
 
     public static Fst Trim(Fst fst)
     {
-        throw new NotImplementedException();
+        ISet<(int From, int To)> transitiveClosure = fst.Transitions
+            .Select(t => (t.From, t.To))
+            .ToHashSet()
+            .TransitiveClosure();
+
+        var reachableFromInitial = fst.Initial.Union(
+            transitiveClosure.Where(p => fst.Initial.Contains(p.From)).Select(p => p.To));
+        var leadingToFinal = fst.Final.Union(
+            transitiveClosure.Where(p => fst.Final.Contains(p.To)).Select(p => p.From));
+
+        var states = reachableFromInitial.Intersect(leadingToFinal).ToArray();
+        var initial = states.Intersect(fst.Initial);
+        var final = states.Intersect(fst.Final);
+        var transitions = fst.Transitions
+            .Where(t => states.Contains(t.From) && states.Contains(t.To))
+            .Select(t => (Array.IndexOf(states, t.From), t.In, t.Out, Array.IndexOf(states, t.To)));
+
+        return new Fst(
+            states.Select(s => Array.IndexOf(states, s)),
+            initial.Select(s => Array.IndexOf(states, s)),
+            final.Select(s => Array.IndexOf(states, s)),
+            transitions);
     }
 
     public static Fst Product(Fsa first, Fsa second)

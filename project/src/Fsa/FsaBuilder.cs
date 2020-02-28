@@ -7,7 +7,7 @@ public static class FsaBuilder
 {
     static int NewState(IReadOnlyCollection<int> states) => states.Count;
 
-    static IEnumerable<int> KNewStates(int k, IReadOnlyCollection<int> states) => 
+    static IEnumerable<int> KNewStates(int k, IReadOnlyCollection<int> states) =>
         Enumerable.Range(states.Count, k);
 
     // Creates a new Fsa by renaming the states 
@@ -164,41 +164,36 @@ public static class FsaBuilder
 
     public static Fsa Trim(Fsa automaton)
     {
-        var reachableStates = automaton.Transitions
+        var transitiveClosure = automaton.Transitions
             .Select(t => (t.From, t.To))
             .ToHashSet()
             .TransitiveClosure();
 
-        var newStates = automaton.Initial
-            .Union(reachableStates
+        var reachableFromInitial = automaton.Initial
+            .Union(transitiveClosure
                 .Where(x => automaton.Initial.Contains(x.Item1))
-                .Select(x => x.Item2))
-            .Intersect(automaton.Final
-                .Union(reachableStates
-                    .Where(x => automaton.Final.Contains(x.Item2))
-                    .Select(x => x.Item1)))
-            .ToArray();
+                .Select(x => x.Item2));
+        var leadingToFinal = automaton.Final
+            .Union(transitiveClosure
+                .Where(x => automaton.Final.Contains(x.Item2))
+                .Select(x => x.Item1));
+        var states = reachableFromInitial.Intersect(leadingToFinal).ToArray();
 
-        var newTransitions = automaton.Transitions
-            .Where(t => newStates.Contains(t.From) && newStates.Contains(t.To))
+        var transitions = automaton.Transitions
+            .Where(t => states.Contains(t.From) && states.Contains(t.To))
             .Select(t => (
-                Array.IndexOf(newStates, t.From),
+                Array.IndexOf(states, t.From),
                 t.Via,
-                Array.IndexOf(newStates, t.To)));
+                Array.IndexOf(states, t.To)));
 
-        var newInitial = newStates
-            .Intersect(automaton.Initial)
-            .Select(s => Array.IndexOf(newStates, s));
-
-        var newFinal = newStates
-            .Intersect(automaton.Final)
-            .Select(s => Array.IndexOf(newStates, s));
+        var newInitial = states.Intersect(automaton.Initial);
+        var newFinal = states.Intersect(automaton.Final);
 
         return new Fsa(
-            newStates.Select(s => Array.IndexOf(newStates, s)),
-            newInitial,
-            newFinal,
-            newTransitions);
+            states.Select(s => Array.IndexOf(states, s)),
+            newInitial.Select(s => Array.IndexOf(states, s)),
+            newFinal.Select(s => Array.IndexOf(states, s)),
+            transitions);
     }
 
     public static Dfsa Trim(Dfsa automaton)
@@ -345,7 +340,7 @@ public static class FsaBuilder
     public static Dfsa Intersect(Dfsa first, Dfsa second)
     {
         var product = Product(
-            (first.Initial, first.Transitions), 
+            (first.Initial, first.Transitions),
             (second.Initial, second.Transitions));
 
         var states = Enumerable.Range(0, product.States.Count);
@@ -370,15 +365,15 @@ public static class FsaBuilder
         var secondTransitionsAsTotalFn = new Dictionary<(int, char), int>();
 
         // Make the function total by adding the missing transitions to the invalid state of "-1"
-        foreach (var state in second.States.Concat(new [] { -1 }))
+        foreach (var state in second.States.Concat(new[] { -1 }))
             foreach (var symbol in combinedAlphabet)
-                secondTransitionsAsTotalFn[(state, symbol)] = 
+                secondTransitionsAsTotalFn[(state, symbol)] =
                     second.Transitions.ContainsKey((state, symbol))
                         ? second.Transitions[(state, symbol)]
                         : -1; // leads to an invalid state
 
         var product = Product(
-            (first.Initial, first.Transitions), 
+            (first.Initial, first.Transitions),
             (second.Initial, secondTransitionsAsTotalFn));
 
         var states = Enumerable.Range(0, product.States.Count);
