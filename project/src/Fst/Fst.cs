@@ -5,7 +5,6 @@
 using System.Collections.Immutable;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 public class Fst
 {
@@ -26,9 +25,10 @@ public class Fst
     public IImmutableSet<int> Final { get; private set; }
     public IImmutableSet<(int From, string In, string Out, int To)> Transitions { get; private set; }
 
-    public ICollection<string> Transduce(string word) => 
-        this.Transduce(word.ToCharArray().Select(x => x.ToString()).ToArray());
-    public ICollection<string> Transduce(IList<string> tokens)
+    public ICollection<string> Process(string word) => 
+        this.Process(word.ToCharArray().Select(x => x.ToString()).ToArray());
+
+    public ICollection<string> Process(IList<string> tokens)
     {
         var successfulPaths = new List<IEnumerable<string>>();
         var path = new Stack<string>();
@@ -58,7 +58,7 @@ public class Fst
         }
 
         foreach (var state in this.Initial)
-            TraverseDepthFirst(state, 0);
+            TraverseDepthFirst(state, index: 0);
 
         return successfulPaths.Select(p => string.Join(string.Empty, p)).ToList();
     }

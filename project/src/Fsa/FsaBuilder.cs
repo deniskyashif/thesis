@@ -5,20 +5,21 @@ using System.Linq;
 
 public static class FsaBuilder
 {
-    static int NewState(IImmutableSet<int> states) => states.Count;
+    static int NewState(IReadOnlyCollection<int> states) => states.Count;
 
     static IEnumerable<int> KNewStates(int k, IReadOnlyCollection<int> states) => 
         Enumerable.Range(states.Count, k);
 
     // Creates a new Fsa by renaming the states 
-    private static Fsa Remap(Fsa automaton, int k)
+    private static Fsa Remap(Fsa automaton, IReadOnlyCollection<int> states)
     {
-        var states = automaton.States.Select(s => s + k);
-        var initial = automaton.Initial.Select(s => s + k);
-        var final = automaton.Final.Select(s => s + k);
-        var transitions = automaton.Transitions.Select(t => (t.From + k, t.Via, t.To + k));
+        var k = states.Count;
 
-        return new Fsa(states, initial, final, transitions);
+        return new Fsa(
+            automaton.States.Select(s => s + k),
+            automaton.Initial.Select(s => s + k),
+            automaton.Final.Select(s => s + k),
+            automaton.Transitions.Select(t => (t.From + k, t.Via, t.To + k)));
     }
 
     public static Fsa FromEpsilon() => FromWord(string.Empty);
@@ -60,7 +61,7 @@ public static class FsaBuilder
     public static Fsa Concat(Fsa first, Fsa second)
     {
         var firstFinalStates = first.Final;
-        second = Remap(second, first.States.Count);
+        second = Remap(second, first.States);
         var secondInitialStates = second.Initial;
 
         var initialStates = first.Initial.Intersect(first.Final).Any()
@@ -84,7 +85,7 @@ public static class FsaBuilder
 
     public static Fsa Union(Fsa first, Fsa second)
     {
-        second = Remap(second, first.States.Count);
+        second = Remap(second, first.States);
 
         return new Fsa(
             states: first.States.Union(second.States),
