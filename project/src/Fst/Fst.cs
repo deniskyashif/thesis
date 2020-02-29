@@ -27,7 +27,7 @@ public class Fst
     public ICollection<string> Process(string word) => 
         this.Process(word.ToCharArray().Select(x => x.ToString()).ToArray());
 
-    public ICollection<string> Process(IList<string> tokens)
+    public ISet<string> Process(IList<string> tokens)
     {
         var successfulPaths = new List<IEnumerable<string>>();
         var path = new Stack<string>();
@@ -59,7 +59,7 @@ public class Fst
         foreach (var state in this.Initial)
             TraverseDepthFirst(state, index: 0);
 
-        return successfulPaths.Select(p => string.Join(string.Empty, p)).ToList();
+        return successfulPaths.Select(p => string.Join(string.Empty, p)).ToHashSet();
     }
 
     IEnumerable<(string Out, int To)> GetTransitions(int state, string input) => 
@@ -67,11 +67,16 @@ public class Fst
             .Where(t => (state, input) == (t.From, t.In))
             .Select(t => (t.Out, t.To));
 
+    IEnumerable<(string Out, int To)> GetTransitions(int state, string input, string output) => 
+        this.Transitions
+            .Where(t => (state, input, output) == (t.From, t.In, t.Out))
+            .Select(t => (t.Out, t.To));
+
     public IEnumerable<int> EpsilonClosure(int state)
     {
         void TraverseEpsilonTransitionsDepthFirst(int current, HashSet<int> visited)
         {
-            var epsilonTransitions = this.GetTransitions(current, string.Empty);
+            var epsilonTransitions = this.GetTransitions(current, string.Empty, string.Empty);
             foreach (var pair in epsilonTransitions)
             {
                 if (!visited.Contains(pair.To))

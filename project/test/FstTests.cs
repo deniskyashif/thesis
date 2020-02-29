@@ -178,10 +178,10 @@ public class FstTests
         Assert.Equal(3, fst.Final.Count);
         Assert.Equal(8, fst.Transitions.Count);
         Assert.Equal(string.Empty, fst.Process(string.Empty).Single());
-        Assert.Equal("AB", fst.Process("ab").Distinct().Single());
-        Assert.Equal("AAA", fst.Process("aaa").Distinct().Single());
-        Assert.Equal("AABAB", fst.Process("aabab").Distinct().Single());
-        Assert.Equal("ABBBAAAA", fst.Process("abbbaaaa").Distinct().Single());
+        Assert.Equal("AB", fst.Process("ab").Single());
+        Assert.Equal("AAA", fst.Process("aaa").Single());
+        Assert.Equal("AABAB", fst.Process("aabab").Single());
+        Assert.Equal("ABBBAAAA", fst.Process("abbbaaaa").Single());
         Assert.Empty(fst.Process("c"));
         Assert.Empty(fst.Process("abc"));
     }
@@ -208,6 +208,21 @@ public class FstTests
         Assert.Equal("A", fst.Process("a").Single());
         Assert.Equal("AB", fst.Process("ab").Single());
         Assert.Empty(fst.Process("abc"));
+        Assert.Empty(fst.Process("b"));
+    }
+
+    [Fact]
+    public void ProductOfFsasToFstTest()
+    {
+        var fst = FstExtensions.Product(
+            FsaExtensions.FromWord("a"), 
+            FsaExtensions.FromWord("b"));
+
+        Assert.Equal(4, fst.States.Count);
+        Assert.Empty(fst.Transitions.Where(t => string.IsNullOrEmpty(t.In) && string.IsNullOrEmpty(t.Out)));
+
+        Assert.Equal("b", fst.Process("a").Single());
+        Assert.Empty(fst.Process(string.Empty));
         Assert.Empty(fst.Process("b"));
     }
 }

@@ -144,10 +144,10 @@ public static class FsaExtensions
     }
 
     public static Fsa All(ISet<string> alphabet)
-        => FsaExtensions.Star(FsaExtensions.FromSymbolSet(alphabet));
+        => FromSymbolSet(alphabet).Star();
 
     /* Preserves the automaton's language but 
-       does not preserve the language of individual states */
+       does not preserve the language of the individual states */
     public static Fsa EpsilonFree(this Fsa automaton)
     {
         var initial = automaton.Initial.SelectMany(automaton.EpsilonClosure);
@@ -353,7 +353,7 @@ public static class FsaExtensions
     }
 
     public static Fsa Intersect(this Fsa first, Fsa second) =>
-        ToFsa(Intersect(Determinize(first), Determinize(second)));
+        first.Determinize().Intersect(second.Determinize()).ToFsa();
 
     public static Dfsa Difference(this Dfsa first, Dfsa second)
     {
