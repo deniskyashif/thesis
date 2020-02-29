@@ -5,41 +5,11 @@ using Xunit;
 public class RelationExtensionsTests
 {
     [Fact]
-    public void ComposeBinaryRelTest()
-    {
-        var rel1 = new HashSet<(int, int)> { (1, 2), (2, 3), (4, 5) };
-        var rel2 = new HashSet<(int, int)> { (2, 9), (5, 5) };
-        var expected = new HashSet<(int, int)> { (1, 9), (4, 5) };
-
-        Assert.Equal(expected, rel1.Compose(rel2));
-    }
-
-    [Fact]
-    public void ComposeBinaryRelTest1()
-    {
-        var rel1 = new HashSet<(int, int)> { (2, 1), (3, 3) };
-        var rel2 = new HashSet<(int, int)> { (2, 9), (5, 5) };
-
-        Assert.Empty(rel1.Compose(rel2));
-    }
-
-    [Fact]
-    public void ComposeBinaryRelTest2()
-    {
-        var rel1 = new HashSet<(int, int)> { (2, 1), (3, 3) };
-        var rel2 = new HashSet<(int, int)> { (1, 9), (5, 5) };
-
-        Assert.Equal(new[] { (2, 9) }, rel1.Compose(rel2));
-    }
-
-    [Fact]
     public void TransitiveClosureTest()
     {
         var rel = new HashSet<(int, int)> { (1, 2), (2, 3), (4, 5) };
         var actual = rel.TransitiveClosure().OrderBy(x => x.Item1).ThenBy(x => x.Item2);
-        var expected = new[] { (1, 2), (2, 3), (4, 5), (1, 3) }
-            .OrderBy(x => x.Item1)
-            .ThenBy(x => x.Item2);
+        var expected = new[] { (1, 2), (2, 3), (4, 5), (1, 3) }.OrderBy(x => x.Item1).ThenBy(x => x.Item2);
 
         Assert.Equal(expected, actual);
     }

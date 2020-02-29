@@ -107,7 +107,7 @@ public static class FstExtensions
 
     public static Fst Trim(this Fst fst)
     {
-        ISet<(int From, int To)> transitiveClosure = fst.Transitions
+        ICollection<(int From, int To)> transitiveClosure = fst.Transitions
             .Select(t => (t.From, t.To))
             .ToHashSet()
             .TransitiveClosure();
@@ -155,15 +155,13 @@ public static class FstExtensions
     public static Fst Product(Fsa first, Fsa second)
     {
         var firstTransWithEpsilon = first.Transitions.Union(
-            first.States.Select(s => (s, string.Empty, s)));
-
+            first.States.Select(s => (From: s, Via: string.Empty, To: s)));
         var secondTransWithEpsilon = second.Transitions.Union(
-            second.States.Select(s => (s, string.Empty, s)));
+            second.States.Select(s => (From: s, Via: string.Empty, To: s)));
 
         var firstTransitionsPerState = firstTransWithEpsilon
             .GroupBy(t => t.From)
             .ToDictionary(g => g.Key, g => g);
-
         var secondTransitionsPerState = secondTransWithEpsilon
             .GroupBy(t => t.From)
             .ToDictionary(g => g.Key, g => g);
@@ -192,8 +190,7 @@ public static class FstExtensions
                     productStates.Add(state);
         
             foreach (var tr in productTrans)
-                transitions.Add(
-                    (n, tr.Item1, tr.Item2, productStates.IndexOf((tr.Item3, tr.Item4))));
+                transitions.Add((n, tr.Item1, tr.Item2, productStates.IndexOf((tr.Item3, tr.Item4))));
         }
         
         var states = Enumerable.Range(0, productStates.Count);

@@ -238,24 +238,24 @@ public static class FsaExtensions
     {
         var multiSymbolTransitions = automaton.Transitions.Where(t => t.Via.Length > 1);
 
-        var newStates = automaton.States;
-        var newTransitions = automaton.Transitions;
+        var newStates = automaton.States.ToList();
+        var newTransitions = automaton.Transitions.ToHashSet();
 
         foreach (var tr in multiSymbolTransitions)
         {
             var wordLen = tr.Via.Length;
+            var intermediateStates = KNewStates(wordLen - 1, newStates);
             var stateSeq = new[] { tr.From }
-                .Concat(KNewStates(wordLen - 1, newStates))
+                .Concat(intermediateStates)
                 .Concat(new[] { tr.To })
                 .ToArray();
 
-            newStates = newStates.Union(stateSeq);
+            newStates.AddRange(intermediateStates);
             var path = Enumerable.Range(0, stateSeq.Length - 1)
                     .Select(i => (stateSeq[i], tr.Via[i].ToString(), stateSeq[i + 1]));
 
-            newTransitions = newTransitions
-                .Except(new[] { tr })
-                .Union(path);
+            newTransitions.Remove(tr);
+            newTransitions.UnionWith(path);
         }
 
         return new Fsa(newStates, automaton.Initial, automaton.Final, newTransitions);

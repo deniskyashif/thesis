@@ -3,24 +3,27 @@ using System.Linq;
 
 public static class BinaryRelationExtensions
 {
-    public static ISet<(int, int)> TransitiveClosure(this ISet<(int, int)> rel)
+    public static ICollection<(int, int)> TransitiveClosure(this ISet<(int, int)> rel)
     {
-        var currentRel = rel;
-        var nextRel = currentRel.Union(rel.Compose(currentRel)).ToHashSet();
+        var domainGroup = rel
+            .GroupBy(x => x.Item1, x => x.Item2)
+            .ToDictionary(g => g.Key, g => g);
+        var transitiveClosure = new List<(int, int)>(rel);
 
-        while (currentRel.Count < nextRel.Count)
+        for (int n = 0; n < transitiveClosure.Count; n++)
         {
-            currentRel = nextRel;
-            nextRel = rel.Union(rel.Compose(currentRel)).ToHashSet();
+            var current = transitiveClosure[n];
+
+            if (domainGroup.ContainsKey(current.Item2))
+            {
+                foreach (var to in domainGroup[current.Item2])
+                {
+                    if (!transitiveClosure.Contains((current.Item1, to)))
+                        transitiveClosure.Add((current.Item1, to));
+                }
+            }
         }
 
-        return currentRel;
+        return transitiveClosure;
     }
-
-    public static IEnumerable<(int, int)> Compose(
-        this ISet<(int, int)> rel1, ISet<(int, int)> rel2) 
-        => rel1.SelectMany(
-            pair1 => rel2
-                .Where(pair2 => pair2.Item1 == pair1.Item2)
-                .Select(pair2 => (pair1.Item1, pair2.Item2)));
 }

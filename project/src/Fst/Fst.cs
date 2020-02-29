@@ -1,5 +1,5 @@
 /*  
-    Two-tape, finite-state transducer
+    Two-tape, classical finite-state transducer
 */
 using System.Collections.Immutable;
 using System.Collections.Generic;
@@ -13,23 +13,23 @@ public class Fst
         IEnumerable<int> final,
         IEnumerable<(int, string, string, int)> transitions)
     {
-        this.States = states.ToImmutableHashSet();
-        this.Initial = initial.ToImmutableHashSet();
-        this.Final = final.ToImmutableHashSet();
-        this.Transitions = transitions.ToImmutableHashSet();
+        this.States = states.ToHashSet();
+        this.Initial = initial.ToHashSet();
+        this.Final = final.ToHashSet();
+        this.Transitions = transitions.ToHashSet();
     }
 
-    public IImmutableSet<int> States { get; private set; }
-    public IImmutableSet<int> Initial { get; private set; }
-    public IImmutableSet<int> Final { get; private set; }
-    public IImmutableSet<(int From, string In, string Out, int To)> Transitions { get; private set; }
+    public IReadOnlyCollection<int> States { get; private set; }
+    public IReadOnlyCollection<int> Initial { get; private set; }
+    public IReadOnlyCollection<int> Final { get; private set; }
+    public IReadOnlyCollection<(int From, string In, string Out, int To)> Transitions { get; private set; }
 
     public ICollection<string> Process(string word) => 
         this.Process(word.ToCharArray().Select(x => x.ToString()).ToArray());
 
     public ISet<string> Process(IList<string> tokens)
     {
-        var successfulPaths = new List<IEnumerable<string>>();
+        var successfulPaths = new HashSet<string>();
         var path = new Stack<string>();
 
         void TraverseDepthFirst(int state, int index)
@@ -37,7 +37,7 @@ public class Fst
             if (index == tokens.Count)
             {
                 if (this.Final.Contains(state))
-                    successfulPaths.Add(path.Reverse().ToList());
+                    successfulPaths.Add(string.Join(string.Empty, path.Reverse()));
             }
             else
             {
@@ -59,7 +59,7 @@ public class Fst
         foreach (var state in this.Initial)
             TraverseDepthFirst(state, index: 0);
 
-        return successfulPaths.Select(p => string.Join(string.Empty, p)).ToHashSet();
+        return successfulPaths;
     }
 
     IEnumerable<(string Out, int To)> GetTransitions(int state, string input) => 
@@ -77,6 +77,7 @@ public class Fst
         void TraverseEpsilonTransitionsDepthFirst(int current, HashSet<int> visited)
         {
             var epsilonTransitions = this.GetTransitions(current, string.Empty, string.Empty);
+
             foreach (var pair in epsilonTransitions)
             {
                 if (!visited.Contains(pair.To))

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Linq;
 
 public class Dfsa
 {
@@ -9,16 +9,16 @@ public class Dfsa
         IEnumerable<int> finalStates,
         IReadOnlyDictionary<(int, char), int> transitions)
     {
-        this.States = states.ToImmutableHashSet();
+        this.States = states.ToHashSet();
         this.Initial = initialState;
-        this.Final = finalStates.ToImmutableHashSet();
-        this.Transitions = transitions.ToImmutableDictionary();
+        this.Final = finalStates.ToHashSet();
+        this.Transitions = transitions;
     }
 
-    public IImmutableSet<int> States { get; private set; }
+    public IReadOnlyCollection<int> States { get; private set; }
     public int Initial { get; private set; }
-    public IImmutableSet<int> Final { get; private set; }
-    public IImmutableDictionary<(int From, char Via), int> Transitions { get; private set; }
+    public IReadOnlyCollection<int> Final { get; private set; }
+    public IReadOnlyDictionary<(int From, char Via), int> Transitions { get; private set; }
 
     public bool Recognize(string word)
     {
@@ -34,4 +34,3 @@ public class Dfsa
         return this.Final.Contains(curr);
     }
 }
-

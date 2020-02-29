@@ -2,8 +2,6 @@
     Finite-State Automaton -
     Construction and closure operations 
 */
-
-using System.Collections.Immutable;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -15,16 +13,16 @@ public class Fsa
         IEnumerable<int> final,
         IEnumerable<(int, string, int)> transitions)
     {
-        this.States = states.ToImmutableHashSet();
-        this.Initial = initial.ToImmutableHashSet();
-        this.Final = final.ToImmutableHashSet();
-        this.Transitions = transitions.ToImmutableHashSet();
+        this.States = states.ToHashSet();
+        this.Initial = initial.ToHashSet();
+        this.Final = final.ToHashSet();
+        this.Transitions = transitions.ToHashSet();
     }
 
-    public IImmutableSet<int> States { get; private set; }
-    public IImmutableSet<int> Initial { get; private set; }
-    public IImmutableSet<int> Final { get; private set; }
-    public IImmutableSet<(int From, string Via, int To)> Transitions { get; private set; }
+    public IReadOnlyCollection<int> States { get; private set; }
+    public IReadOnlyCollection<int> Initial { get; private set; }
+    public IReadOnlyCollection<int> Final { get; private set; }
+    public IReadOnlyCollection<(int From, string Via, int To)> Transitions { get; private set; }
 
     public bool Recognize(string word)
     {
@@ -32,8 +30,8 @@ public class Fsa
 
         foreach (var symbol in word)
         {
-            var nextStates =
-                currentStates.SelectMany(EpsilonClosure)
+            var nextStates = currentStates
+                .SelectMany(EpsilonClosure)
                 .SelectMany(s => this.GetTransitions(s, symbol.ToString()));
 
             currentStates = nextStates;
