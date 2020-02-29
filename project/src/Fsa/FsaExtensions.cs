@@ -80,7 +80,7 @@ public static class FsaExtensions
             transitions);
     }
 
-    public static Fsa Concat(this Fsa fsa, params Fsa[] automata) => 
+    public static Fsa Concat(this Fsa fsa, params Fsa[] automata) =>
         automata.Aggregate(fsa, Concat);
 
     public static Fsa Union(this Fsa first, Fsa second)
@@ -395,4 +395,11 @@ public static class FsaExtensions
             automaton.Final,
             automaton.Transitions
                 .Select(p => (p.Key.From, p.Key.Via.ToString(), To: p.Value)));
+
+    public static Fst Identity(this Fsa fst) =>
+        new Fst(
+            fst.States,
+            fst.Initial,
+            fst.Final,
+            fst.Transitions.Select(t => (t.From, t.Via, t.Via, t.To)));
 }

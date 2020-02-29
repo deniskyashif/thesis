@@ -131,25 +131,26 @@ public static class FstExtensions
             transitions);
     }
 
-    public static Fsa Domain(this Fst fst)
-    {
-        throw new NotImplementedException();
-    }
+    public static Fsa Domain(this Fst fst) => 
+        new Fsa(
+            fst.States,
+            fst.Initial,
+            fst.Final,
+            fst.Transitions.Select(t => (t.From, t.In, t.To)));
 
-    public static Fsa Range(this Fst fst)
-    {
-        throw new NotImplementedException();
-    }
+    public static Fsa Range(this Fst fst) =>
+        new Fsa(
+            fst.States,
+            fst.Initial,
+            fst.Final,
+            fst.Transitions.Select(t => (t.From, t.Out, t.To)));
 
-    public static Fst Inverse(this Fst fst)
-    {
-        throw new NotImplementedException();
-    }
-
-    public static Fst Identity(this Fsa fst)
-    {
-        throw new NotImplementedException();
-    }
+    public static Fst Inverse(this Fst fst) =>
+        new Fst(
+            fst.States,
+            fst.Initial,
+            fst.Final,
+            fst.Transitions.Select(t => (t.From, t.Out, t.In, t.To)));
 
     public static Fst Product(this Fsa first, Fsa second)
     {
