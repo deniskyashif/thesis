@@ -1,7 +1,6 @@
 /*  
     Two-tape, finite-state transducer
 */
-
 using System.Collections.Immutable;
 using System.Collections.Generic;
 using System.Linq;

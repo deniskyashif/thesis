@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public static class FstBuilder
+public static class FstExtensions
 {
     static int NewState(IReadOnlyCollection<int> states) => states.Count;
 
-    public static Fst Remap(Fst fst, IReadOnlyCollection<int> states)
+    static Fst Remap(this Fst fst, IReadOnlyCollection<int> states)
     {
         var k = states.Count;
 
@@ -16,6 +16,7 @@ public static class FstBuilder
             fst.Final.Select(s => s + k),
             fst.Transitions.Select(t => (t.From + k, t.In, t.Out, t.To + k)));
     }
+
     public static Fst FromWordPair(string input, string output)
         => new Fst(
             new[] { 0, 1 },
@@ -23,9 +24,9 @@ public static class FstBuilder
             new[] { 1 },
             new[] { (0, input, output, 1) });
 
-    public static Fst Union(Fst first, Fst second)
+    public static Fst Union(this Fst first, Fst second)
     {
-        second = Remap(second, first.States);
+        second = second.Remap(first.States);
 
         return new Fst(
             first.States.Concat(second.States),
@@ -34,9 +35,9 @@ public static class FstBuilder
             first.Transitions.Concat(second.Transitions));
     }
 
-    public static Fst Concat(Fst first, Fst second)
+    public static Fst Concat(this Fst first, Fst second)
     {
-        second = Remap(second, first.States);
+        second = second.Remap(first.States);
         var transitions = first.Transitions
             .Concat(second.Transitions)
             .Concat(first.Final
@@ -50,7 +51,7 @@ public static class FstBuilder
             transitions);
     }
 
-    public static Fst Star(Fst fst)
+    public static Fst Star(this Fst fst)
     {
         var initial = new[] { NewState(fst.States) };
         var transitions = fst.Transitions
@@ -64,7 +65,7 @@ public static class FstBuilder
             transitions);
     }
 
-    public static Fst Plus(Fst fst)
+    public static Fst Plus(this Fst fst)
     {
         var initial = new[] { NewState(fst.States) };
         var transitions = fst.Transitions
@@ -78,7 +79,7 @@ public static class FstBuilder
             transitions);
     }
 
-    public static Fst Option(Fst fst)
+    public static Fst Option(this Fst fst)
     {
         var newState = new[] { NewState(fst.States) };
 
@@ -89,7 +90,7 @@ public static class FstBuilder
             fst.Transitions);
     }
 
-    public static Fst EpsilonFree(Fst fst)
+    public static Fst EpsilonFree(this Fst fst)
     {
         var transitions = fst.Transitions
             .Where(t => !(string.IsNullOrEmpty(t.In) && string.IsNullOrEmpty(t.Out)))
@@ -104,7 +105,7 @@ public static class FstBuilder
             transitions);
     }
 
-    public static Fst Trim(Fst fst)
+    public static Fst Trim(this Fst fst)
     {
         ISet<(int From, int To)> transitiveClosure = fst.Transitions
             .Select(t => (t.From, t.To))
@@ -130,42 +131,42 @@ public static class FstBuilder
             transitions);
     }
 
-    public static Fst Product(Fsa first, Fsa second)
+    public static Fsa Domain(this Fst fst)
     {
         throw new NotImplementedException();
     }
 
-    public static Fsa Domain(Fst fst)
+    public static Fsa Range(this Fst fst)
     {
         throw new NotImplementedException();
     }
 
-    public static Fsa Range(Fst fst)
+    public static Fst Inverse(this Fst fst)
     {
         throw new NotImplementedException();
     }
 
-    public static Fst Inverse(Fst fst)
+    public static Fst Identity(this Fsa fst)
     {
         throw new NotImplementedException();
     }
 
-    public static Fst Identity(Fsa fst)
+    public static Fst Product(this Fsa first, Fsa second)
     {
         throw new NotImplementedException();
     }
 
-    public static Fst Expand(Fst fst)
+    public static Fst Expand(this Fst fst)
     {
         throw new NotImplementedException();
     }
 
-    public static Fst Compose(Fst first, Fst second)
+    public static Fst Compose(this Fst first, Fst second)
     {
         throw new NotImplementedException();
     }
 
-    public static Fst Reverse(Fst fst)
+    public static Fst Reverse(this Fst fst)
     {
         throw new NotImplementedException();
     }

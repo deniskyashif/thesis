@@ -3,15 +3,14 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
-public static class FsaBuilder
+public static class FsaExtensions
 {
     static int NewState(IReadOnlyCollection<int> states) => states.Count;
 
     static IEnumerable<int> KNewStates(int k, IReadOnlyCollection<int> states) =>
         Enumerable.Range(states.Count, k);
 
-    // Creates a new Fsa by renaming the states 
-    private static Fsa Remap(Fsa automaton, IReadOnlyCollection<int> states)
+    static Fsa Remap(this Fsa automaton, IReadOnlyCollection<int> states)
     {
         var k = states.Count;
 
@@ -58,7 +57,7 @@ public static class FsaBuilder
             transitions);
     }
 
-    public static Fsa Concat(Fsa first, Fsa second)
+    public static Fsa Concat(this Fsa first, Fsa second)
     {
         var firstFinalStates = first.Final;
         second = Remap(second, first.States);
@@ -81,9 +80,10 @@ public static class FsaBuilder
             transitions);
     }
 
-    public static Fsa Concat(params Fsa[] automata) => automata.Aggregate(Concat);
+    public static Fsa Concat(this Fsa fsa, params Fsa[] automata) => 
+        automata.Aggregate(fsa, Concat);
 
-    public static Fsa Union(Fsa first, Fsa second)
+    public static Fsa Union(this Fsa first, Fsa second)
     {
         second = Remap(second, first.States);
 
@@ -94,7 +94,7 @@ public static class FsaBuilder
             transitions: first.Transitions.Union(second.Transitions));
     }
 
-    public static Fsa Star(Fsa automaton)
+    public static Fsa Star(this Fsa automaton)
     {
         var initial = NewState(automaton.States);
         var initialStates = new int[] { initial };
@@ -113,7 +113,7 @@ public static class FsaBuilder
             automaton.Transitions.Union(newTransitions));
     }
 
-    public static Fsa Plus(Fsa automaton)
+    public static Fsa Plus(this Fsa automaton)
     {
         var initial = NewState(automaton.States);
         var initialStates = new int[] { initial };
@@ -132,7 +132,7 @@ public static class FsaBuilder
             automaton.Transitions.Union(newTransitions));
     }
 
-    public static Fsa Option(Fsa automaton)
+    public static Fsa Option(this Fsa automaton)
     {
         var state = new[] { NewState(automaton.States) };
 
@@ -144,11 +144,11 @@ public static class FsaBuilder
     }
 
     public static Fsa All(ISet<string> alphabet)
-        => FsaBuilder.Star(FsaBuilder.FromSymbolSet(alphabet));
+        => FsaExtensions.Star(FsaExtensions.FromSymbolSet(alphabet));
 
     /* Preserves the automaton's language but 
        does not preserve the language of individual states */
-    public static Fsa EpsilonFree(Fsa automaton)
+    public static Fsa EpsilonFree(this Fsa automaton)
     {
         var initial = automaton.Initial.SelectMany(automaton.EpsilonClosure);
 
@@ -162,7 +162,7 @@ public static class FsaBuilder
         return new Fsa(automaton.States, initial, automaton.Final, transitions);
     }
 
-    public static Fsa Trim(Fsa automaton)
+    public static Fsa Trim(this Fsa automaton)
     {
         var transitiveClosure = automaton.Transitions
             .Select(t => (t.From, t.To))
@@ -196,7 +196,7 @@ public static class FsaBuilder
             transitions);
     }
 
-    public static Dfsa Trim(Dfsa automaton)
+    public static Dfsa Trim(this Dfsa automaton)
     {
         var reachableStates = automaton.Transitions
             .Select(t => (t.Key.From, t.Value))
@@ -234,7 +234,7 @@ public static class FsaBuilder
             newTransitions);
     }
 
-    public static Fsa Expand(Fsa automaton)
+    public static Fsa Expand(this Fsa automaton)
     {
         var multiSymbolTransitions = automaton.Transitions.Where(t => t.Via.Length > 1);
 
@@ -261,7 +261,7 @@ public static class FsaBuilder
         return new Fsa(newStates, automaton.Initial, automaton.Final, newTransitions);
     }
 
-    public static Dfsa Determinize(Fsa automaton)
+    public static Dfsa Determinize(this Fsa automaton)
     {
         var fsa = Expand(EpsilonFree(automaton));
 
@@ -337,7 +337,7 @@ public static class FsaBuilder
         return (productStates, transitions);
     }
 
-    public static Dfsa Intersect(Dfsa first, Dfsa second)
+    public static Dfsa Intersect(this Dfsa first, Dfsa second)
     {
         var product = Product(
             (first.Initial, first.Transitions),
@@ -349,13 +349,13 @@ public static class FsaBuilder
                 first.Final.Contains(product.States[s].Item1) &&
                 second.Final.Contains(product.States[s].Item2));
 
-        return Trim(new Dfsa(states, 0, final, product.Transitions));
+        return new Dfsa(states, 0, final, product.Transitions).Trim();
     }
 
-    public static Fsa Intersect(Fsa first, Fsa second) =>
+    public static Fsa Intersect(this Fsa first, Fsa second) =>
         ToFsa(Intersect(Determinize(first), Determinize(second)));
 
-    public static Dfsa Difference(Dfsa first, Dfsa second)
+    public static Dfsa Difference(this Dfsa first, Dfsa second)
     {
         // The second automaton's transition function needs to be total
         var combinedAlphabet = first.Transitions.Select(t => t.Key.Via)
@@ -382,13 +382,13 @@ public static class FsaBuilder
                 first.Final.Contains(product.States[s].Item1) &&
                 !second.Final.Contains(product.States[s].Item2));
 
-        return Trim(new Dfsa(states, 0, final, product.Transitions));
+        return new Dfsa(states, 0, final, product.Transitions).Trim();
     }
 
-    public static Fsa Difference(Fsa first, Fsa second) =>
-        ToFsa(Difference(Determinize(first), Determinize(second)));
+    public static Fsa Difference(this Fsa first, Fsa second) =>
+        first.Determinize().Difference(second.Determinize()).ToFsa();
 
-    public static Fsa ToFsa(Dfsa automaton) =>
+    public static Fsa ToFsa(this Dfsa automaton) =>
         new Fsa(
             automaton.States,
             new[] { automaton.Initial },

@@ -52,9 +52,9 @@ public class FstTests
     [Fact]
     public void UnionFstTest()
     {
-        var first = FstBuilder.FromWordPair("a", "A");
-        var second = FstBuilder.FromWordPair("b", "B");
-        var fst = FstBuilder.Union(first, second);
+        var first = FstExtensions.FromWordPair("a", "A");
+        var second = FstExtensions.FromWordPair("b", "B");
+        var fst = first.Union(second);
 
         Assert.Equal(4, fst.States.Count);
         Assert.Equal(2, fst.Initial.Count);
@@ -68,9 +68,9 @@ public class FstTests
     [Fact]
     public void ConcatFstTest()
     {
-        var first = FstBuilder.FromWordPair("a", "A");
-        var second = FstBuilder.FromWordPair("b", "B");
-        var fst = FstBuilder.Concat(first, second);
+        var first = FstExtensions.FromWordPair("a", "A");
+        var second = FstExtensions.FromWordPair("b", "B");
+        var fst = first.Concat(second);
 
         Assert.Equal(4, fst.States.Count);
         Assert.Equal(1, fst.Initial.Count);
@@ -84,9 +84,9 @@ public class FstTests
     [Fact]
     public void StarFstTest()
     {
-        var first = FstBuilder.FromWordPair("a", "A");
-        var second = FstBuilder.FromWordPair("b", "B");
-        var fst = FstBuilder.Star(FstBuilder.Union(first, second));
+        var first = FstExtensions.FromWordPair("a", "A");
+        var second = FstExtensions.FromWordPair("b", "B");
+        var fst = first.Union(second).Star();
 
         Assert.Equal(5, fst.States.Count);
         Assert.Equal(1, fst.Initial.Count);
@@ -104,9 +104,9 @@ public class FstTests
     [Fact]
     public void PlusFstTest()
     {
-        var first = FstBuilder.FromWordPair("a", "A");
-        var second = FstBuilder.FromWordPair("b", "B");
-        var fst = FstBuilder.Plus(FstBuilder.Union(first, second));
+        var first = FstExtensions.FromWordPair("a", "A");
+        var second = FstExtensions.FromWordPair("b", "B");
+        var fst = first.Union(second).Plus();
 
         Assert.Equal(5, fst.States.Count);
         Assert.Equal(1, fst.Initial.Count);
@@ -124,8 +124,7 @@ public class FstTests
     [Fact]
     public void OptionFstTest()
     {
-        var fst = FstBuilder.Option(
-            FstBuilder.Plus(FstBuilder.FromWordPair("a", "A")));
+        var fst = FstExtensions.FromWordPair("a", "A").Plus().Option();
 
         Assert.Equal(4, fst.States.Count);
         Assert.Equal(2, fst.Initial.Count);
@@ -151,7 +150,7 @@ public class FstTests
             (2, "c", "z", 2),
             (2, "", "", 1),
         };
-        var fst = FstBuilder.EpsilonFree(new Fst(states, initial, final, transitions));
+        var fst = new Fst(states, initial, final, transitions).EpsilonFree();
 
         Assert.Equal(6, fst.Transitions.Count);
         Assert.NotNull(fst.Transitions.Single(t => t == (0, "a", "y", 1)));
@@ -170,9 +169,9 @@ public class FstTests
     [Fact]
     public void EpsilonFreeConversionTest1()
     {
-        var first = FstBuilder.FromWordPair("a", "A");
-        var second = FstBuilder.FromWordPair("b", "B");
-        var fst = FstBuilder.EpsilonFree(FstBuilder.Star(FstBuilder.Union(first, second)));
+        var first = FstExtensions.FromWordPair("a", "A");
+        var second = FstExtensions.FromWordPair("b", "B");
+        var fst = first.Union(second).Star().EpsilonFree();
 
         Assert.Equal(5, fst.States.Count);
         Assert.Equal(3, fst.Initial.Count);
@@ -199,7 +198,7 @@ public class FstTests
             (1, "b", "B", 3),
             (1, "c", "C", 4),
         };
-        var fst = FstBuilder.Trim(new Fst(states, initial, final, transitions));
+        var fst = new Fst(states, initial, final, transitions).Trim();
         
         Assert.Equal(3, fst.States.Count);
         Assert.Equal(1, fst.Initial.Count);
