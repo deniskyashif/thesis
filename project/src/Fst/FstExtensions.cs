@@ -6,6 +6,9 @@ public static class FstExtensions
 {
     static int NewState(IReadOnlyCollection<int> states) => states.Count;
 
+    static IEnumerable<int> KNewStates(int k, IReadOnlyCollection<int> states) =>
+        Enumerable.Range(states.Count, k);
+
     static Fst Remap(this Fst fst, IReadOnlyCollection<int> states)
     {
         var k = states.Count;
@@ -50,6 +53,9 @@ public static class FstExtensions
             second.Final,
             transitions);
     }
+
+    public static Fst Concat(this Fst fst, params Fst[] automata) =>
+        automata.Aggregate(fst, Concat);
 
     public static Fst Star(this Fst fst)
     {
@@ -131,7 +137,7 @@ public static class FstExtensions
             transitions);
     }
 
-    public static Fsa Domain(this Fst fst) => 
+    public static Fsa Domain(this Fst fst) =>
         new Fsa(
             fst.States,
             fst.Initial,
@@ -165,7 +171,7 @@ public static class FstExtensions
         var secondTransitionsPerState = secondTransWithEpsilon
             .GroupBy(t => t.From)
             .ToDictionary(g => g.Key, g => g);
-        
+
         var productStates = new List<(int, int)>();
 
         foreach (var i1 in first.Initial)
@@ -184,44 +190,123 @@ public static class FstExtensions
             foreach (var tr1 in p1Trans)
                 foreach (var tr2 in p2Trans)
                     productTrans.Add((tr1.Via, tr2.Via, tr1.To, tr2.To));
-            
+
             foreach (var state in productTrans.Select(t => (t.Item3, t.Item4)))
                 if (!productStates.Contains(state))
                     productStates.Add(state);
-        
+
             foreach (var tr in productTrans)
                 transitions.Add((n, tr.Item1, tr.Item2, productStates.IndexOf((tr.Item3, tr.Item4))));
         }
-        
+
         var states = Enumerable.Range(0, productStates.Count);
 
-        var initial = states.Where(s => 
-            first.Initial.Contains(productStates[s].Item1) && 
+        var initial = states.Where(s =>
+            first.Initial.Contains(productStates[s].Item1) &&
             second.Initial.Contains(productStates[s].Item2));
 
-        var final = states.Where(s => 
-            first.Final.Contains(productStates[s].Item1) && 
+        var final = states.Where(s =>
+            first.Final.Contains(productStates[s].Item1) &&
             second.Final.Contains(productStates[s].Item2));
-        
+
         return new Fst(states, initial, final, transitions).EpsilonFree().Trim();
     }
 
     public static Fst Expand(this Fst fst)
     {
-        throw new NotImplementedException();
+        string SymbolAt(string word, int index) =>
+            index < word.Length ? word[index].ToString() : string.Empty;
+
+        var multiWordTransitions = fst.Transitions
+            .Where(t => t.In.Length > 1 || t.Out.Length > 1)
+            .ToArray();
+        var states = fst.States.ToList();
+        var transitions = fst.Transitions
+            .Where(t => !(t.In.Length > 1 || t.Out.Length > 1))
+            .ToList();
+
+        for (int n = 0; n < multiWordTransitions.Length; n++)
+        {
+            var curr = multiWordTransitions[n];
+            var longerWordLen = Math.Max(curr.In.Length, curr.Out.Length);
+
+            var intermediateStates = KNewStates(longerWordLen - 1, states);
+            states.AddRange(intermediateStates);
+
+            var stateSeq = (new[] { curr.From })
+                .Concat(intermediateStates)
+                .Concat(new[] { curr.To })
+                .ToArray();
+
+            for (var i = 0; i < longerWordLen; i++)
+            {
+                transitions.Add((
+                    stateSeq[i],
+                    SymbolAt(curr.In, i),
+                    SymbolAt(curr.Out, i),
+                    stateSeq[i + 1]));
+            }
+        }
+
+        return new Fst(states, fst.Initial, fst.Final, transitions);
     }
 
     public static Fst Compose(this Fst first, Fst second)
     {
-        throw new NotImplementedException();
+        first = first.Expand();
+        second = second.Expand();
+
+        var firstOutgoingTransitions = first.Transitions
+            .Concat(first.States.Select(s => (From: s, In: string.Empty, Out: string.Empty, To: s)))
+            .GroupBy(t => t.From, t => (t.In, t.Out, t.To))
+            .ToDictionary(g => g.Key, g => g);
+
+        var secondOutgoingTransitions = second.Transitions
+            .Concat(second.States.Select(s => (From: s, In: string.Empty, Out: string.Empty, To: s)))
+            .GroupBy(t => t.From, t => (t.In, t.Out, t.To))
+            .ToDictionary(g => g.Key, g => g);
+
+        var states = new List<(int, int)>();
+        var transitions = new HashSet<(int, string, string, int)>();
+
+        foreach (var i1 in first.Initial)
+            foreach (var i2 in second.Initial)
+                states.Add((i1, i2));
+
+        for (int n = 0; n < states.Count; n++)
+        {
+            var curr = states[n];
+            var composedTransitions = firstOutgoingTransitions[curr.Item1]
+                .SelectMany(t1 => secondOutgoingTransitions[curr.Item2]
+                    .Where(t2 => t2.In == t1.Out) // (a, b) * (b, c) -> (a, c)
+                    .Select(t2 => (Via: (t1.In, t2.Out), To: (t1.To, t2.To))));
+
+            foreach (var tr in composedTransitions)
+                if (!states.Contains(tr.To))
+                    states.Add(tr.To);
+
+            transitions.UnionWith(
+                composedTransitions.Select(t => (n, t.Via.In, t.Via.Out, states.IndexOf(t.To))));
+        }
+
+        var stateIndices = Enumerable.Range(0, states.Count);
+        var initial = stateIndices.Where(s =>
+            first.Initial.Contains(states[s].Item1) && second.Initial.Contains(states[s].Item2));
+        var final = stateIndices.Where(s =>
+            first.Final.Contains(states[s].Item1) && second.Final.Contains(states[s].Item2));
+
+        return new Fst(stateIndices, initial, final, transitions).EpsilonFree().Trim();
     }
 
-    public static Fst Reverse(this Fst fst)
+    public static Fst Compose(this Fst fst, params Fst[] automata) =>
+        automata.Aggregate(fst, Compose);
+
+    public static Fst PseudoDeterminize(this Fst fst)
     {
         throw new NotImplementedException();
     }
 
-    public static Fst ToRealTime(Fst fst)
+    public static Fst ToRealTime(this Fst fst)
     {
         throw new NotImplementedException();
     }
