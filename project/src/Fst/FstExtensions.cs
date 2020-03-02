@@ -99,15 +99,22 @@ public static class FstExtensions
 
     public static Fst EpsilonFree(this Fst fst)
     {
+        var epsilonClosureOf =  fst.Transitions
+            .Where(t => (string.IsNullOrEmpty($"{t.In}{t.Out}")))
+            .Select(t => (t.From, t.To))
+            .ToHashSet()
+            .TransitiveClosure()
+            .Union(fst.States.Select(s => (From: s, To: s)))
+            .GroupBy(p => p.Item1, p => p.Item2)
+            .ToDictionary(g => g.Key, g => g.ToHashSet());
+
         var transitions = fst.Transitions
-            .Where(t => !(string.IsNullOrEmpty(t.In) && string.IsNullOrEmpty(t.Out)))
-            .SelectMany(t =>
-                fst.EpsilonClosure(t.To)
-                    .Select(to => (t.From, t.In, t.Out, to)));
+            .Where(tr => !(string.IsNullOrEmpty(tr.In) && string.IsNullOrEmpty(tr.Out)))
+            .SelectMany(tr => epsilonClosureOf[tr.To].Select(to => (tr.From, tr.In, tr.Out, to)));
 
         return new Fst(
             fst.States,
-            fst.Initial.SelectMany(s => fst.EpsilonClosure(s)),
+            fst.Initial.SelectMany(s => epsilonClosureOf[s]),
             fst.Final,
             transitions);
     }
@@ -216,7 +223,9 @@ public static class FstExtensions
     public static Fst Expand(this Fst fst)
     {
         string SymbolAt(string word, int index) =>
-            index < word.Length ? word[index].ToString() : string.Empty;
+            index < word.Length 
+                ? word[index].ToString() 
+                : string.Empty;
 
         var multiWordTransitions = fst.Transitions
             .Where(t => t.In.Length > 1 || t.Out.Length > 1)

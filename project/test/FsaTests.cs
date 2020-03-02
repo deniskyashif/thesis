@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -30,7 +31,7 @@ public class FsaTests
     [Fact]
     public void FromSymbolSetFsaTest()
     {
-        var fsa = FsaExtensions.FromSymbolSet(new HashSet<string> { "a", "b", "c" });
+        var fsa = FsaExtensions.FromSymbolSet(new HashSet<char> { 'a', 'b', 'c' });
 
         Assert.Equal(2, fsa.States.Count);
         Assert.False(fsa.Recognize(string.Empty));
@@ -158,7 +159,7 @@ public class FsaTests
     [Fact]
     public void AllFsaTest()
     {
-        var fsa = FsaExtensions.All(new HashSet<string> { "a", "b", "c" });
+        var fsa = FsaExtensions.All(new HashSet<char> { 'a', 'b', 'c' });
 
         Assert.Equal(3, fsa.States.Count);
         Assert.Equal(1, fsa.Initial.Count);
@@ -202,7 +203,7 @@ public class FsaTests
     {
         // .*@.*\.com
         var all = FsaExtensions.All(
-            Enumerable.Range(97, 27).Select(x => ((char)x).ToString()).ToHashSet());
+            Enumerable.Range(97, 27).Select(Convert.ToChar).ToHashSet());
         var fsa = all
             .Concat(
                 FsaExtensions.FromWord("@"),
@@ -303,7 +304,12 @@ public class FsaTests
     [Fact]
     public void ExpandFsaTest()
     {
-        var fsa = FsaExtensions.FromSymbolSet(new HashSet<string> { "abcd" }).Expand();
+        var fsa = new Fsa(
+            new[] { 0, 1 },
+            new[] { 0 },
+            new[] { 1 },
+            new[] { (0, "abcd", 1)}
+        ).Expand();
 
         Assert.Equal(5, fsa.States.Count);
         Assert.Equal(4, fsa.Transitions.Count);
@@ -462,7 +468,7 @@ public class FsaTests
     [Fact]
     public void DifferenceOfFsaTest()
     {
-        var fsa = FsaExtensions.FromSymbolSet(new HashSet<string> { "a", "b", "c" });
+        var fsa = FsaExtensions.FromSymbolSet(new HashSet<char> { 'a', 'b', 'c' });
         var first = FsaExtensions.Star(fsa);
         var second = FsaExtensions.Plus(fsa);
         var words = new[] { "abc", "a", "aa", "abc", "c", "ccba" };
@@ -504,7 +510,7 @@ public class FsaTests
     public void DifferenceOfFsaTest2()
     {
         var universal = FsaExtensions.Star(
-            FsaExtensions.FromSymbolSet(new HashSet<string> { "a", "b", "c" }));
+            FsaExtensions.FromSymbolSet(new HashSet<char> { 'a', 'b', 'c' }));
 
         // ab+c
         var fsa = FsaExtensions.FromWord("a")

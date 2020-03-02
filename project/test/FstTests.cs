@@ -77,6 +77,22 @@ public class FstTests
     }
 
     [Fact]
+    public void FstWithEpsilonProcessTest2()
+    {
+        var states = new[] { 0, 1, 2 };
+        var initial = new[] { 0 };
+        var final = new[] { 2 };
+        var transitions = new[]
+        {
+            (0, "a", "x", 1),
+            (1, string.Empty, "y", 2),
+        };
+        var fst = new Fst(states, initial, final, transitions);
+
+        Assert.Equal("xy", fst.Process("a").Single());
+    }
+
+    [Fact]
     public void UnionFstTest()
     {
         var first = FstExtensions.FromWordPair("a", "A");

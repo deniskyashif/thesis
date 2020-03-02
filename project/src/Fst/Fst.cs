@@ -8,8 +8,6 @@ using System;
 
 public class Fst
 {
-    private readonly IReadOnlyDictionary<int, HashSet<int>> epsilonClosureOf;
-
     public Fst(
         IEnumerable<int> states,
         IEnumerable<int> initial,
@@ -20,8 +18,6 @@ public class Fst
         this.Initial = initial.ToHashSet();
         this.Final = final.ToHashSet();
         this.Transitions = transitions.ToList();
-
-        this.epsilonClosureOf = this.PrecomputeEpsilonClosure();
     }
 
     public IReadOnlyCollection<int> States { get; private set; }
@@ -29,7 +25,7 @@ public class Fst
     public IReadOnlyCollection<int> Final { get; private set; }
     public IReadOnlyCollection<(int From, string In, string Out, int To)> Transitions { get; private set; }
 
-    public ICollection<string> Process(string word) => 
+    public ICollection<string> Process(string word) =>
         this.Process(word.ToCharArray().Select(x => x.ToString()).ToArray());
 
     public ISet<string> Process(IList<string> tokens)
@@ -41,7 +37,7 @@ public class Fst
         {
             if (index == tokens.Count)
             {
-                if (this.Final.Intersect(this.EpsilonClosure(state)).Any())
+                if (this.Final.Contains(state))
                     successfulPaths.Add(string.Join(string.Empty, path.Reverse()));
             }
             else
@@ -52,12 +48,13 @@ public class Fst
                     TraverseDepthFirst(pair.To, index + 1);
                     path.Pop();
                 }
-                foreach (var pair in this.GetTransitions(state, string.Empty))
-                {
-                    path.Push(pair.Out);
-                    TraverseDepthFirst(pair.To, index);
-                    path.Pop();
-                }
+            }
+
+            foreach (var pair in this.GetTransitions(state, string.Empty))
+            {
+                path.Push(pair.Out);
+                TraverseDepthFirst(pair.To, index);
+                path.Pop();
             }
         }
 
@@ -67,26 +64,8 @@ public class Fst
         return successfulPaths;
     }
 
-    public IEnumerable<int> EpsilonClosure(int state)
-    {
-        if (this.epsilonClosureOf.ContainsKey(state))
-            return this.epsilonClosureOf[state];
-
-        return Array.Empty<int>();        
-    }
-
-    IEnumerable<(string Out, int To)> GetTransitions(int state, string input) => 
+    IEnumerable<(string Out, int To)> GetTransitions(int state, string input) =>
         this.Transitions
-            .Where(t => (state, input) == (t.From, t.In))
-            .Select(t => (t.Out, t.To));
-
-    IReadOnlyDictionary<int, HashSet<int>> PrecomputeEpsilonClosure() => 
-        this.Transitions
-            .Where(t => (string.IsNullOrEmpty($"{t.In}{t.Out}")))
-            .Select(t => (t.From, t.To))
-            .ToHashSet()
-            .TransitiveClosure()
-            .Union(this.States.Select(s => (From: s, To: s)))
-            .GroupBy(p => p.Item1, p => p.Item2)
-            .ToDictionary(g => g.Key, g => g.ToHashSet());
+            .Where(tr => (state, input) == (tr.From, tr.In))
+            .Select(tr => (tr.Out, tr.To));
 }

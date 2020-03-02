@@ -41,14 +41,14 @@ public static class FsaExtensions
         return new Fsa(states, initialStates, new int[] { state }, transitions);
     }
 
-    public static Fsa FromSymbolSet(ISet<string> alphabet)
+    public static Fsa FromSymbolSet(IEnumerable<char> alphabet)
     {
         var initial = 0;
         var final = 1;
         var transitions = new List<(int, string, int)>();
 
-        foreach (var token in alphabet)
-            transitions.Add((initial, token, final));
+        foreach (var symbol in alphabet.Distinct())
+            transitions.Add((initial, symbol.ToString(), final));
 
         return new Fsa(
             states: new int[] { initial, final },
@@ -143,7 +143,7 @@ public static class FsaExtensions
             automaton.Transitions);
     }
 
-    public static Fsa All(ISet<string> alphabet)
+    public static Fsa All(IEnumerable<char> alphabet)
         => FromSymbolSet(alphabet).Star();
 
     /* Preserves the automaton's language but 
