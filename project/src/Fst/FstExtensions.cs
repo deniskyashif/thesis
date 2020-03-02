@@ -41,6 +41,7 @@ public static class FstExtensions
     public static Fst Concat(this Fst first, Fst second)
     {
         second = second.Remap(first.States);
+
         var transitions = first.Transitions
             .Concat(second.Transitions)
             .Concat(first.Final
@@ -301,17 +302,83 @@ public static class FstExtensions
     public static Fst Compose(this Fst fst, params Fst[] automata) =>
         automata.Aggregate(fst, Compose);
 
+    public static (Fst Transducer, ICollection<string> EpsilonOutputs) ToRealTime(this Fst fst) =>
+        fst.Trim().EpsilonFree().Expand().RemoveUpperEpsilon();
+
+    private static (Fst, ICollection<string>) RemoveUpperEpsilon(this Fst fst)
+    {
+        var upperEpsilonTransitions = fst.Transitions
+            .Where(tr => string.IsNullOrEmpty(tr.In))
+            .Select(tr => (tr.From, tr.To, tr.Out));
+
+        var epsilonClosure = EpsilonClosure(upperEpsilonTransitions)
+            .Union(fst.States.Select(s => (From: s, To: s, Out: string.Empty)));
+
+        var initialToFinalViaEpsilon = epsilonClosure
+            .Where(t => fst.Initial.Contains(t.From) && fst.Final.Contains(t.To));
+
+        var possibleEpsilonOutputs = initialToFinalViaEpsilon.Select(t => t.Out).ToList();
+        var final = fst.Final.Union(initialToFinalViaEpsilon.Select(t => t.From));
+
+        var reachableWithEpsilonFrom = epsilonClosure
+            .GroupBy(t => t.From, t => (t.To, t.Out))
+            .ToDictionary(g => g.Key, g => g);
+
+        var reachableWithEpsilonTo = epsilonClosure
+            .GroupBy(t => t.To, t => (t.From, t.Out))
+            .ToDictionary(g => g.Key, g => g);
+
+        var transitions = fst.Transitions
+            .Where(tr => !string.IsNullOrEmpty(tr.In))
+            .SelectMany(tr =>
+            {
+                reachableWithEpsilonTo.TryGetValue(tr.From, out var incoming);
+                reachableWithEpsilonFrom.TryGetValue(tr.To, out var outgoing);
+
+                var newTransitions = new List<(int, string, string, int)>();
+
+                foreach (var inc in incoming)
+                    foreach (var outg in outgoing)
+                        newTransitions.Add((inc.From, tr.In, $"{inc.Out}{tr.Out}{outg.Out}", outg.To));
+
+                return newTransitions;
+            });
+
+        var transducer = new Fst(fst.States, fst.Initial, final, transitions);
+
+        return (transducer, possibleEpsilonOutputs);
+    }
+
+    private static IEnumerable<(int From, int To, string Out)> EpsilonClosure(
+        IEnumerable<(int From, int To, string Out)> transitions)
+    {
+        var transitiveClosure = transitions.ToList();
+        var transitionsForState = transitions
+            .GroupBy(t => t.From, t => (t.To, t.Out))
+            .ToDictionary(g => g.Key, g => g);
+
+        for (int n = 0; n < transitiveClosure.Count; n++)
+        {
+            var current = transitiveClosure[n];
+
+            if (current.From == current.To && !string.IsNullOrEmpty(current.Out))
+                throw new ArgumentException("The transducer cannot be infinitely ambiguous.");
+
+            if (transitionsForState.ContainsKey(current.To))
+            {
+                foreach (var tr in transitionsForState[current.To])
+                {
+                    var next = (current.From, tr.To, $"{current.Out}{tr.Out}");
+                    if (!transitiveClosure.Contains(next))
+                        transitiveClosure.Add(next);
+                }
+            }
+        }
+
+        return transitiveClosure;
+    }
+
     public static Fst PseudoDeterminize(this Fst fst)
-    {
-        throw new NotImplementedException();
-    }
-
-    public static Fst ToRealTime(this Fst fst)
-    {
-        throw new NotImplementedException();
-    }
-
-    private static Fst RemoveUpperEpsilon(Fst fst)
     {
         throw new NotImplementedException();
     }

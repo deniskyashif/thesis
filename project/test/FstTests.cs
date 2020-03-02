@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
@@ -47,6 +49,31 @@ public class FstTests
         Assert.Equal("y", fst.Process("a").Single());
         Assert.Equal("yzzzz", fst.Process("acccc").Single());
         Assert.Equal("yzzzEy", fst.Process("acccb").Single());
+    }
+
+    [Fact]
+    public void FstWithEpsilonProcessTest1()
+    {
+        var fst = new Fst(
+            new[] { 0, 1, 2, 3, 4, 5, 6, 7 },
+            new[] { 0 },
+            new[] { 5, 6 },
+            new[]
+            {
+                (0, "", "", 1),
+                (0, "", "", 6),
+                (1, "a", "a", 2),
+                (1, "b", "b", 2),
+                (2, "", "", 0),
+                (2, "", "", 6),
+                (3, "a", "d", 7),
+                (4, "", "", 5),
+                (6, "", "", 3),
+                (7, "b", "", 4),
+            });
+
+        Assert.Equal(new[] { "ab", "d" }, fst.Process("ab").OrderBy(w => w));
+        Assert.Equal(new[] { "abab", "abd" }, fst.Process("abab").OrderBy(w => w));
     }
 
     [Fact]
@@ -310,5 +337,51 @@ public class FstTests
         Assert.Equal("1111d", composed.Process("ababababc").Single());
         Assert.Empty(composed.Process("aba"));
         Assert.Empty(composed.Process(string.Empty));
+    }
+
+    [Fact]
+    public void ToRealTimeFstTest()
+    {
+        var fst = FstExtensions.FromWordPair(string.Empty, "u")
+            .Concat(FstExtensions.FromWordPair("a", "v"))
+            .Concat(FstExtensions.FromWordPair(string.Empty, "w"));
+        var realTime = fst.ToRealTime();
+
+        Assert.True(realTime.Transducer.Transitions.All(tr => !string.IsNullOrEmpty(tr.In)));
+        Assert.Empty(realTime.EpsilonOutputs);
+        Assert.Equal("uvw", realTime.Transducer.Process("a").Single());
+    }
+
+    [Fact]
+    public void ToRealTimeFstTest1()
+    {
+        var fst = new Fst(
+            new[] { 0, 1, 2, 3 },
+            new[] { 0 },
+            new[] { 3 },
+            new[]
+            {
+                (0, string.Empty, "u", 1),
+                (1, "a", "v", 2),
+                (2, string.Empty, "w", 3),
+                (0, string.Empty, "xyz", 3)
+            });
+        var realTime = fst.ToRealTime();
+
+        Assert.True(realTime.Transducer.Transitions.All(tr => !string.IsNullOrEmpty(tr.In)));
+        Assert.Equal("xyz", realTime.EpsilonOutputs.Single());
+        Assert.Equal("uvw", realTime.Transducer.Process("a").Single());
+    }
+
+    [Fact]
+    public void InfAmbiguousFstToRealTimeTest()
+    {
+        var fst = new Fst(
+            new[] { 0, 1, 2 },
+            new[] { 0 },
+            new[] { 2 },
+            new[] { (0, "a", "x", 1), (1, string.Empty, "y", 2), (2, string.Empty, "y", 1) });
+
+        Assert.Throws<ArgumentException>(() => fst.ToRealTime());
     }
 }

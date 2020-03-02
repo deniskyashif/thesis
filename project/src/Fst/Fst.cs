@@ -13,10 +13,10 @@ public class Fst
         IEnumerable<int> final,
         IEnumerable<(int, string, string, int)> transitions)
     {
-        this.States = states.ToHashSet();
-        this.Initial = initial.ToHashSet();
-        this.Final = final.ToHashSet();
-        this.Transitions = transitions.ToHashSet();
+        this.States = states.ToList();
+        this.Initial = initial.ToList();
+        this.Final = final.ToList();
+        this.Transitions = transitions.ToList();
     }
 
     public IReadOnlyCollection<int> States { get; private set; }
@@ -36,7 +36,7 @@ public class Fst
         {
             if (index == tokens.Count)
             {
-                if (this.Final.Contains(state))
+                if (this.Final.Contains(state) || this.Final.Intersect(this.EpsilonClosure(state)).Any())
                     successfulPaths.Add(string.Join(string.Empty, path.Reverse()));
             }
             else
