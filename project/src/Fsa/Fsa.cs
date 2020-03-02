@@ -2,11 +2,14 @@
     Finite-State Automaton -
     Construction and closure operations 
 */
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 public class Fsa
 {
+    private readonly IReadOnlyDictionary<int, HashSet<int>> epsilonClosureOf;
+
     public Fsa(
         IEnumerable<int> states,
         IEnumerable<int> initial,
@@ -17,6 +20,8 @@ public class Fsa
         this.Initial = initial.ToHashSet();
         this.Final = final.ToHashSet();
         this.Transitions = transitions.ToHashSet();
+
+        this.epsilonClosureOf = this.PrecomputeEpsilonClosure();
     }
 
     public IReadOnlyCollection<int> States { get; private set; }
@@ -45,29 +50,26 @@ public class Fsa
             .Any();
     }
 
+    public IEnumerable<int> EpsilonClosure(int state)
+    {
+        if (this.epsilonClosureOf.ContainsKey(state))
+            return this.epsilonClosureOf[state];
+
+        return Array.Empty<int>();
+    }
+
     IEnumerable<int> GetTransitions(int state, string word) => 
         this.Transitions
             .Where(t => (state, word) == (t.From, t.Via))
             .Select(t => t.To);
 
-    public IEnumerable<int> EpsilonClosure(int state)
-    {
-        void TraverseEpsilonTransitions(int current, HashSet<int> visited)
-        {
-            var epsilonTransitions = this.GetTransitions(current, string.Empty);
-            foreach (var epsilonState in epsilonTransitions)
-            {
-                if (!visited.Contains(epsilonState))
-                {
-                    visited.Add(epsilonState);
-                    TraverseEpsilonTransitions(epsilonState, visited);
-                }
-            }
-        }
-
-        var result = new HashSet<int>() { state };
-        TraverseEpsilonTransitions(state, result);
-
-        return result;
-    }
+    IReadOnlyDictionary<int, HashSet<int>> PrecomputeEpsilonClosure() => 
+        this.Transitions
+            .Where(t => string.IsNullOrEmpty(t.Via))
+            .Select(t => (t.From, t.To))
+            .ToHashSet()
+            .TransitiveClosure()
+            .Union(this.States.Select(s => (From: s, To: s)))
+            .GroupBy(p => p.Item1, p => p.Item2)
+            .ToDictionary(g => g.Key, g => g.ToHashSet());
 }
