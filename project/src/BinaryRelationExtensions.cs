@@ -9,6 +9,7 @@ public static class BinaryRelationExtensions
             .GroupBy(x => x.Item1, x => x.Item2)
             .ToDictionary(g => g.Key, g => g);
         var transitiveClosure = new List<(int, int)>(rel);
+        var examined = new HashSet<(int, int)>(rel);
 
         for (int n = 0; n < transitiveClosure.Count; n++)
         {
@@ -18,8 +19,11 @@ public static class BinaryRelationExtensions
             {
                 foreach (var to in domainGroup[current.Item2])
                 {
-                    if (!transitiveClosure.Contains((current.Item1, to)))
+                    if (!examined.Contains((current.Item1, to)))
+                    {
                         transitiveClosure.Add((current.Item1, to));
+                        examined.Add((current.Item1, to));
+                    }
                 }
             }
         }

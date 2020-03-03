@@ -9,8 +9,8 @@ public class TextRewriterTests
     {
         // ab|bc -> d
         var fst = FstExtensions.FromWordPair("ab", "d").Union(FstExtensions.FromWordPair("bc", "d"));
-        var idAll = FsaExtensions.All(new HashSet<char> { 'a', 'b', 'c', 'd' }).Identity();
-        var opt = idAll.Concat(fst.Concat(idAll).Star()).Expand();
+        
+        var opt = fst.ToOptionalRewriter(new HashSet<char> { 'a', 'b', 'c', 'd' });
 
         Assert.Equal(string.Empty, opt.Process(string.Empty).Single());
         Assert.Equal(new[] { "ab", "d" }, opt.Process("ab").OrderBy(s => s));
@@ -24,14 +24,7 @@ public class TextRewriterTests
     {
         // ab|bc -> d
         var fst = FstExtensions.FromWordPair("ab", "d").Union(FstExtensions.FromWordPair("bc", "d"));
-        var all = FsaExtensions.All(new HashSet<char> { 'a', 'b', 'c', 'd' });
-
-        var notInDomain = all
-            .Difference(all.Concat(fst.Domain()).Concat(all))
-            .Identity()
-            .Union(FstExtensions.FromWordPair(string.Empty, string.Empty));
-
-        var obl = notInDomain.Concat(fst.Concat(notInDomain).Star()).Expand().Trim();
+        var obl = fst.ToRewriter(new HashSet<char> { 'a', 'b', 'c', 'd' });
 
         Assert.Equal(string.Empty, obl.Process(string.Empty).Single());
         Assert.Equal("d", obl.Process("ab").Single());
@@ -40,126 +33,41 @@ public class TextRewriterTests
     }
 
     [Fact]
-    public void LMLRewriterTest()
+    public void LmlRewriterTest()
     {
-        const char lb = '<';
-        const char rb = '>';
-        const char cb = '|';
-
-        var rule = FstExtensions.FromWordPair("ab", "d")
+        var alphabet = new HashSet<char> {'a', 'b', 'c', 'd'};
+        var rule1 = FstExtensions.FromWordPair("ab", "d")
             .Union(FstExtensions.FromWordPair("bc", "d"))
             .Expand();
+        var rule2 = FstExtensions.FromWordPair("cd", "CD");
 
-        var alphabet = new HashSet<char> { 'a', 'b', 'c', 'd' };
-        var allAlphabet = FsaExtensions.All(alphabet);
+        var transducer = rule1.ToLmlRewriter(alphabet)
+            .Compose(rule2.ToLmlRewriter(alphabet));
 
-        var allSymbols = alphabet.Concat(new[] { lb, rb, cb }).ToHashSet();
-        var all = FsaExtensions.All(allSymbols);
-
-        Fsa NotInLang(Fsa lang) => all.Difference(lang);
-        Fsa ContainLang(Fsa lang) => all.Concat(lang, all);
-
-        Fst Intro(ISet<char> symbols)
-        {
-            return FsaExtensions
-                .FromSymbolSet(allSymbols.Except(symbols))
-                .Identity()
-                .Union(
-                    FstExtensions.Product(
-                        FsaExtensions.FromWord(string.Empty),
-                        FsaExtensions.FromSymbolSet(symbols)))
-                .Star();
-        }
-
-        Fst IntroX(ISet<char> symbols)
-        {
-            return Intro(symbols)
-                .Concat(FsaExtensions
-                    .FromSymbolSet(allSymbols.Except(symbols))
-                    .Identity())
-                .Option();
-        }
-
-        Fst Xintro(ISet<char> symbols)
-        {
-            return FsaExtensions
-                .FromSymbolSet(allSymbols.Except(symbols))
-                .Identity()
-                .Concat(Intro(symbols))
-                .Option();
-        }
-
-        Fsa Ignore(Fsa lang, ISet<char> symbols) =>
-            lang.Identity().Compose(Intro(symbols)).Range();
-
-        Fsa IgnoreX(Fsa lang, ISet<char> symbols) =>
-            lang.Identity().Compose(IntroX(symbols)).Range();
-
-        Fsa XIgnore(Fsa lang, ISet<char> symbols) =>
-            lang.Identity().Compose(Xintro(symbols)).Range();
-
-        Fsa IfPThenS(Fsa p, Fsa s) =>
-            NotInLang(p.Concat(NotInLang(s)));
-
-        Fsa IfSThenP(Fsa p, Fsa s) =>
-            NotInLang(NotInLang(p).Concat(s));
-
-        Fsa PiffS(Fsa p, Fsa s) =>
-            IfPThenS(p, s).Intersect(IfSThenP(p, s));
-
-        Fsa LiffR(Fsa l, Fsa r) => 
-            PiffS(all.Concat(l), r.Concat(all));
-
-        Fst Replace(ISet<char> symbols, Fst fst)
-        {
-            var all = FsaExtensions.All(symbols);
-
-            var notInDomain = all
-                .Difference(all.Concat(fst.Domain()).Concat(all))
-                .Identity()
-                .Union(FstExtensions.FromWordPair(string.Empty, string.Empty));
-
-            return notInDomain.Concat(fst.Concat(notInDomain).Star()).Expand().Trim();
-        }
-
-        var domain = rule.Domain();
-
-        var initialMatch = Intro(new HashSet<char> { cb })
-            .Compose(
-                LiffR(
-                    FsaExtensions.FromWord(cb.ToString()),
-                    XIgnore(domain, new HashSet<char> { cb }))
-                .Identity());
-
-        var leftToRight =
-            allAlphabet.Identity()
-                .Concat(
-                    FstExtensions.FromWordPair(cb.ToString(), lb.ToString()),
-                    IgnoreX(domain, new HashSet<char> { cb }).Identity(),
-                    FstExtensions.FromWordPair(string.Empty, rb.ToString()))
-                .Star()
-                .Concat(allAlphabet.Identity())
-                .Compose(
-                    Replace(allSymbols, FstExtensions.FromWordPair(cb.ToString(), string.Empty)));
-
-        var longestMatch =
-            NotInLang(
-                ContainLang(
-                    FsaExtensions.FromWord(lb.ToString())
-                        .Concat(IgnoreX(domain, new HashSet<char> { lb, rb })
-                            .Intersect(ContainLang(FsaExtensions.FromWord(rb.ToString()))))))
-                .Identity();
-
-        var replacement = Replace(
-            allSymbols,
-            FstExtensions.FromWordPair(lb.ToString(), string.Empty)
-                .Concat(rule, FstExtensions.FromWordPair(rb.ToString(), string.Empty)));
-
-        var (transducer, epsilonOutputs) = initialMatch
-            .Compose(leftToRight, longestMatch, replacement)
-            .ToRealTime();
-
+        Assert.Equal(string.Empty, transducer.Process(string.Empty).Single());
         Assert.Equal("dc", transducer.Process("abc").Single());
-        Assert.Equal("dcddc", transducer.Process("abcbcabc").Single());
+        Assert.Equal("dCDdc", transducer.Process("abcbcabc").Single());
+    }
+
+    [Fact]
+    public void LmlRewriterTest1()
+    {
+        // a+b|aa -> X
+        var alphabet = new HashSet<char> {'a', 'b', 'c', 'X' };
+        var rule = new Fst(
+            new[] { 0, 1, 2, 3, 4 },
+            new[] { 0 },
+            new[] { 2, 4 },
+            new[] { 
+                (0, "a", string.Empty, 1), 
+                (1, "a", string.Empty, 1),
+                (1, "b", "X", 2),
+                (0, "a", string.Empty, 3),
+                (3, "a", "X", 4),
+            });
+        var transducer = rule.ToLmlRewriter(alphabet);
+
+        Assert.Equal("X", transducer.Process("aaab").Single());
+        Assert.Equal("XX", transducer.Process("aaaa").Single());
     }
 }
