@@ -22,7 +22,6 @@ public static class Rewriter
     public static Fst ToOptionalRewriter(this Fst fst, ISet<char> alphabet)
     {
         var idAll = FsaExtensions.All(alphabet).Identity();
-
         return idAll.Concat(fst.Concat(idAll).Star()).Expand();
     }
 
@@ -59,7 +58,7 @@ public static class Rewriter
                 .Star()
                 .Concat(alphabetLang.Identity())
                 .Compose(
-                    ToRewriter(FstExtensions.FromWordPair(cb.ToString(), string.Empty), allSymbols));
+                    FstExtensions.FromWordPair(cb.ToString(), string.Empty).ToRewriter(allSymbols));
 
         var longestMatch = 
             NotInLang(

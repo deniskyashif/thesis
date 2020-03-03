@@ -99,7 +99,7 @@ public static class FstExtensions
 
     public static Fst EpsilonFree(this Fst fst)
     {
-        var epsilonClosureOf =  fst.Transitions
+        var epsilonClosureOf = fst.Transitions
             .Where(t => (string.IsNullOrEmpty($"{t.In}{t.Out}")))
             .Select(t => (t.From, t.To))
             .ToHashSet()
@@ -223,8 +223,8 @@ public static class FstExtensions
     public static Fst Expand(this Fst fst)
     {
         string SymbolAt(string word, int index) =>
-            index < word.Length 
-                ? word[index].ToString() 
+            index < word.Length
+                ? word[index].ToString()
                 : string.Empty;
 
         var multiWordTransitions = fst.Transitions
@@ -283,6 +283,8 @@ public static class FstExtensions
             foreach (var i2 in second.Initial)
                 states.Add((i1, i2));
 
+        var addedStates = new HashSet<(int, int)>(states);
+
         for (int n = 0; n < states.Count; n++)
         {
             var curr = states[n];
@@ -292,8 +294,13 @@ public static class FstExtensions
                     .Select(t2 => (Via: (t1.In, t2.Out), To: (t1.To, t2.To))));
 
             foreach (var tr in composedTransitions)
-                if (!states.Contains(tr.To))
+            {
+                if (!addedStates.Contains(tr.To))
+                {
                     states.Add(tr.To);
+                    addedStates.Add(tr.To);
+                }
+            }
 
             transitions.UnionWith(
                 composedTransitions.Select(t => (n, t.Via.In, t.Via.Out, states.IndexOf(t.To))));
@@ -311,10 +318,10 @@ public static class FstExtensions
     public static Fst Compose(this Fst fst, params Fst[] automata) =>
         automata.Aggregate(fst, Compose);
 
-    public static (Fst Transducer, ICollection<string> EpsilonOutputs) ToRealTime(this Fst fst) =>
+    public static (Fst Transducer, ISet<string> EpsilonOutputs) ToRealTime(this Fst fst) =>
         fst.Trim().EpsilonFree().Expand().RemoveUpperEpsilon();
 
-    private static (Fst, ICollection<string>) RemoveUpperEpsilon(this Fst fst)
+    private static (Fst, ISet<string>) RemoveUpperEpsilon(this Fst fst)
     {
         var upperEpsilonTransitions = fst.Transitions
             .Where(tr => string.IsNullOrEmpty(tr.In))
@@ -326,7 +333,7 @@ public static class FstExtensions
         var initialToFinalViaEpsilon = epsilonClosure
             .Where(t => fst.Initial.Contains(t.From) && fst.Final.Contains(t.To));
 
-        var possibleEpsilonOutputs = initialToFinalViaEpsilon.Select(t => t.Out).ToList();
+        var possibleEpsilonOutputs = initialToFinalViaEpsilon.Select(t => t.Out).ToHashSet();
         var final = fst.Final.Union(initialToFinalViaEpsilon.Select(t => t.From));
 
         var reachableWithEpsilonFrom = epsilonClosure

@@ -196,8 +196,8 @@ public class FstTests
         var fst = new Fst(states, initial, final, transitions).EpsilonFree();
 
         Assert.Equal(6, fst.Transitions.Count);
-        Assert.NotNull(fst.Transitions.Single(t => t == (0, "a", "y", 1)));
-        Assert.NotNull(fst.Transitions.Single(t => t == (2, "c", "z", 1)));
+        Assert.NotNull(fst.Transitions.SingleOrDefault(t => t == (0, "a", "y", 1)));
+        Assert.NotNull(fst.Transitions.SingleOrDefault(t => t == (2, "c", "z", 1)));
 
         var res1 = fst.Process("ab");
         Assert.Equal(2, res1.Count);
