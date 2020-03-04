@@ -408,4 +408,156 @@ public static class FstExtensions
     {
         throw new NotImplementedException();
     }
+
+    public static Bimachine ToBimachine(this Fst fst, ISet<char> alphabet)
+    {
+        var (rtFst, _) = fst.ToRealTime();
+
+        // Construct the right Dfsa by reversing the transitions
+        var rToLTransOnInput = rtFst.Transitions
+            .GroupBy(tr => tr.To)
+            .ToDictionary(g => g.Key, g => g.Select(tr => (In: tr.In, To: tr.From)));
+
+        var rightStates = new List<ISet<int>> { rtFst.Final.ToHashSet() };
+        var rightTrans = new Dictionary<(int, char), int>();
+
+        for (int n = 0; n < rightStates.Count; n++)
+        {
+            var current = rightStates[n];
+            var symbolToStates = current
+                .Where(s => rToLTransOnInput.ContainsKey(s))
+                .SelectMany(s => rToLTransOnInput[s])
+                .Distinct()
+                .GroupBy(tr => tr.In)
+                .ToDictionary(g => g.Key, g => g.Select(tr => tr.To).ToHashSet());
+
+            foreach (var subsetState in symbolToStates.Select(p => p.Value))
+                if (!rightStates.Any(rs => rs.SetEquals(subsetState)))
+                    rightStates.Add(subsetState);
+
+            foreach (var pair in symbolToStates)
+                rightTrans.Add(
+                    (n, pair.Key[0]), rightStates.FindIndex(ss => ss.SetEquals(pair.Value)));
+        }
+
+        // delta'_R = F_3->(1,2) (rightTrans)
+        var lToRTransOnInput = rightTrans
+            .GroupBy(kvp => kvp.Value)
+            .ToDictionary(g => g.Key, g => g.Select(kvp => kvp.Key).ToHashSet());
+
+        // Delta'
+        var departingTransForStatePerSymbol = new Dictionary<(char In, int From), ISet<(int To, string Out)>>();
+        foreach (var tr in rtFst.Transitions)
+        {
+            if (!departingTransForStatePerSymbol.ContainsKey((tr.In[0], tr.From)))
+                departingTransForStatePerSymbol[(tr.In[0], tr.From)] = new HashSet<(int, string)>();
+
+            departingTransForStatePerSymbol[(tr.In[0], tr.From)].Add((tr.To, tr.Out));
+        }
+
+        // Construct the left Dfsa and the BM output function
+        var leftStates = new List<(ISet<int> SState, IDictionary<int, int> Selector)>();
+        var leftTrans = new Dictionary<(int, char), int>();
+        var bmOutput = new Dictionary<(int, char, int), string>();
+
+        // Phi_0
+        var rightToLeftStateSelector = new Dictionary<int, int>();
+        
+        // init Phi_0
+        for (int r = 0; r < rightStates.Count; r++)
+        {
+            var toStates = rightStates[r].Intersect(rtFst.Initial);
+            foreach (var st in toStates)
+                rightToLeftStateSelector.Add(r, st);
+        }
+
+        leftStates.Add((rtFst.Initial.ToHashSet(), rightToLeftStateSelector));
+
+        for (int k = 0; k < leftStates.Count; k++)
+        {
+            var current = leftStates[k];
+
+            // Construct N
+            var targetTransForCurrentSymbol =
+                new Dictionary<char, (ISet<int> SState, IDictionary<int, int> Selector)>();
+
+            foreach (var symbol in alphabet)
+            {
+                var targetSState = new HashSet<int>(); // L'
+                foreach (var st in current.SState)
+                {
+                    if (departingTransForStatePerSymbol.ContainsKey((symbol, st)))
+                    {
+                        targetSState.UnionWith(
+                            departingTransForStatePerSymbol[(symbol, st)].Select(x => x.To));
+                    }
+                }
+                // Phi'(a)
+                var targetSelector = new Dictionary<int, int>();
+
+                foreach (var pair in current.Selector)
+                {
+                    if (lToRTransOnInput.ContainsKey(pair.Key))
+                    {
+                        foreach (var (st, symb) in lToRTransOnInput[pair.Key])
+                        {
+                            foreach (var (toState, word) in departingTransForStatePerSymbol[(symb, pair.Key)])
+                            {
+                                if (rightStates[st].Contains(toState))
+                                {
+                                    targetSelector.Add(st, toState);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                targetTransForCurrentSymbol.Add(symbol, (targetSState, targetSelector));
+            }
+
+            foreach (var tr in targetTransForCurrentSymbol)
+            {
+                var symb = tr.Key;
+                var (targetSState, targetSelector) = tr.Value;
+
+                // Construct the bimachine's output function
+                foreach (var tsPair in targetSelector)
+                {
+                    if (rightTrans.ContainsKey((tsPair.Key, symb)) &&
+                        current.Selector.ContainsKey(rightTrans[(tsPair.Key, symb)]))
+                    {
+                        var state = current.Selector[rightTrans[(tsPair.Key, symb)]];
+
+                        if (departingTransForStatePerSymbol.ContainsKey((symb, state)))
+                        {
+                            foreach (var (st, outputWord) in departingTransForStatePerSymbol[(symb, state)])
+                            {
+                                bmOutput.Add((k, symb, tsPair.Key), outputWord);
+                            }
+                        }
+                    }
+                }
+
+                // Left dfsa's states
+                if (!leftStates.Any(ls => ls.SState.SetEquals(targetSState))) // TODO: if bug - possible add dict comparison
+                    leftStates.Add((targetSState, targetSelector));
+
+                // Left dfsa's output function
+                // if (!leftTrans.ContainsKey((k, item.Symbol)))
+                // {
+                leftTrans.Add(
+                    (k, symb),
+                    leftStates.FindIndex(p => p.SState.SetEquals(targetSState))); // TODO: if bug - possible add dict comparison
+                // }
+            }
+        }
+
+        var rightStateIndices = Enumerable.Range(0, rightStates.Count);
+        var rightDfsa = new Dfsa(rightStateIndices, 0, rightStateIndices, rightTrans);
+
+        var leftStateIndices = Enumerable.Range(0, leftStates.Count);
+        var leftDfsa = new Dfsa(leftStateIndices, 0, leftStateIndices, leftTrans);
+
+        return new Bimachine(leftDfsa, rightDfsa, bmOutput);
+    }
 }
