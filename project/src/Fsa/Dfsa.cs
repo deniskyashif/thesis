@@ -33,4 +33,21 @@ public class Dfsa
 
         return this.Final.Contains(curr);
     }
+
+    public (bool Success, IList<int> Path) RecognitionPath(string word)
+    {
+        var curr = this.Initial;
+        var path = new List<int> { curr };
+
+        foreach (var symbol in word)
+        {
+            if (!this.Transitions.ContainsKey((curr, symbol)))
+                return (false, path);
+
+            curr = this.Transitions[(curr, symbol)];
+            path.Add(curr);
+        }
+
+        return (this.Final.Contains(curr), path);
+    }
 }
