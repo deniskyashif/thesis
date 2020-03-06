@@ -411,23 +411,24 @@ public static class FstExtensions
 
     public static Bimachine ToBimachine(this Fst fst, ISet<char> alphabet)
     {
+        // TODO: Handle epsilon inputs
         var (rtFst, _) = fst.ToRealTime();
 
-        // Construct the right Dfsa by reversing the transitions
-        var rToLTransOnInput = rtFst.Transitions // Delta'' F_4->(2,1)
+        // Construct the right Dfa by reversing the transitions
+        // Group the transitions by destination state
+        var fstTransGroupedBy_4to12 = rtFst.Transitions
             .GroupBy(tr => tr.To)
             .ToDictionary(g => g.Key, g => g.Select(tr => (In: tr.In, To: tr.From)));
 
-        var rightSStates = new List<ISet<int>> { rtFst.Final.ToHashSet() }; // P_r
-        var rightTransitions = new Dictionary<(int, char), int>(); // delta_r
+        var rightSStates = new List<ISet<int>> { rtFst.Final.ToHashSet() };
+        var rightTransitions = new Dictionary<(int, char), int>();
 
         for (int n = 0; n < rightSStates.Count; n++)
         {
             var sState = rightSStates[n];
             var symbolToSStates = sState
-                .Where(s => rToLTransOnInput.ContainsKey(s))
-                .SelectMany(s => rToLTransOnInput[s])
-                .Distinct()
+                .Where(st => fstTransGroupedBy_4to12.ContainsKey(st))
+                .SelectMany(st => fstTransGroupedBy_4to12[st])
                 .GroupBy(tr => tr.In)
                 .ToDictionary(g => g.Key, g => g.Select(tr => tr.To).ToHashSet());
 
@@ -441,32 +442,31 @@ public static class FstExtensions
                     rightSStates.FindIndex(ss => ss.SetEquals(targetSState)));
         }
 
-        // delta'_R = F_3->(1,2) (rightTrans)
-        var lToRTransOnInput = rightTransitions
+        // Group right Dfa's transitions by a destination state
+        var rightDfaTransGroupedBy_3to12 = rightTransitions
             .GroupBy(kvp => kvp.Value)
             .ToDictionary(
-                g => g.Key, 
+                g => g.Key,
                 g => g.Select(kvp => (To: kvp.Key.Item1, Symbol: kvp.Key.Item2)).ToHashSet());
 
-        // Delta' F_(2,1)->(4,3) (delta)
-        var trPerSymbolAndState = new Dictionary<(char In, int From), ISet<(int To, string Out)>>();
+        var fstTransGroupedBy_21to43 = new Dictionary<(char In, int From), ISet<(int To, string Out)>>();
 
         foreach (var tr in rtFst.Transitions)
         {
-            if (!trPerSymbolAndState.ContainsKey((tr.In[0], tr.From)))
-                trPerSymbolAndState[(tr.In[0], tr.From)] = new HashSet<(int, string)>();
+            if (!fstTransGroupedBy_21to43.ContainsKey((tr.In[0], tr.From)))
+                fstTransGroupedBy_21to43[(tr.In[0], tr.From)] = new HashSet<(int, string)>();
 
-            trPerSymbolAndState[(tr.In[0], tr.From)].Add((tr.To, tr.Out));
+            fstTransGroupedBy_21to43[(tr.In[0], tr.From)].Add((tr.To, tr.Out));
         }
 
-        // Construct the left Dfsa and the BM output function
+        // Construct the left Dfa and the bimachine's output function
         var leftStates = new List<(ISet<int> SState, IDictionary<int, int> Selector)>();
         var leftTransitions = new Dictionary<(int, char), int>();
         var bmOutput = new Dictionary<(int, char, int), string>();
 
-        // Phi_0
+        // Construct left Dfa's initial state selector
         var initStateSelector = new Dictionary<int, int>();
-        // init Phi_0
+
         for (int rIndex = 0; rIndex < rightSStates.Count; rIndex++)
         {
             var initStates = rightSStates[rIndex].Intersect(rtFst.Initial);
@@ -481,73 +481,75 @@ public static class FstExtensions
         {
             var current = leftStates[k];
 
-            // Construct N
-            var targetTransForCurrentSymbol =
-                new Dictionary<char, (ISet<int> SState, IDictionary<int, int> Selector)>();
+            // Find target states & their selectors on each alphabet symbol
+            var targetTransForCurrentOnSymbol =
+                new Dictionary<char, (ISet<int> LeftSState, IDictionary<int, int> SelectorForSymbol)>();
 
             foreach (var symbol in alphabet)
             {
-                var targetSState = new HashSet<int>(); // L'
-                foreach (var st in current.SState)
-                {
-                    if (trPerSymbolAndState.ContainsKey((symbol, st)))
-                    {
-                        targetSState.UnionWith(
-                            trPerSymbolAndState[(symbol, st)].Select(x => x.To));
-                    }
-                }
-                
-                var targetSelector = new Dictionary<int, int>(); // Phi'(a)
+                var targetLeftSState = new HashSet<int>();
 
-                foreach (var (rIndex, fstState) in current.Selector)
+                foreach (var st in current.SState)
+                    if (fstTransGroupedBy_21to43.ContainsKey((symbol, st)))
+                        targetLeftSState.UnionWith(
+                            fstTransGroupedBy_21to43[(symbol, st)].Select(x => x.To));
+
+                if (!targetLeftSState.Any())    
+                    continue;
+
+                var targetSelector = new Dictionary<int, int>();
+
+                foreach (var (toRightIndex, fstState) in current.Selector)
                 {
-                    if (!lToRTransOnInput.ContainsKey(rIndex))
+                    if (!rightDfaTransGroupedBy_3to12.ContainsKey(toRightIndex))
                         continue;
 
-                    foreach (var (st, symb) in lToRTransOnInput[rIndex])
+                    foreach (var (fromRIndex, _) in rightDfaTransGroupedBy_3to12[toRightIndex].Where(p => p.Symbol == symbol))
                     {
-                        if (!trPerSymbolAndState.ContainsKey((symb, fstState)))
+                        if (!fstTransGroupedBy_21to43.ContainsKey((symbol, fstState)))
                             continue;
 
-                        var targetStateAndWord = trPerSymbolAndState[(symb, fstState)]
-                            .Where(p => rightSStates[st].Contains(p.To)).FirstOrDefault();
+                        var reachableTargets = fstTransGroupedBy_21to43[(symbol, fstState)]
+                            .Where(p => rightSStates[fromRIndex].Contains(p.To));
 
-                        if (targetStateAndWord != default)
-                        {
-                            targetSelector.Add(st, targetStateAndWord.To);
-                            break;
-                        }
+                        if (reachableTargets.Any() && !targetSelector.ContainsKey(fromRIndex))
+                            targetSelector.Add(fromRIndex, reachableTargets.First().To);
                     }
                 }
-                if (targetSState.Any() && targetSelector.Any())
-                    targetTransForCurrentSymbol.Add(symbol, (targetSState, targetSelector));
+
+                if (targetLeftSState.Any() && targetSelector.Any())
+                    targetTransForCurrentOnSymbol.Add(symbol, (targetLeftSState, targetSelector));
             }
 
-            foreach (var tr in targetTransForCurrentSymbol)
+            foreach (var tr in targetTransForCurrentOnSymbol)
             {
                 var symbol = tr.Key;
                 var (targetSState, targetSelector) = tr.Value;
 
-                // Construct the bimachine's output function
-                foreach (var tsPair in targetSelector)
+                // Add to the bimachine's output function
+                foreach (var (fromRIndex, fstState) in targetSelector)
                 {
-                    if (!rightTransitions.ContainsKey((tsPair.Key, symbol)))
+                    if (!rightTransitions.ContainsKey((fromRIndex, symbol)))
                         continue;
-                    
-                    var state = current.Selector[rightTransitions[(tsPair.Key, symbol)]];
+                    if (!current.Selector.ContainsKey(rightTransitions[(fromRIndex, symbol)]))
+                        continue;
 
-                    foreach (var (st, outputWord) in trPerSymbolAndState[(symbol, state)])
-                        bmOutput.Add((k, symbol, tsPair.Key), outputWord);
+                    var state = current.Selector[rightTransitions[(fromRIndex, symbol)]];
+                    var destinationStates = fstTransGroupedBy_21to43[(symbol, state)].Where(p => p.To == fstState);
+
+                    foreach (var (toState, word) in destinationStates)
+                        if (!bmOutput.ContainsKey((k, symbol, fromRIndex)))
+                            bmOutput.Add((k, symbol, fromRIndex), word);
                 }
 
-                // Left Dfsa's states
-                if (!leftStates.Any(ls => ls.SState.SetEquals(targetSState))) // TODO: if bug - possible add dict comparison
+                // Left Dfa's states
+                if (!leftStates.Any(ls => ls.SState.SetEquals(targetSState)))
                     leftStates.Add((targetSState, targetSelector));
 
-                // Left Dfsa's output function
+                // Left Dfa's transitions
                 leftTransitions.Add(
                     (k, symbol),
-                    leftStates.FindIndex(p => p.SState.SetEquals(targetSState))); // TODO: if bug - possible add dict comparison
+                    leftStates.FindIndex(p => p.SState.SetEquals(targetSState)));
             }
         }
 
