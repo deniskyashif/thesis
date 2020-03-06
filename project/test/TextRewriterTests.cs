@@ -92,4 +92,26 @@ public class TextRewriterTests
         Assert.Equal("X", transducer.Process("aaab").Single());
         Assert.Equal("XX", transducer.Process("aaaa").Single());
     }
+
+    // [Fact]
+    public void LmlRewriterWithBimachineTest()
+    {
+        // a+b|aa -> X
+        var alphabet = new HashSet<char> {'a', 'b', 'c', 'X' };
+        var rule = new Fst(
+            new[] { 0, 1, 2, 3, 4 },
+            new[] { 0 },
+            new[] { 2, 4 },
+            new[] { 
+                (0, "a", string.Empty, 1), 
+                (1, "a", string.Empty, 1),
+                (1, "b", "X", 2),
+                (0, "a", string.Empty, 3),
+                (3, "a", "X", 4),
+            });
+        var bm = rule.ToLmlRewriter(alphabet).ToBimachine(alphabet);
+
+        Assert.Equal("X", bm.Process("aaab"));
+        Assert.Equal("XX", bm.Process("aaaa"));
+    }
 }

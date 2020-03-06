@@ -23,4 +23,21 @@ public class BimachineTests
         Assert.Throws<ArgumentException>(() => bm.Process("a"));
         Assert.Throws<ArgumentException>(() => bm.Process("abb"));
     }
+
+    [Fact]
+    public void ConstructionFromFstTest1()
+    {
+        // { (a, x), (ab, y) }
+        var fst = new Fst(
+            new[] { 0, 1, 2, 3 },
+            new[] { 0 },
+            new[] { 1, 3 },
+            new[] { (0, "a", "x", 1), (0, "a", "y", 2), (2, "b", "", 3) });
+
+        var bm = fst.ToBimachine(new HashSet<char> { 'a', 'b' });
+        Assert.Equal("x", bm.Process("a"));
+        Assert.Equal("y", bm.Process("ab"));
+        Assert.Throws<ArgumentException>(() => bm.Process("aa"));
+        Assert.Throws<ArgumentException>(() => bm.Process("abb"));
+    }
 }
