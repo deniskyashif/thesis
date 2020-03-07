@@ -58,6 +58,9 @@ public static class FsaOperations
             transitions: first.Transitions.Union(second.Transitions));
     }
 
+    public static Fsa Union(this Fsa fsa, params Fsa[] automata) =>
+        automata.Aggregate(fsa, Union);
+
     public static Fsa Star(this Fsa automaton)
     {
         var initial = NewState(automaton.States);

@@ -34,7 +34,7 @@ public class Dfsa
         return this.Final.Contains(curr);
     }
 
-    public (bool Success, IList<int> Path) RecognitionPath(string word)
+    public (bool Success, IList<int> Path) RecognitionPathLToR(string word)
     {
         var curr = this.Initial;
         var path = new List<int> { curr };
@@ -49,5 +49,24 @@ public class Dfsa
         }
 
         return (this.Final.Contains(curr), path);
+    }
+
+    public (bool Success, IList<int> Path) RecognitionPathRToL(string word)
+    {
+        var current = this.Initial;
+        var path = new List<int> { current };
+
+        for (var i = word.Length - 1; i >= 0; i--)
+        {
+            var symbol = word[i];
+
+            if (!this.Transitions.ContainsKey((current, symbol)))
+                return (false, path);
+
+            current = this.Transitions[(current, symbol)];
+            path.Add(current);
+        }
+
+        return (this.Final.Contains(current), path);
     }
 }

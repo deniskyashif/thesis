@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
-public class RelationExtensionsTests
+public class BinaryRelOperations
 {
     [Fact]
     public void TransitiveClosureTest()

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-class Tokenizer
+static class Tokenizers
 {
     static readonly ISet<char> alphabet =
         Enumerable.Range(32, 95).Select(x => (char)x)
@@ -18,6 +18,7 @@ class Tokenizer
         var letters = upperCaseLetters.Concat(lowerCaseLetters);
 
         Console.WriteLine("Constructing the \"rise case\" transducer.");
+        
         var riseCase = alphabet
             .Select(symbol =>
                 FstBuilder.FromWordPair(
@@ -25,49 +26,62 @@ class Tokenizer
                     char.IsLower(symbol)
                         ? symbol.ToString().ToUpper()
                         : symbol.ToString()))
-            .Aggregate((aggr, fst) => aggr.Union(fst))
+            .Aggregate((aggr, fst) => aggr.UnionWith(fst))
             .Star();
 
         Console.WriteLine("Constructing the \"multi word expression list\" transducer.");
-        var multiWordExpressionList = new[] { "AT LEAST", "IN SPITE OF" };
-        var multiWordExpression = multiWordExpressionList
-            .Select(exp => FsaBuilder.FromWord(exp))
-            .Aggregate((aggr, fsa) => aggr.Union(fsa));
+        
+        var multiWordExprList = new[] { "AT LEAST", "IN SPITE OF" };
+        var multiWordExpr = 
+            multiWordExprList
+                .Select(exp => FsaBuilder.FromWord(exp))
+                .Aggregate((aggr, fsa) => aggr.Union(fsa));
 
         Console.WriteLine("Constructing the \"token\" transducer.");
-        var token = FsaBuilder.FromSymbolSet(letters).Plus()
-            .Union(FsaBuilder.FromSymbolSet(digits).Plus())
-            .Union(riseCase
-                .Compose(multiWordExpression.Identity())
-                .Domain())
-            .Union(FsaBuilder.FromSymbolSet(alphabet.Except(whitespaces)));
+        
+        var token = 
+            FsaBuilder.FromSymbolSet(letters)
+            .Plus()
+            .Union(
+                FsaBuilder.FromSymbolSet(digits).Plus(),
+                riseCase.Compose(multiWordExpr.Identity()).Domain(),
+                FsaBuilder.FromSymbolSet(alphabet.Except(whitespaces)));
 
         Console.WriteLine("Constructing the \"insert leading newline\" transducer.");
-        var insertLeadingNewLine = FstBuilder.FromWordPair(string.Empty, "\n")
-            .Concat(FsaBuilder.FromSymbolSet(alphabet).Star().Identity());
+
+        var insertLeadingNewLine = 
+            FstBuilder.FromWordPair(string.Empty, "\n")
+                .Concat(FsaBuilder.FromSymbolSet(alphabet).Star().Identity());
 
         Console.WriteLine("Constructing the \"clear spaces\" transducer.");
-        var clearSpaces = FstOperations.Product(
-            FsaBuilder.FromSymbolSet(whitespaces).Plus(),
-            FsaBuilder.FromWord(" "))
+        
+        var clearSpaces = 
+            FstOperations.Product(
+                FsaBuilder.FromSymbolSet(whitespaces).Plus(),
+                FsaBuilder.FromWord(" "))
             .ToLmlRewriter(alphabet);
 
         Console.WriteLine("Constructing the \"mark tokens\" transducer.");
-        var markTokens = token.Identity()
-            .Concat(FstBuilder.FromWordPair(string.Empty, "\n"))
-            .ToLmlRewriter(alphabet);
+        
+        var markTokens = 
+            token.Identity()
+                .Concat(FstBuilder.FromWordPair(string.Empty, "\n"))
+                .ToLmlRewriter(alphabet);
 
         Console.WriteLine("Constructing the \"clear leading whitespace\" transducer.");
+        
         var clearLeadingSpace = 
             insertLeadingNewLine.Compose(
                 FstBuilder.FromWordPair("\n ", "\n").ToRewriter(alphabet),
                 insertLeadingNewLine.Inverse());
 
         Console.WriteLine("Creating the composed transducer.");
-        var tokenizer = clearSpaces.Compose(markTokens, clearLeadingSpace);
+        
+        var fst = clearSpaces.Compose(markTokens, clearLeadingSpace);
         
         Console.WriteLine("Converting to a bimachine.");
-        var bm = tokenizer.ToBimachine(alphabet);
+        
+        var bm = fst.ToBimachine(alphabet);
 
         return bm;
     }

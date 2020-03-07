@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-public static class BinaryRelationExtensions
+public static class BinaryRelationOperations
 {
     public static ICollection<(int, int)> TransitiveClosure(this ISet<(int, int)> rel)
     {

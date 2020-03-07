@@ -20,7 +20,7 @@ public static class FstOperations
             fst.Transitions.Select(t => (t.From + k, t.In, t.Out, t.To + k)));
     }
 
-    public static Fst Union(this Fst first, Fst second)
+    public static Fst UnionWith(this Fst first, Fst second)
     {
         second = second.Remap(first.States);
 
@@ -30,6 +30,9 @@ public static class FstOperations
             first.Final.Concat(second.Final),
             first.Transitions.Concat(second.Transitions));
     }
+
+    public static Fst Union(this Fst fst, params Fst[] automata) =>
+        automata.Aggregate(fst, UnionWith);
 
     public static Fst Concat(this Fst first, Fst second)
     {

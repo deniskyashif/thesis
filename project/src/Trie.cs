@@ -11,16 +11,19 @@ public class Trie
 
     public void Insert(string word)
     {
-        var curr = this;
+        var current = this;
+
         foreach (var s in word)
         {
-            var next = curr.GetTransitnion(s);
+            var next = current.GetTransitnion(s);
+
             if (next == null)
-                next = curr.AddTransition(s);
-            curr = next;
+                next = current.AddTransition(s);
+
+            current = next;
         }
 
-        curr.IsFinal = true;
+        current.IsFinal = true;
     }
 
     public bool Recognize(string word) => Traverse(word)?.IsFinal ?? false;
@@ -43,6 +46,7 @@ public class Trie
     private Trie GetTransitnion(char symbol)
     {
         this.transitions.TryGetValue(symbol, out var node);
+
         return node;
     }
 

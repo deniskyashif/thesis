@@ -8,6 +8,15 @@ public static class Rewriter
     const char rb = '≫';
     const char cb = '†';
 
+    // Optional rewrite transducer
+    public static Fst ToOptionalRewriter(this Fst fst, ISet<char> alphabet)
+    {
+        var idAll = FsaBuilder.All(alphabet).Identity();
+
+        return idAll.Concat(fst.Concat(idAll).Star()).Expand();
+    }
+
+    // Obligatory rewrite transducer
     public static Fst ToRewriter(this Fst fst, ISet<char> alphabet)
     {
         var all = FsaBuilder.All(alphabet);
@@ -19,48 +28,43 @@ public static class Rewriter
 
         return notInDomain.Concat(fst.Concat(notInDomain).Star()).Expand().Trim();
     }
-
-    public static Fst ToOptionalRewriter(this Fst fst, ISet<char> alphabet)
-    {
-        var idAll = FsaBuilder.All(alphabet).Identity();
-        return idAll.Concat(fst.Concat(idAll).Star()).Expand();
-    }
-
+    
+    // Obligatory leftmost-longest match rewrite transducer
     public static Fst ToLmlRewriter(this Fst rule, ISet<char> alphabet)
     {
         if (alphabet.Intersect(new[] { lb, rb, cb }).Any())
             throw new ArgumentException("The alphabet contains invalid symbols.");
 
-        var alphabetLang = FsaBuilder.All(alphabet);
+        var alphabetStarFsa = FsaBuilder.All(alphabet);
         var allSymbols = alphabet.Concat(new[] { lb, rb, cb }).ToHashSet();
-        var allSymbolsLang = FsaBuilder.All(allSymbols);
+        var allSymbolsStarFsa = FsaBuilder.All(allSymbols);
 
-        Fsa NotInLang(Fsa lang) => allSymbolsLang.Difference(lang);
-        Fsa ContainLang(Fsa lang) => allSymbolsLang.Concat(lang, allSymbolsLang);
+        Fsa NotInLang(Fsa lang) => allSymbolsStarFsa.Difference(lang);
+        Fsa ContainLang(Fsa lang) => allSymbolsStarFsa.Concat(lang, allSymbolsStarFsa);
         Fsa IfPThenS(Fsa p, Fsa s) => NotInLang(p.Concat(NotInLang(s)));
         Fsa IfSThenP(Fsa p, Fsa s) => NotInLang(NotInLang(p).Concat(s));
         Fsa PiffS(Fsa p, Fsa s) => IfPThenS(p, s).Intersect(IfSThenP(p, s));
         Fsa LiffR(Fsa lang, Fsa l, Fsa r) => PiffS(lang.Concat(l), r.Concat(lang));
 
-        var domain = rule.Domain();
+        var ruleDomain = rule.Domain();
 
         var initialMatch =
             Intro(allSymbols, new HashSet<char> { cb })
                 .Compose(
                     LiffR(
-                        allSymbolsLang,
+                        allSymbolsStarFsa,
                         FsaBuilder.FromWord(cb.ToString()),
-                        XIgnore(domain, allSymbols, new HashSet<char> { cb }))
+                        XIgnore(ruleDomain, allSymbols, new HashSet<char> { cb }))
                     .Identity());
 
         var leftToRight =
-            alphabetLang.Identity()
+            alphabetStarFsa.Identity()
                 .Concat(
                     FstBuilder.FromWordPair(cb.ToString(), lb.ToString()),
-                    IgnoreX(domain, allSymbols, new HashSet<char> { cb }).Identity(),
+                    IgnoreX(ruleDomain, allSymbols, new HashSet<char> { cb }).Identity(),
                     FstBuilder.FromWordPair(string.Empty, rb.ToString()))
                 .Star()
-                .Concat(alphabetLang.Identity())
+                .Concat(alphabetStarFsa.Identity())
                 .Compose(
                     FstBuilder.FromWordPair(cb.ToString(), string.Empty).ToRewriter(allSymbols));
 
@@ -68,15 +72,14 @@ public static class Rewriter
             NotInLang(
                 ContainLang(
                     FsaBuilder.FromWord(lb.ToString())
-                        .Concat(IgnoreX(domain, allSymbols, new HashSet<char> { lb, rb })
+                        .Concat(IgnoreX(ruleDomain, allSymbols, new HashSet<char> { lb, rb })
                             .Intersect(ContainLang(FsaBuilder.FromWord(rb.ToString()))))))
             .Identity();
 
-        var replacement =
-            ToRewriter(
+        var replacement = 
                 FstBuilder.FromWordPair(lb.ToString(), string.Empty)
-                    .Concat(rule, FstBuilder.FromWordPair(rb.ToString(), string.Empty)),
-                allSymbols);
+                    .Concat(rule, FstBuilder.FromWordPair(rb.ToString(), string.Empty))
+                    .ToRewriter(allSymbols);
 
         return initialMatch.Compose(leftToRight, longestMatch, replacement);
     }

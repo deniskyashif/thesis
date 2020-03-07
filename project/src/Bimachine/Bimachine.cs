@@ -20,11 +20,11 @@ public class Bimachine
 
     public string Process(string word)
     {
-        var leftRun = this.Left.RecognitionPath(word);
+        var leftRun = this.Left.RecognitionPathLToR(word);
         if (!leftRun.Success) 
             throw new ArgumentException("Unrecognized input.");
 
-        var rightRun = this.Right.RecognitionPath(Reverse(word));
+        var rightRun = this.Right.RecognitionPathRToL(word);
         if (!rightRun.Success)
             throw new ArgumentException("Unrecognized input.");
 
@@ -38,12 +38,5 @@ public class Bimachine
         }
 
         return output.ToString();
-    }
-
-    private static string Reverse(string s)
-    {
-        char[] charArray = s.ToCharArray();
-        Array.Reverse(charArray);
-        return new string(charArray);
     }
 }

@@ -294,9 +294,9 @@ public class FsaTests
         };
         var dfsa = new Dfsa(states, initial, final, transitions);
 
-        Assert.Equal(new[] { 0, 1 }, dfsa.RecognitionPath("a").Path);
-        Assert.Equal(new[] { 0, 2, 3, 3 }, dfsa.RecognitionPath("bcc").Path);
-        Assert.Equal(new[] { 0, 2, 3, 3, 3, 3 }, dfsa.RecognitionPath("bcccc").Path);
+        Assert.Equal(new[] { 0, 1 }, dfsa.RecognitionPathLToR("a").Path);
+        Assert.Equal(new[] { 0, 2, 3, 3 }, dfsa.RecognitionPathLToR("bcc").Path);
+        Assert.Equal(new[] { 0, 2, 3, 3, 3, 3 }, dfsa.RecognitionPathLToR("bcccc").Path);
     }
 
     [Fact]
