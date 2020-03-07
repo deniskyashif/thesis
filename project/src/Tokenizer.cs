@@ -20,7 +20,7 @@ class Tokenizer
         Console.WriteLine("Constructing the \"rise case\" transducer.");
         var riseCase = alphabet
             .Select(symbol =>
-                FstExtensions.FromWordPair(
+                FstBuilder.FromWordPair(
                     symbol.ToString(),
                     char.IsLower(symbol)
                         ? symbol.ToString().ToUpper()
@@ -43,24 +43,24 @@ class Tokenizer
             .Union(FsaBuilder.FromSymbolSet(alphabet.Except(whitespaces)));
 
         Console.WriteLine("Constructing the \"insert leading newline\" transducer.");
-        var insertLeadingNewLine = FstExtensions.FromWordPair(string.Empty, "\n")
+        var insertLeadingNewLine = FstBuilder.FromWordPair(string.Empty, "\n")
             .Concat(FsaBuilder.FromSymbolSet(alphabet).Star().Identity());
 
         Console.WriteLine("Constructing the \"clear spaces\" transducer.");
-        var clearSpaces = FstExtensions.Product(
+        var clearSpaces = FstOperations.Product(
             FsaBuilder.FromSymbolSet(whitespaces).Plus(),
             FsaBuilder.FromWord(" "))
             .ToLmlRewriter(alphabet);
 
         Console.WriteLine("Constructing the \"mark tokens\" transducer.");
         var markTokens = token.Identity()
-            .Concat(FstExtensions.FromWordPair(string.Empty, "\n"))
+            .Concat(FstBuilder.FromWordPair(string.Empty, "\n"))
             .ToLmlRewriter(alphabet);
 
         Console.WriteLine("Constructing the \"clear leading whitespace\" transducer.");
         var clearLeadingSpace = 
             insertLeadingNewLine.Compose(
-                FstExtensions.FromWordPair("\n ", "\n").ToRewriter(alphabet),
+                FstBuilder.FromWordPair("\n ", "\n").ToRewriter(alphabet),
                 insertLeadingNewLine.Inverse());
 
         Console.WriteLine("Creating the composed transducer.");

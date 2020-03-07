@@ -8,7 +8,7 @@ public class TextRewriterTests
     public void OptionalRewriteRelTest()
     {
         // ab|bc -> d
-        var fst = FstExtensions.FromWordPair("ab", "d").Union(FstExtensions.FromWordPair("bc", "d"));
+        var fst = FstBuilder.FromWordPair("ab", "d").Union(FstBuilder.FromWordPair("bc", "d"));
         
         var opt = fst.ToOptionalRewriter(new HashSet<char> { 'a', 'b', 'c', 'd' });
 
@@ -23,7 +23,7 @@ public class TextRewriterTests
     public void ObligatoryRewriteRelTest()
     {
         // ab|bc -> d
-        var fst = FstExtensions.FromWordPair("ab", "d").Union(FstExtensions.FromWordPair("bc", "d"));
+        var fst = FstBuilder.FromWordPair("ab", "d").Union(FstBuilder.FromWordPair("bc", "d"));
         var obl = fst.ToRewriter(new HashSet<char> { 'a', 'b', 'c', 'd' });
 
         Assert.Equal(string.Empty, obl.Process(string.Empty).Single());
@@ -36,10 +36,10 @@ public class TextRewriterTests
     public void LmlRewriterTest()
     {
         var alphabet = new HashSet<char> {'a', 'b', 'c', 'd'};
-        var rule1 = FstExtensions.FromWordPair("ab", "d")
-            .Union(FstExtensions.FromWordPair("bc", "d"))
+        var rule1 = FstBuilder.FromWordPair("ab", "d")
+            .Union(FstBuilder.FromWordPair("bc", "d"))
             .Expand();
-        var rule2 = FstExtensions.FromWordPair("cd", "CD");
+        var rule2 = FstBuilder.FromWordPair("cd", "CD");
 
         var transducer = rule1.ToLmlRewriter(alphabet)
             .Compose(rule2.ToLmlRewriter(alphabet));
@@ -85,10 +85,10 @@ public class TextRewriterTests
     {
         // (a|b)* -> d -> D
         var alphabet = new HashSet<char> {'a', 'b', 'c', 'd', 'D' };
-        var rule = FstExtensions.FromWordPair("a", "d")
-            .Union(FstExtensions.FromWordPair("b", "d"))
+        var rule = FstBuilder.FromWordPair("a", "d")
+            .Union(FstBuilder.FromWordPair("b", "d"))
             .Star()
-            .Compose(FstExtensions.FromWordPair("d", "D"));
+            .Compose(FstBuilder.FromWordPair("d", "D"));
 
         var transducer = rule.ToLmlRewriter(alphabet);
 

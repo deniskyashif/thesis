@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public static class FstExtensions
+public static class FstOperations
 {
     static int NewState(IReadOnlyCollection<int> states) => states.Count;
 
@@ -19,13 +19,6 @@ public static class FstExtensions
             fst.Final.Select(s => s + k),
             fst.Transitions.Select(t => (t.From + k, t.In, t.Out, t.To + k)));
     }
-
-    public static Fst FromWordPair(string input, string output)
-        => new Fst(
-            new[] { 0, 1 },
-            new[] { 0 },
-            new[] { 1 },
-            new[] { (0, input, output, 1) });
 
     public static Fst Union(this Fst first, Fst second)
     {

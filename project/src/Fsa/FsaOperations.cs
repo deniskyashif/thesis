@@ -107,9 +107,6 @@ public static class FsaOperations
             automaton.Transitions);
     }
 
-    public static Fsa All(IEnumerable<char> alphabet)
-        => FsaBuilder.FromSymbolSet(alphabet).Star();
-
     /* Preserves the automaton's language but 
        does not preserve the language of the individual states */
     public static Fsa EpsilonFree(this Fsa automaton)

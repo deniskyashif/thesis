@@ -159,7 +159,7 @@ public class FsaTests
     [Fact]
     public void AllFsaTest()
     {
-        var fsa = FsaOperations.All(new HashSet<char> { 'a', 'b', 'c' });
+        var fsa = FsaBuilder.All(new HashSet<char> { 'a', 'b', 'c' });
 
         Assert.Equal(3, fsa.States.Count);
         Assert.Equal(1, fsa.Initial.Count);
@@ -202,7 +202,7 @@ public class FsaTests
     public void ComplexFsaConstructionTest2()
     {
         // .*@.*\.com
-        var all = FsaOperations.All(
+        var all = FsaBuilder.All(
             Enumerable.Range(97, 27).Select(Convert.ToChar).ToHashSet());
         var fsa = all
             .Concat(

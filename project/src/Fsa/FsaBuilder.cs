@@ -38,4 +38,7 @@ public static class FsaBuilder
             final: new int[] { final },
             transitions);
     }
+
+    public static Fsa All(IEnumerable<char> alphabet)
+        => FsaBuilder.FromSymbolSet(alphabet).Star();
 }

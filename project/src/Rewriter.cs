@@ -10,19 +10,19 @@ public static class Rewriter
 
     public static Fst ToRewriter(this Fst fst, ISet<char> alphabet)
     {
-        var all = FsaOperations.All(alphabet);
+        var all = FsaBuilder.All(alphabet);
 
         var notInDomain = all
             .Difference(all.Concat(fst.Domain()).Concat(all))
             .Identity()
-            .Union(FstExtensions.FromWordPair(string.Empty, string.Empty));
+            .Union(FstBuilder.FromWordPair(string.Empty, string.Empty));
 
         return notInDomain.Concat(fst.Concat(notInDomain).Star()).Expand().Trim();
     }
 
     public static Fst ToOptionalRewriter(this Fst fst, ISet<char> alphabet)
     {
-        var idAll = FsaOperations.All(alphabet).Identity();
+        var idAll = FsaBuilder.All(alphabet).Identity();
         return idAll.Concat(fst.Concat(idAll).Star()).Expand();
     }
 
@@ -31,9 +31,9 @@ public static class Rewriter
         if (alphabet.Intersect(new[] { lb, rb, cb }).Any())
             throw new ArgumentException("The alphabet contains invalid symbols.");
 
-        var alphabetLang = FsaOperations.All(alphabet);
+        var alphabetLang = FsaBuilder.All(alphabet);
         var allSymbols = alphabet.Concat(new[] { lb, rb, cb }).ToHashSet();
-        var allSymbolsLang = FsaOperations.All(allSymbols);
+        var allSymbolsLang = FsaBuilder.All(allSymbols);
 
         Fsa NotInLang(Fsa lang) => allSymbolsLang.Difference(lang);
         Fsa ContainLang(Fsa lang) => allSymbolsLang.Concat(lang, allSymbolsLang);
@@ -56,13 +56,13 @@ public static class Rewriter
         var leftToRight =
             alphabetLang.Identity()
                 .Concat(
-                    FstExtensions.FromWordPair(cb.ToString(), lb.ToString()),
+                    FstBuilder.FromWordPair(cb.ToString(), lb.ToString()),
                     IgnoreX(domain, allSymbols, new HashSet<char> { cb }).Identity(),
-                    FstExtensions.FromWordPair(string.Empty, rb.ToString()))
+                    FstBuilder.FromWordPair(string.Empty, rb.ToString()))
                 .Star()
                 .Concat(alphabetLang.Identity())
                 .Compose(
-                    FstExtensions.FromWordPair(cb.ToString(), string.Empty).ToRewriter(allSymbols));
+                    FstBuilder.FromWordPair(cb.ToString(), string.Empty).ToRewriter(allSymbols));
 
         var longestMatch =
             NotInLang(
@@ -74,8 +74,8 @@ public static class Rewriter
 
         var replacement =
             ToRewriter(
-                FstExtensions.FromWordPair(lb.ToString(), string.Empty)
-                    .Concat(rule, FstExtensions.FromWordPair(rb.ToString(), string.Empty)),
+                FstBuilder.FromWordPair(lb.ToString(), string.Empty)
+                    .Concat(rule, FstBuilder.FromWordPair(rb.ToString(), string.Empty)),
                 allSymbols);
 
         return initialMatch.Compose(leftToRight, longestMatch, replacement);
@@ -87,7 +87,7 @@ public static class Rewriter
             .FromSymbolSet(alphabet.Except(symbols))
             .Identity()
             .Union(
-                FstExtensions.Product(
+                FstOperations.Product(
                     FsaBuilder.FromWord(string.Empty),
                     FsaBuilder.FromSymbolSet(symbols)))
             .Star();

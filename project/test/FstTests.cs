@@ -95,8 +95,8 @@ public class FstTests
     [Fact]
     public void UnionFstTest()
     {
-        var first = FstExtensions.FromWordPair("a", "A");
-        var second = FstExtensions.FromWordPair("b", "B");
+        var first = FstBuilder.FromWordPair("a", "A");
+        var second = FstBuilder.FromWordPair("b", "B");
         var fst = first.Union(second);
 
         Assert.Equal(4, fst.States.Count);
@@ -111,8 +111,8 @@ public class FstTests
     [Fact]
     public void ConcatFstTest()
     {
-        var first = FstExtensions.FromWordPair("a", "A");
-        var second = FstExtensions.FromWordPair("b", "B");
+        var first = FstBuilder.FromWordPair("a", "A");
+        var second = FstBuilder.FromWordPair("b", "B");
         var fst = first.Concat(second);
 
         Assert.Equal(4, fst.States.Count);
@@ -127,8 +127,8 @@ public class FstTests
     [Fact]
     public void StarFstTest()
     {
-        var first = FstExtensions.FromWordPair("a", "A");
-        var second = FstExtensions.FromWordPair("b", "B");
+        var first = FstBuilder.FromWordPair("a", "A");
+        var second = FstBuilder.FromWordPair("b", "B");
         var fst = first.Union(second).Star();
 
         Assert.Equal(5, fst.States.Count);
@@ -147,8 +147,8 @@ public class FstTests
     [Fact]
     public void PlusFstTest()
     {
-        var first = FstExtensions.FromWordPair("a", "A");
-        var second = FstExtensions.FromWordPair("b", "B");
+        var first = FstBuilder.FromWordPair("a", "A");
+        var second = FstBuilder.FromWordPair("b", "B");
         var fst = first.Union(second).Plus();
 
         Assert.Equal(5, fst.States.Count);
@@ -167,7 +167,7 @@ public class FstTests
     [Fact]
     public void OptionFstTest()
     {
-        var fst = FstExtensions.FromWordPair("a", "A").Plus().Option();
+        var fst = FstBuilder.FromWordPair("a", "A").Plus().Option();
 
         Assert.Equal(4, fst.States.Count);
         Assert.Equal(2, fst.Initial.Count);
@@ -212,8 +212,8 @@ public class FstTests
     [Fact]
     public void EpsilonFreeConversionTest1()
     {
-        var first = FstExtensions.FromWordPair("a", "A");
-        var second = FstExtensions.FromWordPair("b", "B");
+        var first = FstBuilder.FromWordPair("a", "A");
+        var second = FstBuilder.FromWordPair("b", "B");
         var fst = first.Union(second).Star().EpsilonFree();
 
         Assert.Equal(5, fst.States.Count);
@@ -257,7 +257,7 @@ public class FstTests
     [Fact]
     public void ProductOfFsasToFstTest()
     {
-        var fst = FstExtensions.Product(
+        var fst = FstOperations.Product(
             FsaBuilder.FromWord("a"),
             FsaBuilder.FromWord("b"));
 
@@ -272,7 +272,7 @@ public class FstTests
     [Fact]
     public void ExpandSimpleFstTest()
     {
-        var fst = FstExtensions.FromWordPair("abc", "xy").Expand();
+        var fst = FstBuilder.FromWordPair("abc", "xy").Expand();
 
         Assert.Equal(4, fst.States.Count);
         Assert.Equal(3, fst.Transitions.Count);
@@ -283,8 +283,8 @@ public class FstTests
     [Fact]
     public void ExpandFstTest()
     {
-        var fst = FstExtensions.FromWordPair("abc", "xy")
-            .Union(FstExtensions.FromWordPair("p", "q"))
+        var fst = FstBuilder.FromWordPair("abc", "xy")
+            .Union(FstBuilder.FromWordPair("p", "q"))
             .Expand();
 
         Assert.Equal(6, fst.States.Count);
@@ -297,8 +297,8 @@ public class FstTests
     [Fact]
     public void ExpandFstTest1()
     {
-        var fst = FstExtensions.FromWordPair("abc", "xy")
-            .Union(FstExtensions.FromWordPair("pp", "qq"))
+        var fst = FstBuilder.FromWordPair("abc", "xy")
+            .Union(FstBuilder.FromWordPair("pp", "qq"))
             .Expand();
 
         Assert.Equal(7, fst.States.Count);
@@ -311,8 +311,8 @@ public class FstTests
     [Fact]
     public void ComposeSimpleFstTest()
     {
-        var first = FstExtensions.FromWordPair("ab", "xy");
-        var second = FstExtensions.FromWordPair("xy", "zz");
+        var first = FstBuilder.FromWordPair("ab", "xy");
+        var second = FstBuilder.FromWordPair("xy", "zz");
         var composed = first.Compose(second);
 
         Assert.Equal(3, composed.States.Count);
@@ -326,9 +326,9 @@ public class FstTests
     [Fact]
     public void ComposeMultipleFstTest()
     {
-        var first = FstExtensions.FromWordPair("ab", "x").Star();
-        var second = FstExtensions.FromWordPair("x", "1").Star();
-        var third = FstExtensions.FromWordPair("1", "2").Star();
+        var first = FstBuilder.FromWordPair("ab", "x").Star();
+        var second = FstBuilder.FromWordPair("x", "1").Star();
+        var third = FstBuilder.FromWordPair("1", "2").Star();
         var composed = first.Compose(second, third);
 
         Assert.Equal(string.Empty, composed.Process(string.Empty).Single());
@@ -340,11 +340,11 @@ public class FstTests
     [Fact]
     public void ComposeFstTest()
     {
-        var first = FstExtensions.FromWordPair("ab", "x")
+        var first = FstBuilder.FromWordPair("ab", "x")
             .Plus()
-            .Concat(FstExtensions.FromWordPair("c", "d").Option());
-        var second = FstExtensions.FromWordPair("x", "1")
-            .Union(FstExtensions.FromWordPair("d", "d"))
+            .Concat(FstBuilder.FromWordPair("c", "d").Option());
+        var second = FstBuilder.FromWordPair("x", "1")
+            .Union(FstBuilder.FromWordPair("d", "d"))
             .Plus();
         var composed = first.Compose(second);
 
@@ -358,9 +358,9 @@ public class FstTests
     [Fact]
     public void ToRealTimeFstTest()
     {
-        var fst = FstExtensions.FromWordPair(string.Empty, "u")
-            .Concat(FstExtensions.FromWordPair("a", "v"))
-            .Concat(FstExtensions.FromWordPair(string.Empty, "w"));
+        var fst = FstBuilder.FromWordPair(string.Empty, "u")
+            .Concat(FstBuilder.FromWordPair("a", "v"))
+            .Concat(FstBuilder.FromWordPair(string.Empty, "w"));
         var realTime = fst.ToRealTime();
 
         Assert.True(realTime.Transducer.Transitions.All(tr => !string.IsNullOrEmpty(tr.In)));
