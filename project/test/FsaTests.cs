@@ -8,7 +8,7 @@ public class FsaTests
     [Fact]
     public void EpsilonFsaBuilderTest()
     {
-        var fsa = FsaExtensions.FromEpsilon();
+        var fsa = FsaBuilder.FromEpsilon();
 
         Assert.Single(fsa.States);
         Assert.False(fsa.Recognize("a"));
@@ -19,7 +19,7 @@ public class FsaTests
     [Fact]
     public void WordFsaBuilderTest()
     {
-        var fsa = FsaExtensions.FromWord("abc");
+        var fsa = FsaBuilder.FromWord("abc");
 
         Assert.Equal(4, fsa.States.Count);
         Assert.False(fsa.Recognize(string.Empty));
@@ -31,7 +31,7 @@ public class FsaTests
     [Fact]
     public void FromSymbolSetFsaTest()
     {
-        var fsa = FsaExtensions.FromSymbolSet(new HashSet<char> { 'a', 'b', 'c' });
+        var fsa = FsaBuilder.FromSymbolSet(new HashSet<char> { 'a', 'b', 'c' });
 
         Assert.Equal(2, fsa.States.Count);
         Assert.False(fsa.Recognize(string.Empty));
@@ -43,8 +43,8 @@ public class FsaTests
     [Fact]
     public void ConcatFsaTest()
     {
-        var fsa1 = FsaExtensions.FromWord("abc");
-        var fsa2 = FsaExtensions.FromWord("de");
+        var fsa1 = FsaBuilder.FromWord("abc");
+        var fsa2 = FsaBuilder.FromWord("de");
         var fsa = fsa1.Concat(fsa2);
 
         Assert.Equal(7, fsa.States.Count);
@@ -60,9 +60,9 @@ public class FsaTests
     [Fact]
     public void ConcatMultipleFsaTest()
     {
-        var fsa1 = FsaExtensions.FromWord("ab");
-        var fsa2 = FsaExtensions.FromWord("cde");
-        var fsa3 = FsaExtensions.FromWord("f").Star();
+        var fsa1 = FsaBuilder.FromWord("ab");
+        var fsa2 = FsaBuilder.FromWord("cde");
+        var fsa3 = FsaBuilder.FromWord("f").Star();
         var fsa = fsa1.Concat(fsa2, fsa3);
 
         Assert.True(fsa.Recognize("abcdef"));
@@ -73,8 +73,8 @@ public class FsaTests
     [Fact]
     public void UnionFsaTest()
     {
-        var fsa1 = FsaExtensions.FromWord("abc");
-        var fsa2 = FsaExtensions.FromWord("de");
+        var fsa1 = FsaBuilder.FromWord("abc");
+        var fsa2 = FsaBuilder.FromWord("de");
         var fsa = fsa1.Union(fsa2);
 
         Assert.Equal(7, fsa.States.Count);
@@ -90,8 +90,8 @@ public class FsaTests
     [Fact]
     public void UnionEpsilonFsaTest()
     {
-        var fsa1 = FsaExtensions.FromWord("abc");
-        var fsa2 = FsaExtensions.FromEpsilon();
+        var fsa1 = FsaBuilder.FromWord("abc");
+        var fsa2 = FsaBuilder.FromEpsilon();
         var fsa = fsa1.Union(fsa2);
 
         Assert.Equal(5, fsa.States.Count);
@@ -106,7 +106,7 @@ public class FsaTests
     [Fact]
     public void StarFsaTest()
     {
-        var fsa = FsaExtensions.FromWord("a").Star();
+        var fsa = FsaBuilder.FromWord("a").Star();
 
         Assert.Equal(3, fsa.States.Count);
         Assert.Single(fsa.Initial);
@@ -118,7 +118,7 @@ public class FsaTests
     [Fact]
     public void StarFsaTest1()
     {
-        var fsa = FsaExtensions.FromWord("abc").Star();
+        var fsa = FsaBuilder.FromWord("abc").Star();
 
         Assert.Equal(5, fsa.States.Count);
         Assert.Single(fsa.Initial);
@@ -133,7 +133,7 @@ public class FsaTests
     [Fact]
     public void PlusFsaTest()
     {
-        var fsa = FsaExtensions.FromWord("a").Plus();
+        var fsa = FsaBuilder.FromWord("a").Plus();
 
         Assert.Equal(3, fsa.States.Count);
         Assert.Single(fsa.Initial);
@@ -146,7 +146,7 @@ public class FsaTests
     [Fact]
     public void OptionFsaTest()
     {
-        var fsa = FsaExtensions.FromWord("ab").Option();
+        var fsa = FsaBuilder.FromWord("ab").Option();
 
         Assert.Equal(4, fsa.States.Count);
         Assert.Equal(2, fsa.Initial.Count);
@@ -159,7 +159,7 @@ public class FsaTests
     [Fact]
     public void AllFsaTest()
     {
-        var fsa = FsaExtensions.All(new HashSet<char> { 'a', 'b', 'c' });
+        var fsa = FsaOperations.All(new HashSet<char> { 'a', 'b', 'c' });
 
         Assert.Equal(3, fsa.States.Count);
         Assert.Equal(1, fsa.Initial.Count);
@@ -174,9 +174,9 @@ public class FsaTests
     {
         // ab*c
         var fsa =
-            FsaExtensions.FromWord("a").Concat(
-                FsaExtensions.FromWord("b").Star(),
-                FsaExtensions.FromWord("c"));
+            FsaBuilder.FromWord("a").Concat(
+                FsaBuilder.FromWord("b").Star(),
+                FsaBuilder.FromWord("c"));
 
         Assert.False(fsa.Recognize(string.Empty));
         Assert.False(fsa.Recognize("ab"));
@@ -189,10 +189,10 @@ public class FsaTests
     public void ComplexFsaConstructionTest1()
     {
         // (a|b)*c
-        var fsa = FsaExtensions.FromWord("a")
-            .Union(FsaExtensions.FromWord("b"))
+        var fsa = FsaBuilder.FromWord("a")
+            .Union(FsaBuilder.FromWord("b"))
             .Star()
-            .Concat(FsaExtensions.FromWord("c"));
+            .Concat(FsaBuilder.FromWord("c"));
 
         Assert.DoesNotContain(new[] { "ca", "aaba", string.Empty, "cc" }, fsa.Recognize);
         Assert.True(new[] { "abbac", "ac", "bc", "ababbbbac", "c" }.All(fsa.Recognize));
@@ -202,13 +202,13 @@ public class FsaTests
     public void ComplexFsaConstructionTest2()
     {
         // .*@.*\.com
-        var all = FsaExtensions.All(
+        var all = FsaOperations.All(
             Enumerable.Range(97, 27).Select(Convert.ToChar).ToHashSet());
         var fsa = all
             .Concat(
-                FsaExtensions.FromWord("@"),
+                FsaBuilder.FromWord("@"),
                 all,
-                FsaExtensions.FromWord(".com"))
+                FsaBuilder.FromWord(".com"))
             .Determinize();
 
         Assert.DoesNotContain(new[] { "me@yahoo.co", "you@@gmail.com", "info@aol.cc", "about@.mail.comm" }, fsa.Recognize);
@@ -219,7 +219,7 @@ public class FsaTests
     public void EpsilonFreeSimpleConstructionTest()
     {
         // a*
-        var fsa = FsaExtensions.FromWord("a").Star().EpsilonFree();
+        var fsa = FsaBuilder.FromWord("a").Star().EpsilonFree();
 
         Assert.DoesNotContain(fsa.Transitions, t => string.IsNullOrEmpty(t.Via));
         Assert.DoesNotContain(new[] { "ca", "aaba", "b", "cc" }, fsa.Recognize);
@@ -230,10 +230,10 @@ public class FsaTests
     public void EpsilonFreeConstructionTest()
     {
         // (a|b)+c
-        var fsa = FsaExtensions.FromWord("a")
-            .Union(FsaExtensions.FromWord("b"))
+        var fsa = FsaBuilder.FromWord("a")
+            .Union(FsaBuilder.FromWord("b"))
             .Plus()
-            .Concat(FsaExtensions.FromWord("c"))
+            .Concat(FsaBuilder.FromWord("c"))
             .EpsilonFree();
 
         Assert.DoesNotContain(fsa.Transitions, t => string.IsNullOrEmpty(t.Via));
@@ -437,7 +437,7 @@ public class FsaTests
                     {(3, 'b'), 2 },
             });
 
-        var (states, transitions) = FsaExtensions.Product(
+        var (states, transitions) = FsaOperations.Product(
             (first.Initial, first.Transitions),
             (second.Initial, second.Transitions));
 
@@ -489,9 +489,9 @@ public class FsaTests
     [Fact]
     public void DifferenceOfFsaTest()
     {
-        var fsa = FsaExtensions.FromSymbolSet(new HashSet<char> { 'a', 'b', 'c' });
-        var first = FsaExtensions.Star(fsa);
-        var second = FsaExtensions.Plus(fsa);
+        var fsa = FsaBuilder.FromSymbolSet(new HashSet<char> { 'a', 'b', 'c' });
+        var first = fsa.Star();
+        var second = fsa.Plus();
         var words = new[] { "abc", "a", "aa", "abc", "c", "ccba" };
 
         Assert.True(words.All(first.Recognize));
@@ -510,12 +510,12 @@ public class FsaTests
     {
         // a*b
         var first =
-            FsaExtensions.Concat(
-                FsaExtensions.Star(
-                    FsaExtensions.FromWord("a")),
-                FsaExtensions.FromWord("b"));
+            FsaOperations.Concat(
+                FsaOperations.Star(
+                    FsaBuilder.FromWord("a")),
+                FsaBuilder.FromWord("b"));
         // ab|b
-        var second = FsaExtensions.FromWord("b");
+        var second = FsaBuilder.FromWord("b");
 
         Assert.True(new[] { "ab", "b", "aaaaab", "aab" }.All(first.Recognize));
         Assert.True(new[] { "b" }.All(second.Recognize));
@@ -530,13 +530,13 @@ public class FsaTests
     [Fact]
     public void DifferenceOfFsaTest2()
     {
-        var universal = FsaExtensions.Star(
-            FsaExtensions.FromSymbolSet(new HashSet<char> { 'a', 'b', 'c' }));
+        var universal = FsaOperations.Star(
+            FsaBuilder.FromSymbolSet(new HashSet<char> { 'a', 'b', 'c' }));
 
         // ab+c
-        var fsa = FsaExtensions.FromWord("a")
-            .Concat(FsaExtensions.FromWord("b").Plus())
-            .Concat(FsaExtensions.FromWord("c"));
+        var fsa = FsaBuilder.FromWord("a")
+            .Concat(FsaBuilder.FromWord("b").Plus())
+            .Concat(FsaBuilder.FromWord("c"));
 
         // not in ab+c
         var diff = universal.Difference(fsa);

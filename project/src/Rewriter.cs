@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -9,7 +10,7 @@ public static class Rewriter
 
     public static Fst ToRewriter(this Fst fst, ISet<char> alphabet)
     {
-        var all = FsaExtensions.All(alphabet);
+        var all = FsaOperations.All(alphabet);
 
         var notInDomain = all
             .Difference(all.Concat(fst.Domain()).Concat(all))
@@ -21,15 +22,18 @@ public static class Rewriter
 
     public static Fst ToOptionalRewriter(this Fst fst, ISet<char> alphabet)
     {
-        var idAll = FsaExtensions.All(alphabet).Identity();
+        var idAll = FsaOperations.All(alphabet).Identity();
         return idAll.Concat(fst.Concat(idAll).Star()).Expand();
     }
 
     public static Fst ToLmlRewriter(this Fst rule, ISet<char> alphabet)
     {
-        var alphabetLang = FsaExtensions.All(alphabet);
+        if (alphabet.Intersect(new[] { lb, rb, cb }).Any())
+            throw new ArgumentException("The alphabet contains invalid symbols.");
+
+        var alphabetLang = FsaOperations.All(alphabet);
         var allSymbols = alphabet.Concat(new[] { lb, rb, cb }).ToHashSet();
-        var allSymbolsLang = FsaExtensions.All(allSymbols);
+        var allSymbolsLang = FsaOperations.All(allSymbols);
 
         Fsa NotInLang(Fsa lang) => allSymbolsLang.Difference(lang);
         Fsa ContainLang(Fsa lang) => allSymbolsLang.Concat(lang, allSymbolsLang);
@@ -40,12 +44,12 @@ public static class Rewriter
 
         var domain = rule.Domain();
 
-        var initialMatch = 
+        var initialMatch =
             Intro(allSymbols, new HashSet<char> { cb })
                 .Compose(
                     LiffR(
                         allSymbolsLang,
-                        FsaExtensions.FromWord(cb.ToString()),
+                        FsaBuilder.FromWord(cb.ToString()),
                         XIgnore(domain, allSymbols, new HashSet<char> { cb }))
                     .Identity());
 
@@ -60,15 +64,15 @@ public static class Rewriter
                 .Compose(
                     FstExtensions.FromWordPair(cb.ToString(), string.Empty).ToRewriter(allSymbols));
 
-        var longestMatch = 
+        var longestMatch =
             NotInLang(
                 ContainLang(
-                    FsaExtensions.FromWord(lb.ToString())
+                    FsaBuilder.FromWord(lb.ToString())
                         .Concat(IgnoreX(domain, allSymbols, new HashSet<char> { lb, rb })
-                            .Intersect(ContainLang(FsaExtensions.FromWord(rb.ToString()))))))
+                            .Intersect(ContainLang(FsaBuilder.FromWord(rb.ToString()))))))
             .Identity();
 
-        var replacement = 
+        var replacement =
             ToRewriter(
                 FstExtensions.FromWordPair(lb.ToString(), string.Empty)
                     .Concat(rule, FstExtensions.FromWordPair(rb.ToString(), string.Empty)),
@@ -79,20 +83,20 @@ public static class Rewriter
 
     static Fst Intro(ISet<char> alphabet, ISet<char> symbols)
     {
-        return FsaExtensions
+        return FsaBuilder
             .FromSymbolSet(alphabet.Except(symbols))
             .Identity()
             .Union(
                 FstExtensions.Product(
-                    FsaExtensions.FromWord(string.Empty),
-                    FsaExtensions.FromSymbolSet(symbols)))
+                    FsaBuilder.FromWord(string.Empty),
+                    FsaBuilder.FromSymbolSet(symbols)))
             .Star();
     }
 
     static Fst IntroX(ISet<char> alphabet, ISet<char> symbols)
     {
         return Intro(alphabet, symbols)
-            .Concat(FsaExtensions
+            .Concat(FsaBuilder
                 .FromSymbolSet(alphabet.Except(symbols))
                 .Identity())
             .Option();
@@ -100,7 +104,7 @@ public static class Rewriter
 
     static Fst Xintro(ISet<char> alphabet, ISet<char> symbols)
     {
-        return FsaExtensions
+        return FsaBuilder
             .FromSymbolSet(alphabet.Except(symbols))
             .Identity()
             .Concat(Intro(alphabet, symbols))

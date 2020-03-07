@@ -4,7 +4,6 @@ using System.Text;
 
 public class Bimachine
 {
-
     public Bimachine(
         Dfsa left,
         Dfsa right,
@@ -22,9 +21,11 @@ public class Bimachine
     public string Process(string word)
     {
         var leftRun = this.Left.RecognitionPath(word);
-        var rightRun = this.Right.RecognitionPath(Reverse(word));
+        if (!leftRun.Success) 
+            throw new ArgumentException("Unrecognized input.");
 
-        if (!(leftRun.Success && rightRun.Success))
+        var rightRun = this.Right.RecognitionPath(Reverse(word));
+        if (!rightRun.Success)
             throw new ArgumentException("Unrecognized input.");
 
         var output = new StringBuilder();

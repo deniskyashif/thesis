@@ -196,8 +196,8 @@ public class FstTests
         var fst = new Fst(states, initial, final, transitions).EpsilonFree();
 
         Assert.Equal(6, fst.Transitions.Count);
-        Assert.NotNull(fst.Transitions.SingleOrDefault(t => t == (0, "a", "y", 1)));
-        Assert.NotNull(fst.Transitions.SingleOrDefault(t => t == (2, "c", "z", 1)));
+        Assert.Single(fst.Transitions.Where(t => t == (0, "a", "y", 1)));
+        Assert.Single(fst.Transitions.Where(t => t == (2, "c", "z", 1)));
 
         var res1 = fst.Process("ab");
         Assert.Equal(2, res1.Count);
@@ -258,8 +258,8 @@ public class FstTests
     public void ProductOfFsasToFstTest()
     {
         var fst = FstExtensions.Product(
-            FsaExtensions.FromWord("a"),
-            FsaExtensions.FromWord("b"));
+            FsaBuilder.FromWord("a"),
+            FsaBuilder.FromWord("b"));
 
         Assert.Equal(4, fst.States.Count);
         Assert.Empty(fst.Transitions.Where(t => string.IsNullOrEmpty(t.In) && string.IsNullOrEmpty(t.Out)));
