@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
-public class TextRewriterTests
+public class RewriterTests
 {
     [Fact]
     public void OptionalRewriteRelTest()
@@ -81,7 +81,7 @@ public class TextRewriterTests
     }
 
     [Fact]
-    public void LmlRewriterTest2()
+    public void ComposedLmlRewriterTest()
     {
         // (a|b)* -> d -> D
         var alphabet = new HashSet<char> {'a', 'b', 'c', 'd', 'D' };
@@ -100,5 +100,41 @@ public class TextRewriterTests
         Assert.Equal("DDDDDDDDcDDD", bm.Process("abababbbcbba"));
         Assert.Equal("DDDD", bm.Process("aaaa"));
         Assert.Equal("cc", bm.Process("cc"));
+    }
+
+    [Fact]
+    public void ClearWhiteSpaceRewriterTest()
+    {
+        // WS+ -> ''
+        var whitespaces = new[] { ' ', '\t' };
+        var alphabet = new[] { 'a', 'b' }.Concat(whitespaces).ToHashSet();
+
+        var clearWS = FsaBuilder.FromSymbolSet(whitespaces)
+            .Plus()
+            .Product(FsaBuilder.FromEpsilon())
+            .ToLmlRewriter(alphabet)
+            .ToBimachine(alphabet);
+
+        Assert.Equal(string.Empty, clearWS.Process("          "));
+        Assert.Equal("abbaabbbabbabb", clearWS.Process("a bbaab  bbab     bab b"));
+        Assert.Equal("ababb", clearWS.Process("ababb"));
+    }
+
+    [Fact]
+    public void InsertNewLineAfterSymbolTest()
+    {
+        // a+ -> a+'\n'
+        var alphabet = new HashSet<char> { 'a', 'b', 'c', '\n' };
+
+        var fst = FsaBuilder.FromSymbolSet(new[] { 'a' })
+            .Plus()
+            .Identity()
+            .Concat(FstBuilder.FromWordPair(string.Empty, "\n"))
+            .ToLmlRewriter(alphabet)
+            .ToBimachine(alphabet);
+
+        Assert.Equal("baa\nbca\nba\n", fst.Process("baabcaba"));
+        Assert.Equal("bbcbcb", fst.Process("bbcbcb"));
+        Assert.Equal("a\nba\nbb", fst.Process("ababb"));
     }
 }

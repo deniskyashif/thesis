@@ -267,6 +267,60 @@ public static class FsaOperations
         return new Dfsa(renamedStates, 0, finalStates, dfsaTransitions);
     }
 
+    public static Fst Product(this Fsa first, Fsa second)
+    {
+        var firstTransWithEpsilon = first.Transitions.Union(
+            first.States.Select(s => (From: s, Via: string.Empty, To: s)));
+        var secondTransWithEpsilon = second.Transitions.Union(
+            second.States.Select(s => (From: s, Via: string.Empty, To: s)));
+
+        var firstTransitionsPerState = firstTransWithEpsilon
+            .GroupBy(t => t.From)
+            .ToDictionary(g => g.Key, g => g);
+        var secondTransitionsPerState = secondTransWithEpsilon
+            .GroupBy(t => t.From)
+            .ToDictionary(g => g.Key, g => g);
+
+        var productStates = new List<(int, int)>();
+
+        foreach (var i1 in first.Initial)
+            foreach (var i2 in second.Initial)
+                productStates.Add((i1, i2));
+
+        var transitions = new HashSet<(int, string, string, int)>();
+
+        for (int n = 0; n < productStates.Count; n++)
+        {
+            var (p1, p2) = productStates[n];
+            var p1Trans = firstTransitionsPerState[p1];
+            var p2Trans = secondTransitionsPerState[p2];
+            var productTrans = new List<(string, string, int, int)>();
+
+            foreach (var tr1 in p1Trans)
+                foreach (var tr2 in p2Trans)
+                    productTrans.Add((tr1.Via, tr2.Via, tr1.To, tr2.To));
+
+            foreach (var state in productTrans.Select(t => (t.Item3, t.Item4)))
+                if (!productStates.Contains(state))
+                    productStates.Add(state);
+
+            foreach (var tr in productTrans)
+                transitions.Add((n, tr.Item1, tr.Item2, productStates.IndexOf((tr.Item3, tr.Item4))));
+        }
+
+        var states = Enumerable.Range(0, productStates.Count);
+
+        var initial = states.Where(s =>
+            first.Initial.Contains(productStates[s].Item1) &&
+            second.Initial.Contains(productStates[s].Item2));
+
+        var final = states.Where(s =>
+            first.Final.Contains(productStates[s].Item1) &&
+            second.Final.Contains(productStates[s].Item2));
+
+        return new Fst(states, initial, final, transitions).EpsilonFree().Trim();
+    }
+
     public static (IReadOnlyList<(int, int)> States, IReadOnlyDictionary<(int From, char Via), int> Transitions)
         Product(
             (int Initial, IReadOnlyDictionary<(int From, char Via), int> Transitions) first,

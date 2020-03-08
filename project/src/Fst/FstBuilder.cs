@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Linq;
+
 public static class FstBuilder
 {
     public static Fst FromWordPair(string input, string output)

@@ -255,21 +255,6 @@ public class FstTests
     }
 
     [Fact]
-    public void ProductOfFsasToFstTest()
-    {
-        var fst = FstOperations.Product(
-            FsaBuilder.FromWord("a"),
-            FsaBuilder.FromWord("b"));
-
-        Assert.Equal(4, fst.States.Count);
-        Assert.Empty(fst.Transitions.Where(t => string.IsNullOrEmpty(t.In) && string.IsNullOrEmpty(t.Out)));
-
-        Assert.Equal("b", fst.Process("a").Single());
-        Assert.Empty(fst.Process(string.Empty));
-        Assert.Empty(fst.Process("b"));
-    }
-
-    [Fact]
     public void ExpandSimpleFstTest()
     {
         var fst = FstBuilder.FromWordPair("abc", "xy").Expand();

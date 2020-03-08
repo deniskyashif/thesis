@@ -90,9 +90,7 @@ public static class Rewriter
             .FromSymbolSet(alphabet.Except(symbols))
             .Identity()
             .Union(
-                FstOperations.Product(
-                    FsaBuilder.FromWord(string.Empty),
-                    FsaBuilder.FromSymbolSet(symbols)))
+                FsaBuilder.FromWord(string.Empty).Product(FsaBuilder.FromSymbolSet(symbols)))
             .Star();
     }
 
