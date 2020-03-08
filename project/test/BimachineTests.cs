@@ -35,9 +35,28 @@ public class BimachineTests
             new[] { (0, "a", "x", 1), (0, "a", "yyyy", 2), (2, "b", "", 3) });
 
         var bm = fst.ToBimachine(new HashSet<char> { 'a', 'b' });
+
         Assert.Equal("x", bm.Process("a"));
         Assert.Equal("yyyy", bm.Process("ab"));
         Assert.Throws<ArgumentException>(() => bm.Process("aa"));
         Assert.Throws<ArgumentException>(() => bm.Process("abb"));
+    }
+
+    [Fact]
+    public void ConstructionFromFstTest2()
+    {
+        // <a,a>* U (<a,''>* . <b,b>)
+        var fst = FstBuilder.FromWordPair("a", "a")
+            .Star()
+            .Union(
+                FstBuilder.FromWordPair("a", string.Empty)
+                    .Star()
+                    .Concat(FstBuilder.FromWordPair("b", "b")));
+
+        var bm = fst.ToBimachine(new HashSet<char> { 'a', 'b' });
+
+        Assert.Equal("b", bm.Process("aab"));
+        Assert.Equal("aa", bm.Process("aa"));
+        Assert.Equal("b", bm.Process("aaaaaab"));
     }
 }

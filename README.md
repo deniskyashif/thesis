@@ -1,1 +1,1 @@
-Finite-state automata and transducer implementations including operations on these devices.
+Finite-state device constructions and operations.
