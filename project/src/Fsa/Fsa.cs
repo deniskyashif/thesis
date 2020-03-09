@@ -7,7 +7,8 @@ using System.Linq;
 
 public class Fsa
 {
-    private readonly Lazy<IReadOnlyDictionary<int, HashSet<int>>> epsilonClosureOf;
+    private readonly Lazy<IDictionary<int, HashSet<int>>> epsilonClosureOf;
+    private readonly Lazy<IDictionary<(int, string), HashSet<int>>> transPerStateAndLabel;
 
     public Fsa(
         IEnumerable<int> states,
@@ -20,8 +21,12 @@ public class Fsa
         this.Final = final.ToHashSet();
         this.Transitions = transitions.ToHashSet();
 
-        this.epsilonClosureOf = new Lazy<IReadOnlyDictionary<int, HashSet<int>>>(
+        this.epsilonClosureOf = new Lazy<IDictionary<int, HashSet<int>>>(
             () => this.PrecomputeEpsilonClosure());
+        this.transPerStateAndLabel = new Lazy<IDictionary<(int, string), HashSet<int>>>(
+            () => this.Transitions
+                .GroupBy(t => (t.From, t.Label), t => t.To)
+                .ToDictionary(g => g.Key, g => g.ToHashSet()));
     }
 
     public IReadOnlyCollection<int> States { get; private set; }
@@ -61,12 +66,15 @@ public class Fsa
         return Array.Empty<int>();
     }
 
-    IEnumerable<int> GetTransitions(int state, string label) => 
-        this.Transitions
-            .Where(t => (state, label) == (t.From, t.Label))
-            .Select(t => t.To);
+    IEnumerable<int> GetTransitions(int state, string label)
+    {
+        if (this.transPerStateAndLabel.Value.ContainsKey((state, label)))
+            return this.transPerStateAndLabel.Value[(state, label)];
 
-    IReadOnlyDictionary<int, HashSet<int>> PrecomputeEpsilonClosure() => 
+        return Array.Empty<int>();
+    }
+
+    IDictionary<int, HashSet<int>> PrecomputeEpsilonClosure() => 
         this.Transitions
             .Where(t => string.IsNullOrEmpty(t.Label))
             .Select(t => (t.From, t.To))
