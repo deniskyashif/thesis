@@ -133,17 +133,17 @@ public static class FstOperations
         var leadingToFinal = fst.Final.Union(
             transitiveClosure.Where(p => fst.Final.Contains(p.To)).Select(p => p.From));
 
-        var states = reachableFromInitial.Intersect(leadingToFinal).ToArray();
+        var states = reachableFromInitial.Intersect(leadingToFinal).ToList();
         var initial = states.Intersect(fst.Initial);
         var final = states.Intersect(fst.Final);
         var transitions = fst.Transitions
             .Where(t => states.Contains(t.From) && states.Contains(t.To))
-            .Select(t => (Array.IndexOf(states, t.From), t.In, t.Out, Array.IndexOf(states, t.To)));
+            .Select(t => (states.IndexOf(t.From), t.In, t.Out, states.IndexOf(t.To)));
 
         return new Fst(
-            states.Select(s => Array.IndexOf(states, s)),
-            initial.Select(s => Array.IndexOf(states, s)),
-            final.Select(s => Array.IndexOf(states, s)),
+            states.Select(s => states.IndexOf(s)),
+            initial.Select(s => states.IndexOf(s)),
+            final.Select(s => states.IndexOf(s)),
             transitions);
     }
 
@@ -182,13 +182,13 @@ public static class FstOperations
 
         var multiWordTransitions = fst.Transitions
             .Where(t => t.In.Length > 1 || t.Out.Length > 1)
-            .ToArray();
+            .ToList();
         var states = fst.States.ToList();
         var transitions = fst.Transitions
             .Where(t => !(t.In.Length > 1 || t.Out.Length > 1))
             .ToList();
 
-        for (int n = 0; n < multiWordTransitions.Length; n++)
+        for (int n = 0; n < multiWordTransitions.Count; n++)
         {
             var curr = multiWordTransitions[n];
             var longerWordLen = Math.Max(curr.In.Length, curr.Out.Length);
@@ -199,7 +199,7 @@ public static class FstOperations
             var stateSeq = (new[] { curr.From })
                 .Concat(intermediateStates)
                 .Concat(new[] { curr.To })
-                .ToArray();
+                .ToList();
 
             for (var i = 0; i < longerWordLen; i++)
             {
@@ -244,7 +244,7 @@ public static class FstOperations
             var composedTransitions = firstOutgoingTransitions[curr.Item1]
                 .SelectMany(t1 => secondOutgoingTransitions[curr.Item2]
                     .Where(t2 => t2.In == t1.Out) // (a, b) * (b, c) -> (a, c)
-                    .Select(t2 => (Via: (t1.In, t2.Out), To: (t1.To, t2.To))));
+                    .Select(t2 => (Label: (t1.In, t2.Out), To: (t1.To, t2.To))));
 
             foreach (var tr in composedTransitions)
             {
@@ -256,7 +256,7 @@ public static class FstOperations
             }
 
             transitions.UnionWith(
-                composedTransitions.Select(t => (n, t.Via.In, t.Via.Out, states.IndexOf(t.To))));
+                composedTransitions.Select(t => (n, t.Label.In, t.Label.Out, states.IndexOf(t.To))));
         }
 
         var stateIndices = Enumerable.Range(0, states.Count);

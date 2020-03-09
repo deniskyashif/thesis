@@ -29,7 +29,7 @@ public class Fst
     public IReadOnlyCollection<(int From, string In, string Out, int To)> Transitions { get; private set; }
 
     public ICollection<string> Process(string word) =>
-        this.Process(word.ToCharArray().Select(x => x.ToString()).ToArray());
+        this.Process(word.ToCharArray().Select(x => x.ToString()).ToList());
 
     public ISet<string> Process(IList<string> tokens)
     {

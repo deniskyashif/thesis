@@ -221,7 +221,7 @@ public class FsaTests
         // a*
         var fsa = FsaBuilder.FromWord("a").Star().EpsilonFree();
 
-        Assert.DoesNotContain(fsa.Transitions, t => string.IsNullOrEmpty(t.Via));
+        Assert.DoesNotContain(fsa.Transitions, t => string.IsNullOrEmpty(t.Label));
         Assert.DoesNotContain(new[] { "ca", "aaba", "b", "cc" }, fsa.Recognize);
         Assert.True(new[] { "aaaa", "a", "aa", string.Empty, "aaaaaaaa" }.All(fsa.Recognize));
     }
@@ -236,7 +236,7 @@ public class FsaTests
             .Concat(FsaBuilder.FromWord("c"))
             .EpsilonFree();
 
-        Assert.DoesNotContain(fsa.Transitions, t => string.IsNullOrEmpty(t.Via));
+        Assert.DoesNotContain(fsa.Transitions, t => string.IsNullOrEmpty(t.Label));
         Assert.True(new[] { "abbac", "ac", "bc", "ababbbbac", "aac" }.All(fsa.Recognize));
         Assert.DoesNotContain(new[] { "ca", "aaba", string.Empty, "cc", "c" }, fsa.Recognize);
     }

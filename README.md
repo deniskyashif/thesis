@@ -1,4 +1,4 @@
-## Lexical Analysis using Bimachines
+# Lexical Analysis using Bimachines
 
 ### Finite-state device constructions and operations
 

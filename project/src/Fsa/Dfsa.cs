@@ -21,7 +21,7 @@ public class Dfsa
 
     public IReadOnlyCollection<int> Final { get; private set; }
 
-    public IReadOnlyDictionary<(int From, char Via), int> Transitions { get; private set; }
+    public IReadOnlyDictionary<(int From, char Label), int> Transitions { get; private set; }
 
     public bool Recognize(string word)
     {

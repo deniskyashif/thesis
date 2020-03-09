@@ -22,7 +22,7 @@ public static class FsaOperations
             automaton.States.Select(s => s + k),
             automaton.Initial.Select(s => s + k),
             automaton.Final.Select(s => s + k),
-            automaton.Transitions.Select(t => (t.From + k, t.Via, t.To + k)));
+            automaton.Transitions.Select(t => (t.From + k, t.Label, t.To + k)));
     }
 
     public static Fsa Concat(this Fsa first, Fsa second)
@@ -39,7 +39,7 @@ public static class FsaOperations
 
         foreach (var tr in first.Transitions.Where(t => first.Final.Contains(t.To)))
             foreach (var state in second.Initial)
-                transitions.Add((tr.From, tr.Via, state));
+                transitions.Add((tr.From, tr.Label, state));
 
         return new Fsa(
             states: first.States.Union(second.States),
@@ -122,11 +122,11 @@ public static class FsaOperations
         var initial = automaton.Initial.SelectMany(automaton.EpsilonClosure);
 
         var transitions = automaton.Transitions
-            .Where(t => !string.IsNullOrEmpty(t.Via))
+            .Where(t => !string.IsNullOrEmpty(t.Label))
             .SelectMany(t =>
                 automaton
                     .EpsilonClosure(t.To)
-                    .Select(es => (t.From, t.Via, es)));
+                    .Select(es => (t.From, t.Label, es)));
 
         return new Fsa(automaton.States, initial, automaton.Final, transitions);
     }
@@ -147,22 +147,22 @@ public static class FsaOperations
             .Union(transitiveClosure
                 .Where(x => automaton.Final.Contains(x.Item2))
                 .Select(x => x.Item1));
-        var states = reachableFromInitial.Intersect(leadingToFinal).ToArray();
+        var states = reachableFromInitial.Intersect(leadingToFinal).ToList();
 
         var transitions = automaton.Transitions
             .Where(t => states.Contains(t.From) && states.Contains(t.To))
             .Select(t => (
-                Array.IndexOf(states, t.From),
-                t.Via,
-                Array.IndexOf(states, t.To)));
+                states.IndexOf(t.From),
+                t.Label,
+                states.IndexOf(t.To)));
 
         var newInitial = states.Intersect(automaton.Initial);
         var newFinal = states.Intersect(automaton.Final);
 
         return new Fsa(
-            states.Select(s => Array.IndexOf(states, s)),
-            newInitial.Select(s => Array.IndexOf(states, s)),
-            newFinal.Select(s => Array.IndexOf(states, s)),
+            states.Select(s => states.IndexOf(s)),
+            newInitial.Select(s => states.IndexOf(s)),
+            newFinal.Select(s => states.IndexOf(s)),
             transitions);
     }
 
@@ -182,9 +182,9 @@ public static class FsaOperations
                 .Union(reachableStates
                     .Where(pair => automaton.Final.Contains(pair.Item2))
                     .Select(pair => pair.Item1)))
-            .ToArray();
+            .ToList();
 
-        if (newStates.Length == 0)
+        if (!newStates.Any())
             return new Dfsa(
                 new[] { 1 },
                 1,
@@ -195,36 +195,36 @@ public static class FsaOperations
         var newTransitions = automaton.Transitions
             .Where(t => newStates.Contains(t.Key.From) && newStates.Contains(t.Value))
             .ToDictionary(
-                t => (Array.IndexOf(newStates, t.Key.From), t.Key.Via), // key
-                t => Array.IndexOf(newStates, t.Value)); // value
+                t => (newStates.IndexOf(t.Key.From), t.Key.Label), // key
+                t => newStates.IndexOf(t.Value)); // value
 
         return new Dfsa(
-            newStates.Select(s => Array.IndexOf(newStates, s)),
-            Array.IndexOf(newStates, automaton.Initial),
-            automaton.Final.Intersect(newStates).Select(s => Array.IndexOf(newStates, s)),
+            newStates.Select(s => newStates.IndexOf(s)),
+            newStates.IndexOf(automaton.Initial),
+            automaton.Final.Intersect(newStates).Select(s => newStates.IndexOf(s)),
             newTransitions);
     }
 
     // Convert to a classical Fsa where each transition label has length <= 1
     public static Fsa Expand(this Fsa automaton)
     {
-        var multiSymbolTransitions = automaton.Transitions.Where(t => t.Via.Length > 1);
+        var multiSymbolTransitions = automaton.Transitions.Where(t => t.Label.Length > 1);
 
         var newStates = automaton.States.ToList();
         var newTransitions = automaton.Transitions.ToHashSet();
 
         foreach (var tr in multiSymbolTransitions)
         {
-            var wordLen = tr.Via.Length;
+            var wordLen = tr.Label.Length;
             var intermediateStates = KNewStates(wordLen - 1, newStates);
             var stateSeq = new[] { tr.From }
                 .Concat(intermediateStates)
                 .Concat(new[] { tr.To })
-                .ToArray();
+                .ToList();
 
             newStates.AddRange(intermediateStates);
-            var path = Enumerable.Range(0, stateSeq.Length - 1)
-                    .Select(i => (stateSeq[i], tr.Via[i].ToString(), stateSeq[i + 1]));
+            var path = Enumerable.Range(0, stateSeq.Count - 1)
+                    .Select(i => (stateSeq[i], tr.Label[i].ToString(), stateSeq[i + 1]));
 
             newTransitions.Remove(tr);
             newTransitions.UnionWith(path);
@@ -238,10 +238,10 @@ public static class FsaOperations
         var fsa = Expand(EpsilonFree(automaton));
 
         var stateTransitionMap = fsa.Transitions
-            .GroupBy(t => t.From, t => (t.Via, t.To))
-            .ToDictionary(g => g.Key, g => g.ToArray());
+            .GroupBy(t => t.From, t => (t.Label, t.To))
+            .ToDictionary(g => g.Key, g => g.ToList());
 
-        var subsetStates = new List<int[]> { fsa.Initial.ToArray() };
+        var subsetStates = new List<List<int>> { fsa.Initial.ToList() };
         var dfsaTransitions = new Dictionary<(int, char), int>();
 
         for (var n = 0; n < subsetStates.Count; n++) // we break from the loop when there is no unexamined state
@@ -250,8 +250,8 @@ public static class FsaOperations
                 .Where(s => stateTransitionMap.ContainsKey(s)) // keep only the items with outgoing transitions
                 .SelectMany(s => stateTransitionMap[s]) // flatten into a set of (symbol, target) pairs
                 .Distinct()
-                .GroupBy(p => p.Via.Single(), p => p.To) // group them by symbol (fsa has only symbol transitions becase of "Expand")
-                .ToDictionary(g => g.Key, g => g.ToArray()); // convert to dictionary of type <symbol, set of states>
+                .GroupBy(p => p.Label.Single(), p => p.To) // group them by symbol (fsa has only symbol transitions becase of "Expand")
+                .ToDictionary(g => g.Key, g => g.ToList()); // convert to dictionary of type <symbol, set of states>
 
             foreach (var state in symbolToStates.Select(p => p.Value)) // the newly formed state sets are in the Dfsa
                 if (!subsetStates.Any(ss => ss.SequenceEqual(state))) // check if it has been added
@@ -270,7 +270,7 @@ public static class FsaOperations
         // then it is marked as final in the deterministic automaton
         var finalStates = renamedStates
             .Where(index => subsetStates[index].Intersect(fsa.Final).Any())
-            .ToArray();
+            .ToList();
 
         return new Dfsa(renamedStates, 0, finalStates, dfsaTransitions);
     }
@@ -278,9 +278,9 @@ public static class FsaOperations
     public static Fst Product(this Fsa first, Fsa second)
     {
         var firstTransWithEpsilon = first.Transitions.Union(
-            first.States.Select(s => (From: s, Via: string.Empty, To: s)));
+            first.States.Select(s => (From: s, Label: string.Empty, To: s)));
         var secondTransWithEpsilon = second.Transitions.Union(
-            second.States.Select(s => (From: s, Via: string.Empty, To: s)));
+            second.States.Select(s => (From: s, Label: string.Empty, To: s)));
 
         var firstTransitionsPerState = firstTransWithEpsilon
             .GroupBy(t => t.From)
@@ -306,7 +306,7 @@ public static class FsaOperations
 
             foreach (var tr1 in p1Trans)
                 foreach (var tr2 in p2Trans)
-                    productTrans.Add((tr1.Via, tr2.Via, tr1.To, tr2.To));
+                    productTrans.Add((tr1.Label, tr2.Label, tr1.To, tr2.To));
 
             foreach (var state in productTrans.Select(t => (t.Item3, t.Item4)))
                 if (!productStates.Contains(state))
@@ -329,13 +329,13 @@ public static class FsaOperations
         return new Fst(states, initial, final, transitions).EpsilonFree().Trim();
     }
 
-    public static (IReadOnlyList<(int, int)> States, IReadOnlyDictionary<(int From, char Via), int> Transitions)
+    public static (IReadOnlyList<(int, int)> States, IReadOnlyDictionary<(int From, char Label), int> Transitions)
         Product(
-            (int Initial, IReadOnlyDictionary<(int From, char Via), int> Transitions) first,
-            (int Initial, IReadOnlyDictionary<(int From, char Via), int> Transitions) second)
+            (int Initial, IReadOnlyDictionary<(int From, char Label), int> Transitions) first,
+            (int Initial, IReadOnlyDictionary<(int From, char Label), int> Transitions) second)
     {
         var stateTransitionMapOfFirst = first.Transitions
-            .GroupBy(kvp => kvp.Key.From, kvp => (kvp.Key.Via, kvp.Value))
+            .GroupBy(kvp => kvp.Key.From, kvp => (kvp.Key.Label, kvp.Value))
             .ToDictionary(g => g.Key, g => g);
 
         var productStates = new List<(int, int)> { (first.Initial, second.Initial) };
@@ -347,8 +347,8 @@ public static class FsaOperations
 
             var departingTransitions = stateTransitionMapOfFirst.ContainsKey(p1)
                 ? stateTransitionMapOfFirst[p1]
-                    .Where(pair => second.Transitions.ContainsKey((p2, pair.Via)))
-                    .Select(pair => (pair.Via, (pair.Value, second.Transitions[(p2, pair.Via)])))
+                    .Where(pair => second.Transitions.ContainsKey((p2, pair.Label)))
+                    .Select(pair => (pair.Label, (pair.Value, second.Transitions[(p2, pair.Label)])))
                 : Array.Empty<(char, (int, int))>();
 
             foreach (var prodState in departingTransitions.Select(pair => pair.Item2))
@@ -357,7 +357,7 @@ public static class FsaOperations
 
             // Transitions refer to states by their index in the states list
             foreach (var pair in departingTransitions)
-                transitions.Add((n, pair.Via), productStates.IndexOf(pair.Item2));
+                transitions.Add((n, pair.Label), productStates.IndexOf(pair.Item2));
         }
 
         return (productStates, transitions);
@@ -384,8 +384,8 @@ public static class FsaOperations
     public static Dfsa Difference(this Dfsa first, Dfsa second)
     {
         // The second automaton's transition function needs to be total
-        var combinedAlphabet = first.Transitions.Select(t => t.Key.Via)
-            .Concat(second.Transitions.Select(t => t.Key.Via))
+        var combinedAlphabet = first.Transitions.Select(t => t.Key.Label)
+            .Concat(second.Transitions.Select(t => t.Key.Label))
             .Distinct();
 
         var secondTransitionsAsTotalFn = new Dictionary<(int, char), int>();
@@ -420,14 +420,14 @@ public static class FsaOperations
             new[] { automaton.Initial },
             automaton.Final,
             automaton.Transitions
-                .Select(p => (p.Key.From, p.Key.Via.ToString(), To: p.Value)));
+                .Select(p => (p.Key.From, p.Key.Label.ToString(), To: p.Value)));
 
     public static Fst Identity(this Fsa fst) =>
         new Fst(
             fst.States,
             fst.Initial,
             fst.Final,
-            fst.Transitions.Select(t => (t.From, t.Via, t.Via, t.To)));
+            fst.Transitions.Select(t => (t.From, t.Label, t.Label, t.To)));
     
     public static Dfsa Minimize(this Dfsa fsa)
     {

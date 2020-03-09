@@ -30,7 +30,7 @@ public class Fsa
 
     public IReadOnlyCollection<int> Final { get; private set; }
 
-    public IReadOnlyCollection<(int From, string Via, int To)> Transitions { get; private set; }
+    public IReadOnlyCollection<(int From, string Label, int To)> Transitions { get; private set; }
 
     public bool Recognize(string word)
     {
@@ -61,14 +61,14 @@ public class Fsa
         return Array.Empty<int>();
     }
 
-    IEnumerable<int> GetTransitions(int state, string word) => 
+    IEnumerable<int> GetTransitions(int state, string label) => 
         this.Transitions
-            .Where(t => (state, word) == (t.From, t.Via))
+            .Where(t => (state, label) == (t.From, t.Label))
             .Select(t => t.To);
 
     IReadOnlyDictionary<int, HashSet<int>> PrecomputeEpsilonClosure() => 
         this.Transitions
-            .Where(t => string.IsNullOrEmpty(t.Via))
+            .Where(t => string.IsNullOrEmpty(t.Label))
             .Select(t => (t.From, t.To))
             .ToHashSet()
             .TransitiveClosure()
