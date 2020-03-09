@@ -25,11 +25,34 @@
 
 \section{Крайни Автомати}
 
-Краен автомат дефинираме като петорка \( A = \langle \Sigma, Q, I, F, \Delta \rangle \), където
+\textbf{Дефиниция 1.1} \emph{Краен автомат} дефинираме като петорка \( \mathcal{A} = \langle \Sigma, Q, I, F, \Delta \rangle \), където
 
-\section{Детерминирани Крайни Автомати}
+\begin{itemize}
+	\item \( \Sigma \) е \emph{крайна азбука от символи}
+	\item \( Q \) е \emph{крайно множество от състояния}
+	\item \( I \subseteq Q \) е \emph{множество от начални състояния}
+	\item \( F \subseteq Q \) е \emph{множество от финални състояния}
+	\item \( \Delta \subseteq Q \times \Sigma \times Q \) е \emph{релация на преходите}
+\end{itemize}
+ 
+Тройки от вида \( \langle q_1, m, q_2 \rangle \in \Delta \) наричаме \emph{преходи} и казваме, че започва състояние \( q_1 \), има етикет \( m \) и завършва в състояние \( q_2 \). Алтернативно, тези преходи обозначаваме като \( q_1 \to^m q_2 \).
 
-Детерминиран краен автомат наричаме \( A = \langle \Sigma, Q, s, F, \delta \rangle \), където
+\paragraph{Дефиниция 1.2} Нека \( \mathcal{A} \) е краен автомат. \emph{Разширена релация на преходите} \( \Delta^* \subseteq Q \times \Sigma \times Q \) дефинираме индуктивно:
+
+\begin{itemize}
+	\item \( \langle q, \epsilon, q \rangle \in \Delta^* \) за всяко \( q \in Q \)
+	\item \( \langle q_1, wa, q_2 \rangle \in \Delta^* \) за всяко \( q_1, q_2, q \in Q \), \( a \in \Sigma, w \in \Sigma^* \), ако \( \langle q_1, w, q \rangle \in \Delta^* \) и \( \langle q, a, q_2 \rangle \in \Delta \)
+\end{itemize}
+
+\paragraph{Дефиниция 1.3} Нека \( \mathcal{A} = \langle \Sigma, Q, I, F, \Delta \rangle \) е краен автомат. \emph{Път} в \( \mathcal{A} \) наричаме крайна редица от преходи с дължина \( k > 0 \) \[ \pi = q_0 \to^{a_1} q_1 \to^{a_2} \ldots \to^{a_k} q_k \] където \( \langle q_{i-1}, a_i, q_i \rangle \in \Delta \) за \( i = 1 \ldots k \). Казваме, че \emph{пътят} започва от състояние \( q_0 \) и завършва в състояние \( q_k \). Елементите \( q_0,q_1, \ldots ,q_k \) наричаме \emph{състояния на пътя}, а думата \( w = a_1 a_2 \ldots a_k \) наричаме \emph{етикет на пътя}. \newline \emph{Успешен път} в автомата е \emph{път}, който започва от начално състояние и завършва във финално състояние.
+
+\paragraph{Дефиниция 1.4} Нека \( \mathcal{A} \) е краен автомат. Множеството от етикети на всички възможни успещни пътища в \( \mathcal{A} \) наричаме \emph{език на \( \mathcal{A} \)} и обозначаваме като \( L(\mathcal{A}) \). \[ L(\mathcal{A}) = \{ w \in \Sigma^* \hspace{0.1cm} | \hspace{0.1cm} \exists i \in I, f \in F : \langle i, w, f \rangle \in \Delta^* \} \]
+
+\paragraph{Дефиниция 1.5} Нека \( \mathcal{A}_1 \) и \( \mathcal{A}_2 \) са крайни автомати. Казваме, че \( \mathcal{A}_1 \) е еквивалентен на \( \mathcal{A}_2 \) (\( \mathcal{A}_1 \equiv \mathcal{A}_2 \)), ако езиците им съвпадат (\( L(\mathcal{A}_1) = L(\mathcal{A}_2) \))
+
+\section{Детерминистични Крайни Автомати}
+
+Kраен автомат \( \mathcal{A} = \langle \Sigma, Q, s, F, \delta \rangle \) наричаме \emph{детерминистичен}, ако 
 
 \section{Бимашини}
 
