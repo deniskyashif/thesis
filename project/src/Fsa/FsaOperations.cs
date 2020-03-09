@@ -1,3 +1,6 @@
+/*
+    Operations on finite-state automata.
+*/
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -10,6 +13,7 @@ public static class FsaOperations
     static IEnumerable<int> KNewStates(int k, IReadOnlyCollection<int> states) =>
         Enumerable.Range(states.Count, k);
 
+    // Clones the finite automaton by renaming the states
     static Fsa Remap(this Fsa automaton, IReadOnlyCollection<int> states)
     {
         var k = states.Count;
@@ -61,6 +65,7 @@ public static class FsaOperations
     public static Fsa Union(this Fsa fsa, params Fsa[] automata) =>
         automata.Aggregate(fsa, Union);
 
+    // Kleene star operation on a finite automaton
     public static Fsa Star(this Fsa automaton)
     {
         var initial = NewState(automaton.States);
@@ -99,7 +104,7 @@ public static class FsaOperations
             automaton.Transitions.Union(newTransitions));
     }
 
-    public static Fsa Option(this Fsa automaton)
+    public static Fsa Optional(this Fsa automaton)
     {
         var state = new[] { NewState(automaton.States) };
 
@@ -110,7 +115,7 @@ public static class FsaOperations
             automaton.Transitions);
     }
 
-    /* Preserves the automaton's language but 
+    /* Removes the epsilon transitions and preserves the automaton's language but 
        does not preserve the language of the individual states */
     public static Fsa EpsilonFree(this Fsa automaton)
     {
@@ -126,6 +131,7 @@ public static class FsaOperations
         return new Fsa(automaton.States, initial, automaton.Final, transitions);
     }
 
+    // Removes the states that are not on a successful path in the automaton.
     public static Fsa Trim(this Fsa automaton)
     {
         var transitiveClosure = automaton.Transitions
@@ -160,6 +166,7 @@ public static class FsaOperations
             transitions);
     }
 
+    // Removes the states that are not on a successful path in the deterministic automaton.
     public static Dfsa Trim(this Dfsa automaton)
     {
         var reachableStates = automaton.Transitions
@@ -198,6 +205,7 @@ public static class FsaOperations
             newTransitions);
     }
 
+    // Convert to a classical Fsa where each transition label has length <= 1
     public static Fsa Expand(this Fsa automaton)
     {
         var multiSymbolTransitions = automaton.Transitions.Where(t => t.Via.Length > 1);
@@ -420,4 +428,9 @@ public static class FsaOperations
             fst.Initial,
             fst.Final,
             fst.Transitions.Select(t => (t.From, t.Via, t.Via, t.To)));
+    
+    public static Dfsa Minimize(this Dfsa fsa)
+    {
+        throw new NotImplementedException();
+    }
 }

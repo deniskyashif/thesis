@@ -146,7 +146,7 @@ public class FsaTests
     [Fact]
     public void OptionFsaTest()
     {
-        var fsa = FsaBuilder.FromWord("ab").Option();
+        var fsa = FsaBuilder.FromWord("ab").Optional();
 
         Assert.Equal(4, fsa.States.Count);
         Assert.Equal(2, fsa.Initial.Count);

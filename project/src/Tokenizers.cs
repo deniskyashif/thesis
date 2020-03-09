@@ -6,6 +6,11 @@ public static class Tokenizers
 {
     public static Bimachine CreateForArithmeticExpr()
     {
+        /*
+            INT: [0-9]+
+            OP: '+' | '-' | '*' | '/'
+            epsilon -> WS+ 
+        */
         const string tokenBoundary = "\n";
         var whitespaces = new[] { ' ', '\t' };
         var digits = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
@@ -50,7 +55,7 @@ public static class Tokenizers
                     char.IsLower(symbol)
                         ? symbol.ToString().ToUpper()
                         : symbol.ToString()))
-            .Aggregate((aggr, fst) => aggr.UnionWith(fst))
+            .Aggregate((aggr, fst) => aggr.Union(fst))
             .Star();
 
         Console.WriteLine("Constructing the \"multi word expression list\" transducer.");

@@ -8,7 +8,7 @@ public class RewriterTests
     public void OptionalRewriteRelTest()
     {
         // ab|bc -> d
-        var fst = FstBuilder.FromWordPair("ab", "d").UnionWith(FstBuilder.FromWordPair("bc", "d"));
+        var fst = FstBuilder.FromWordPair("ab", "d").Union(FstBuilder.FromWordPair("bc", "d"));
         
         var opt = fst.ToOptionalRewriter(new HashSet<char> { 'a', 'b', 'c', 'd' });
 
@@ -23,7 +23,7 @@ public class RewriterTests
     public void ObligatoryRewriteRelTest()
     {
         // ab|bc -> d
-        var fst = FstBuilder.FromWordPair("ab", "d").UnionWith(FstBuilder.FromWordPair("bc", "d"));
+        var fst = FstBuilder.FromWordPair("ab", "d").Union(FstBuilder.FromWordPair("bc", "d"));
         var obl = fst.ToRewriter(new HashSet<char> { 'a', 'b', 'c', 'd' });
 
         Assert.Equal(string.Empty, obl.Process(string.Empty).Single());
@@ -37,7 +37,7 @@ public class RewriterTests
     {
         var alphabet = new HashSet<char> {'a', 'b', 'c', 'd'};
         var rule1 = FstBuilder.FromWordPair("ab", "d")
-            .UnionWith(FstBuilder.FromWordPair("bc", "d"))
+            .Union(FstBuilder.FromWordPair("bc", "d"))
             .Expand();
         var rule2 = FstBuilder.FromWordPair("cd", "CD");
 
@@ -86,7 +86,7 @@ public class RewriterTests
         // (a|b)* -> d -> D
         var alphabet = new HashSet<char> {'a', 'b', 'c', 'd', 'D' };
         var rule = FstBuilder.FromWordPair("a", "d")
-            .UnionWith(FstBuilder.FromWordPair("b", "d"))
+            .Union(FstBuilder.FromWordPair("b", "d"))
             .Star()
             .Compose(FstBuilder.FromWordPair("d", "D"));
 

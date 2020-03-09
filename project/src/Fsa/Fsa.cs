@@ -1,6 +1,5 @@
-/*  
-    Finite-State Automaton -
-    Construction and closure operations 
+/*
+  Non-deterministic finite-state automaton
 */
 using System;
 using System.Collections.Generic;
@@ -8,7 +7,7 @@ using System.Linq;
 
 public class Fsa
 {
-    private readonly IReadOnlyDictionary<int, HashSet<int>> epsilonClosureOf;
+    private readonly Lazy<IReadOnlyDictionary<int, HashSet<int>>> epsilonClosureOf;
 
     public Fsa(
         IEnumerable<int> states,
@@ -21,12 +20,16 @@ public class Fsa
         this.Final = final.ToHashSet();
         this.Transitions = transitions.ToHashSet();
 
-        this.epsilonClosureOf = this.PrecomputeEpsilonClosure();
+        this.epsilonClosureOf = new Lazy<IReadOnlyDictionary<int, HashSet<int>>>(
+            () => this.PrecomputeEpsilonClosure());
     }
 
     public IReadOnlyCollection<int> States { get; private set; }
+
     public IReadOnlyCollection<int> Initial { get; private set; }
+
     public IReadOnlyCollection<int> Final { get; private set; }
+
     public IReadOnlyCollection<(int From, string Via, int To)> Transitions { get; private set; }
 
     public bool Recognize(string word)
@@ -52,8 +55,8 @@ public class Fsa
 
     public IEnumerable<int> EpsilonClosure(int state)
     {
-        if (this.epsilonClosureOf.ContainsKey(state))
-            return this.epsilonClosureOf[state];
+        if (this.epsilonClosureOf.Value.ContainsKey(state))
+            return this.epsilonClosureOf.Value[state];
 
         return Array.Empty<int>();
     }

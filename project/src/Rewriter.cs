@@ -4,9 +4,9 @@ using System.Linq;
 
 public static class Rewriter
 {
-    const char lb = '≪';
-    const char rb = '≫';
-    const char cb = '†';
+    const char cb = '†'; // marks the begining of a rewrite occurrence
+    const char lb = '≪'; // marks the left boundary (start) of a rewrite occurrence
+    const char rb = '≫'; // marks the right boundary (end) of a rewrite occurrence
 
     // Optional rewrite transducer
     public static Fst ToOptionalRewriter(this Fst fst, ISet<char> alphabet)
@@ -39,11 +39,21 @@ public static class Rewriter
         var allSymbols = alphabet.Concat(new[] { lb, rb, cb }).ToHashSet();
         var allSymbolsStarFsa = FsaBuilder.All(allSymbols);
 
+        // Automaton recognizing all words that are not in the language of the input automaton (complement)
         Fsa NotInLang(Fsa lang) => allSymbolsStarFsa.Difference(lang);
-        Fsa ContainLang(Fsa lang) => allSymbolsStarFsa.Concat(lang, allSymbolsStarFsa);
+
+        // Automaton recognizing all words that contain an occurrence of a word from the input automaton
+        Fsa ContainsLang(Fsa lang) => allSymbolsStarFsa.Concat(lang, allSymbolsStarFsa);
+
+        // All words w where each prefix of w representing a string in "P" is followed by a suffix which is in "S".
         Fsa IfPThenS(Fsa p, Fsa s) => NotInLang(p.Concat(NotInLang(s)));
+        
+        // All words for which each suffix from "S" is preceeded by a prefix from "P"
         Fsa IfSThenP(Fsa p, Fsa s) => NotInLang(NotInLang(p).Concat(s));
-        Fsa PiffS(Fsa p, Fsa s) => IfPThenS(p, s).Intersect(IfSThenP(p, s));
+        Fsa PiffS(Fsa l, Fsa r) => IfPThenS(l, r).Intersect(IfSThenP(l, r));
+
+        /* Describes the words where every position is preceded by a string with a suffix in "L"
+           if and only if it is followed by a string with a prefix in "R" */
         Fsa LiffR(Fsa lang, Fsa l, Fsa r) => PiffS(lang.Concat(l), r.Concat(lang));
 
         var ruleDomain = rule.Domain();
@@ -70,10 +80,10 @@ public static class Rewriter
 
         var longestMatch =
             NotInLang(
-                ContainLang(
+                ContainsLang(
                     FsaBuilder.FromWord(lb.ToString())
                         .Concat(IgnoreX(ruleDomain, allSymbols, new HashSet<char> { lb, rb })
-                            .Intersect(ContainLang(FsaBuilder.FromWord(rb.ToString()))))))
+                            .Intersect(ContainsLang(FsaBuilder.FromWord(rb.ToString()))))))
             .Identity();
 
         var replacement = 
@@ -84,40 +94,46 @@ public static class Rewriter
         return initialMatch.Compose(leftToRight, longestMatch, replacement);
     }
 
+    // Introduce symbols from a set S into an input string not containing symbols in S
     static Fst Intro(ISet<char> alphabet, ISet<char> symbols)
     {
         return FsaBuilder
             .FromSymbolSet(alphabet.Except(symbols))
             .Identity()
             .Union(
-                FsaBuilder.FromWord(string.Empty).Product(FsaBuilder.FromSymbolSet(symbols)))
+                FsaBuilder.FromEpsilon()
+                    .Product(FsaBuilder.FromSymbolSet(symbols)))
             .Star();
     }
 
+    // Same as "Intro" except symbols from S cannot occur at the end of the string
     static Fst IntroX(ISet<char> alphabet, ISet<char> symbols)
     {
         return Intro(alphabet, symbols)
-            .Concat(FsaBuilder
-                .FromSymbolSet(alphabet.Except(symbols))
-                .Identity())
-            .Option();
+            .Concat(
+                FsaBuilder.FromSymbolSet(alphabet.Except(symbols)).Identity())
+            .Optional();
     }
 
+    // Same as "Intro" except symbols from S cannot occur at the beginning of the string
     static Fst Xintro(ISet<char> alphabet, ISet<char> symbols)
     {
-        return FsaBuilder
-            .FromSymbolSet(alphabet.Except(symbols))
+        return FsaBuilder.FromSymbolSet(alphabet.Except(symbols))
             .Identity()
             .Concat(Intro(alphabet, symbols))
-            .Option();
+            .Optional();
     }
 
-    static Fsa Ignore(Fsa lang, ISet<char> alphabet, ISet<char> symbols) =>
-        lang.Identity().Compose(Intro(alphabet, symbols)).Range();
+    /* For a given automaton L and a set of symbols S, construct the automaton 
+        which recognizes all words from L with freely introduced symbols from S */
+    static Fsa Ignore(Fsa lang, ISet<char> fsaAlphabet, ISet<char> symbols) =>
+        lang.Identity().Compose(Intro(fsaAlphabet, symbols)).Range();
 
-    static Fsa IgnoreX(Fsa lang, ISet<char> alphabet, ISet<char> symbols) =>
-        lang.Identity().Compose(IntroX(alphabet, symbols)).Range();
+    // Same as "Ignore" except symbols from S cannot be at the end
+    static Fsa IgnoreX(Fsa lang, ISet<char> fsaAlphabet, ISet<char> symbols) =>
+        lang.Identity().Compose(IntroX(fsaAlphabet, symbols)).Range();
 
-    static Fsa XIgnore(Fsa lang, ISet<char> alphabet, ISet<char> symbols) =>
-        lang.Identity().Compose(Xintro(alphabet, symbols)).Range();
+    // Same as "Ignore" except symbols from S cannot be at the beginning
+    static Fsa XIgnore(Fsa lang, ISet<char> fsaAlphabet, ISet<char> symbols) =>
+        lang.Identity().Compose(Xintro(fsaAlphabet, symbols)).Range();
 }

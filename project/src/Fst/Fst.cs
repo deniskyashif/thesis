@@ -1,5 +1,5 @@
 /*  
-    Two-tape, classical finite-state transducer
+    Two-tape finite-state transducer
 */
 using System.Collections.Immutable;
 using System.Collections.Generic;
@@ -21,8 +21,11 @@ public class Fst
     }
 
     public IReadOnlyCollection<int> States { get; private set; }
+
     public IReadOnlyCollection<int> Initial { get; private set; }
+
     public IReadOnlyCollection<int> Final { get; private set; }
+
     public IReadOnlyCollection<(int From, string In, string Out, int To)> Transitions { get; private set; }
 
     public ICollection<string> Process(string word) =>

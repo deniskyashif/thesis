@@ -1,3 +1,6 @@
+/*  
+    Operations on two-tape finite-state transducers
+*/
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +12,7 @@ public static class FstOperations
     static IEnumerable<int> KNewStates(int k, IReadOnlyCollection<int> states) =>
         Enumerable.Range(states.Count, k);
 
+    // Clones the finite automaton by renaming the states
     static Fst Remap(this Fst fst, IReadOnlyCollection<int> states)
     {
         var k = states.Count;
@@ -20,7 +24,7 @@ public static class FstOperations
             fst.Transitions.Select(t => (t.From + k, t.In, t.Out, t.To + k)));
     }
 
-    public static Fst UnionWith(this Fst first, Fst second)
+    public static Fst Union(this Fst first, Fst second)
     {
         second = second.Remap(first.States);
 
@@ -32,7 +36,7 @@ public static class FstOperations
     }
 
     public static Fst Union(this Fst fst, params Fst[] automata) =>
-        automata.Aggregate(fst, UnionWith);
+        automata.Aggregate(fst, Union);
 
     public static Fst Concat(this Fst first, Fst second)
     {
@@ -82,7 +86,7 @@ public static class FstOperations
             transitions);
     }
 
-    public static Fst Option(this Fst fst)
+    public static Fst Optional(this Fst fst)
     {
         var newState = new[] { NewState(fst.States) };
 
@@ -93,6 +97,7 @@ public static class FstOperations
             fst.Transitions);
     }
 
+    // Removes the epsilon transitions by preserving the transducer's language
     public static Fst EpsilonFree(this Fst fst)
     {
         var epsilonClosureOf = fst.Transitions
@@ -115,6 +120,7 @@ public static class FstOperations
             transitions);
     }
 
+    // Removes the states that are not on a successful path in the automaton.
     public static Fst Trim(this Fst fst)
     {
         ICollection<(int From, int To)> transitiveClosure = fst.Transitions
@@ -141,6 +147,7 @@ public static class FstOperations
             transitions);
     }
 
+    // Infers the underlying finite-state automaton from the upper tape
     public static Fsa Domain(this Fst fst) =>
         new Fsa(
             fst.States,
@@ -148,6 +155,7 @@ public static class FstOperations
             fst.Final,
             fst.Transitions.Select(t => (t.From, t.In, t.To)));
 
+    // Infers the underlying finite-state automaton from the lower tape
     public static Fsa Range(this Fst fst) =>
         new Fsa(
             fst.States,
@@ -155,6 +163,7 @@ public static class FstOperations
             fst.Final,
             fst.Transitions.Select(t => (t.From, t.Out, t.To)));
 
+    // Constructs a Fst by switching the tapes
     public static Fst Inverse(this Fst fst) =>
         new Fst(
             fst.States,
@@ -162,6 +171,8 @@ public static class FstOperations
             fst.Final,
             fst.Transitions.Select(t => (t.From, t.Out, t.In, t.To)));
 
+    /* For a finite-state transducer, constructs an equivalent classical 2-tape letter automaton,
+       where each transitions is of length <= 1 on both tapes. */
     public static Fst Expand(this Fst fst)
     {
         string SymbolAt(string word, int index) =>
@@ -260,6 +271,7 @@ public static class FstOperations
     public static Fst Compose(this Fst fst, params Fst[] automata) =>
         automata.Aggregate(fst, Compose);
 
+    // Produce a transducer by removing the epsilon transitions on the upper tape.
     public static (Fst Transducer, ISet<string> EpsilonOutputs) ToRealTime(this Fst fst) =>
         fst.Trim().EpsilonFree().Expand().RemoveUpperEpsilon();
 
@@ -307,7 +319,7 @@ public static class FstOperations
         return (transducer, possibleEpsilonOutputs);
     }
 
-    private static IEnumerable<(int From, int To, string Out)> EpsilonClosure(
+    static IEnumerable<(int From, int To, string Out)> EpsilonClosure(
         IEnumerable<(int From, int To, string Out)> transitions)
     {
         var transitiveClosure = transitions.ToList();
@@ -334,21 +346,6 @@ public static class FstOperations
         }
 
         return transitiveClosure;
-    }
-
-    public static Fst PseudoDeterminize(this Fst fst)
-    {
-        throw new NotImplementedException();
-    }
-
-    public static Fst SquaredOutput(Fst fst)
-    {
-        throw new NotImplementedException();
-    }
-
-    public static bool IsFunctional(Fst fst)
-    {
-        throw new NotImplementedException();
     }
 
     public static Bimachine ToBimachine(this Fst fst, ISet<char> alphabet)
@@ -501,5 +498,25 @@ public static class FstOperations
         var rightDfsa = new Dfsa(rightStateIndices, 0, rightStateIndices, rightTransitions);
 
         return new Bimachine(leftDfsa, rightDfsa, bmOutput);
+    }
+
+    public static Fst PseudoDeterminize(this Fst fst)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static Fst SquaredOutput(this Fst fst)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static bool IsFunctional(this Fst fst)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static Fst PseudoMinimize(this Fst fst)
+    {
+        throw new NotImplementedException();
     }
 }

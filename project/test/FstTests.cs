@@ -97,7 +97,7 @@ public class FstTests
     {
         var first = FstBuilder.FromWordPair("a", "A");
         var second = FstBuilder.FromWordPair("b", "B");
-        var fst = first.UnionWith(second);
+        var fst = first.Union(second);
 
         Assert.Equal(4, fst.States.Count);
         Assert.Equal(2, fst.Initial.Count);
@@ -129,7 +129,7 @@ public class FstTests
     {
         var first = FstBuilder.FromWordPair("a", "A");
         var second = FstBuilder.FromWordPair("b", "B");
-        var fst = first.UnionWith(second).Star();
+        var fst = first.Union(second).Star();
 
         Assert.Equal(5, fst.States.Count);
         Assert.Equal(1, fst.Initial.Count);
@@ -149,7 +149,7 @@ public class FstTests
     {
         var first = FstBuilder.FromWordPair("a", "A");
         var second = FstBuilder.FromWordPair("b", "B");
-        var fst = first.UnionWith(second).Plus();
+        var fst = first.Union(second).Plus();
 
         Assert.Equal(5, fst.States.Count);
         Assert.Equal(1, fst.Initial.Count);
@@ -167,7 +167,7 @@ public class FstTests
     [Fact]
     public void OptionFstTest()
     {
-        var fst = FstBuilder.FromWordPair("a", "A").Plus().Option();
+        var fst = FstBuilder.FromWordPair("a", "A").Plus().Optional();
 
         Assert.Equal(4, fst.States.Count);
         Assert.Equal(2, fst.Initial.Count);
@@ -214,7 +214,7 @@ public class FstTests
     {
         var first = FstBuilder.FromWordPair("a", "A");
         var second = FstBuilder.FromWordPair("b", "B");
-        var fst = first.UnionWith(second).Star().EpsilonFree();
+        var fst = first.Union(second).Star().EpsilonFree();
 
         Assert.Equal(5, fst.States.Count);
         Assert.Equal(3, fst.Initial.Count);
@@ -269,7 +269,7 @@ public class FstTests
     public void ExpandFstTest()
     {
         var fst = FstBuilder.FromWordPair("abc", "xy")
-            .UnionWith(FstBuilder.FromWordPair("p", "q"))
+            .Union(FstBuilder.FromWordPair("p", "q"))
             .Expand();
 
         Assert.Equal(6, fst.States.Count);
@@ -283,7 +283,7 @@ public class FstTests
     public void ExpandFstTest1()
     {
         var fst = FstBuilder.FromWordPair("abc", "xy")
-            .UnionWith(FstBuilder.FromWordPair("pp", "qq"))
+            .Union(FstBuilder.FromWordPair("pp", "qq"))
             .Expand();
 
         Assert.Equal(7, fst.States.Count);
@@ -327,9 +327,9 @@ public class FstTests
     {
         var first = FstBuilder.FromWordPair("ab", "x")
             .Plus()
-            .Concat(FstBuilder.FromWordPair("c", "d").Option());
+            .Concat(FstBuilder.FromWordPair("c", "d").Optional());
         var second = FstBuilder.FromWordPair("x", "1")
-            .UnionWith(FstBuilder.FromWordPair("d", "d"))
+            .Union(FstBuilder.FromWordPair("d", "d"))
             .Plus();
         var composed = first.Compose(second);
 

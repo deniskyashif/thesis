@@ -1,3 +1,6 @@
+/*  
+    Classical bimachine
+*/
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -15,7 +18,9 @@ public class Bimachine
     }
 
     public Dfsa Left { get; private set; }
+
     public Dfsa Right { get; private set; }
+
     public IReadOnlyDictionary<(int Lstate, char Symbol, int Rstate), string> Output { get; private set; }
 
     public string Process(string word)
