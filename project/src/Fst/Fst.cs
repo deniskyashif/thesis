@@ -1,5 +1,5 @@
 /*  
-    Two-tape finite-state transducer
+    Finite-state transducer
 */
 using System.Collections.Immutable;
 using System.Collections.Generic;

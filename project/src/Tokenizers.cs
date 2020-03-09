@@ -35,6 +35,7 @@ public static class Tokenizers
 
         return clearWS.Compose(markTokens).ToBimachine(alphabet);
     }
+
     public static Bimachine CreateForEnglish()
     {
         var alphabet = Enumerable.Range(32, 95).Select(x => (char)x)

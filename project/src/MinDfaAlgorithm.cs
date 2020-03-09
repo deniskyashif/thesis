@@ -1,6 +1,6 @@
 /*
     Direct construction of a minimal, deterministic, acyclic 
-    finite state automaton from a set of strings.
+    finite-state automaton from a set of strings.
 */
 using System.Collections.Generic;
 using System.Linq;

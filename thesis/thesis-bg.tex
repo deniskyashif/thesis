@@ -17,25 +17,23 @@
 %SetFonts
 
 \title{Лексически Анализ чрез Бимашини}
-% \author{Denis Kyashif}
-% \date{Jan 23, 2020}							% Activate to display a given date or no date
+% \author{Денис Кяшиф}
+% \date{Feb 23, 2020}							% Activate to display a given date or no date
 
 \begin{document}
 % \maketitle
 
 \section{Крайни Автомати}
 
-Краен автомат дефинираме като петорка \( A = <\Sigma, Q, I, F, \Delta> \), където
+Краен автомат дефинираме като петорка \( A = \langle \Sigma, Q, I, F, \Delta \rangle \), където
 
-\subsection{Детерминирани Крайни Автомати}
+\section{Детерминирани Крайни Автомати}
 
-Детерминиран краен автомат наричаме \( A = <\Sigma, Q, q_0, F, \delta> \)
+Детерминиран краен автомат наричаме \( A = \langle \Sigma, Q, s, F, \delta \rangle \), където
 
 \section{Бимашини}
 
 \section{Токенизиращи Релации}
-
-\subsection{Лексическа граматика}
 
 \subsection{Контексти и застъпване}
 
@@ -59,7 +57,5 @@
 	\draw [decorate,decoration={brace,amplitude=10pt,mirror,raise=3pt},yshift=0pt]
 		(8,0) -- (11,0) node [black,midway,xshift=0cm,yshift=-0.75cm] {\footnotesize $w_3$};
 \end{tikzpicture}
-
-\section{Крайни Преобразуватели}
 
 \end{document}

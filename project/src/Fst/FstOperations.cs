@@ -1,5 +1,5 @@
 /*  
-    Operations on two-tape finite-state transducers
+    Operations on finite-state transducers
 */
 using System;
 using System.Collections.Generic;

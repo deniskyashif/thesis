@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public static class Rewriter
+public static class Rewriters
 {
     const char cb = '†'; // marks the begining of a rewrite occurrence
     const char lb = '≪'; // marks the left boundary (start) of a rewrite occurrence
