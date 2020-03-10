@@ -7,8 +7,9 @@ public static class Rewriters
     const char cb = '†'; // marks the begining of a rewrite occurrence
     const char lb = '≪'; // marks the left boundary (start) of a rewrite occurrence
     const char rb = '≫'; // marks the right boundary (end) of a rewrite occurrence
+    static readonly char[] boundaryMarkers = new char[] { cb, lb, rb };
 
-    // Optional rewrite transducer
+    // Convert to an optional rewrite transducer
     public static Fst ToOptionalRewriter(this Fst fst, ISet<char> alphabet)
     {
         var idAll = FsaBuilder.All(alphabet).Identity();
@@ -16,7 +17,7 @@ public static class Rewriters
         return idAll.Concat(fst.Concat(idAll).Star()).Expand();
     }
 
-    // Obligatory rewrite transducer
+    // Convert to ab obligatory rewrite transducer
     public static Fst ToRewriter(this Fst fst, ISet<char> alphabet)
     {
         var all = FsaBuilder.All(alphabet);
@@ -29,14 +30,14 @@ public static class Rewriters
         return notInDomain.Concat(fst.Concat(notInDomain).Star()).Expand().Trim();
     }
     
-    // Obligatory leftmost-longest match rewrite transducer
+    // Convert to an obligatory leftmost-longest match rewrite transducer
     public static Fst ToLmlRewriter(this Fst rewriteRule, ISet<char> alphabet)
     {
-        if (alphabet.Intersect(new[] { lb, rb, cb }).Any())
+        if (alphabet.Intersect(boundaryMarkers).Any())
             throw new ArgumentException("The alphabet contains invalid symbols.");
 
         var alphabetStarFsa = FsaBuilder.All(alphabet);
-        var allSymbols = alphabet.Concat(new[] { lb, rb, cb }).ToHashSet();
+        var allSymbols = alphabet.Concat(boundaryMarkers).ToHashSet();
         var allSymbolsStarFsa = FsaBuilder.All(allSymbols);
 
         // Automaton recognizing all words that are not in the language of the input automaton (complement)
@@ -58,7 +59,7 @@ public static class Rewriters
 
         var ruleDomain = rewriteRule.Domain();
 
-        var initialMatch =
+        var initialMatch = // mark the beginnings of all rewrite occurrences by inserting "cb"
             Intro(allSymbols, new HashSet<char> { cb })
                 .Compose(
                     LiffR(
@@ -67,18 +68,18 @@ public static class Rewriters
                         XIgnore(ruleDomain, allSymbols, new HashSet<char> { cb }))
                     .Identity());
 
-        var leftToRight =
-            alphabetStarFsa.Identity()
+        var leftToRight = // insert boundary markers ("lb", "rb") arount the leftmost rewrite occurrences
+            alphabetStarFsa.Identity() // preceeded by arbitrary text that is not matched by the rule
                 .Concat(
-                    FstBuilder.FromWordPair(cb.ToString(), lb.ToString()),
-                    IgnoreX(ruleDomain, allSymbols, new HashSet<char> { cb }).Identity(),
-                    FstBuilder.FromWordPair(string.Empty, rb.ToString()))
-                .Star()
-                .Concat(alphabetStarFsa.Identity())
+                    FstBuilder.FromWordPair(cb.ToString(), lb.ToString()), // replace intial match marker with the left boundary marker
+                    IgnoreX(ruleDomain, allSymbols, new HashSet<char> { cb }).Identity(), // recognize matches with the leftover "cb" symbol inbetween the markers
+                    FstBuilder.FromWordPair(string.Empty, rb.ToString())) // insert right boundary marker at the end of the matched substring
+                .Star() // handle multiple rewrite occurrences
+                .Concat(alphabetStarFsa.Identity()) // succeeded by arbitrary text that is not matched by the rule
                 .Compose(
-                    FstBuilder.FromWordPair(cb.ToString(), string.Empty).ToRewriter(allSymbols));
+                    FstBuilder.FromWordPair(cb.ToString(), string.Empty).ToRewriter(allSymbols)); // delete the remaining initial match markers
 
-        var longestMatch =
+        var longestMatch = // amongst occurrences with the same starting point, preserve only the longest ones
             NotInLang(
                 ContainsLang(
                     FsaBuilder.FromWord(lb.ToString())
@@ -86,9 +87,11 @@ public static class Rewriters
                             .Intersect(ContainsLang(FsaBuilder.FromWord(rb.ToString()))))))
             .Identity();
 
-        var replacement = 
-                FstBuilder.FromWordPair(lb.ToString(), string.Empty)
-                    .Concat(rewriteRule, FstBuilder.FromWordPair(rb.ToString(), string.Empty))
+        var replacement = // replace the rewrite occurrence and delete the left and right markers
+                FstBuilder.FromWordPair(lb.ToString(), string.Empty) // delete the left boundary marker
+                    .Concat(
+                        rewriteRule, // perform the replacement
+                        FstBuilder.FromWordPair(rb.ToString(), string.Empty)) // delete the right boundary marker
                     .ToRewriter(allSymbols);
 
         return initialMatch.Compose(leftToRight, longestMatch, replacement);
@@ -126,14 +129,14 @@ public static class Rewriters
 
     /* For a given automaton L and a set of symbols S, construct the automaton 
         which recognizes all words from L with freely introduced symbols from S */
-    static Fsa Ignore(Fsa lang, ISet<char> fsaAlphabet, ISet<char> symbols) =>
-        lang.Identity().Compose(Intro(fsaAlphabet, symbols)).Range();
+    static Fsa Ignore(Fsa fsa, ISet<char> fsaAlphabet, ISet<char> symbols) =>
+        fsa.Identity().Compose(Intro(fsaAlphabet, symbols)).Range();
 
     // Same as "Ignore" except symbols from S cannot be at the end
-    static Fsa IgnoreX(Fsa lang, ISet<char> fsaAlphabet, ISet<char> symbols) =>
-        lang.Identity().Compose(IntroX(fsaAlphabet, symbols)).Range();
+    static Fsa IgnoreX(Fsa fsa, ISet<char> fsaAlphabet, ISet<char> symbols) =>
+        fsa.Identity().Compose(IntroX(fsaAlphabet, symbols)).Range();
 
     // Same as "Ignore" except symbols from S cannot be at the beginning
-    static Fsa XIgnore(Fsa lang, ISet<char> fsaAlphabet, ISet<char> symbols) =>
-        lang.Identity().Compose(Xintro(fsaAlphabet, symbols)).Range();
+    static Fsa XIgnore(Fsa fsa, ISet<char> fsaAlphabet, ISet<char> symbols) =>
+        fsa.Identity().Compose(Xintro(fsaAlphabet, symbols)).Range();
 }

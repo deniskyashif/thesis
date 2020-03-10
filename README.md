@@ -17,6 +17,7 @@
 ### Tokenizers
 
 - Arithmetic expression tokenizer
+- Regular expression tokenizer
 - Tokenizer for the English language (incomplete)
 
 [Implementations](https://github.com/deniskyashif/thesis/blob/master/project/src/Tokenizers.cs)
