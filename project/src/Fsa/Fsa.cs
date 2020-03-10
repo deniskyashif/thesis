@@ -23,6 +23,7 @@ public class Fsa
 
         this.epsilonClosureOf = new Lazy<IDictionary<int, HashSet<int>>>(
             () => this.PrecomputeEpsilonClosure());
+
         this.transPerStateAndLabel = new Lazy<IDictionary<(int, string), HashSet<int>>>(
             () => this.Transitions
                 .GroupBy(t => (t.From, t.Label), t => t.To)

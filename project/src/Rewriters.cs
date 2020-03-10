@@ -30,7 +30,7 @@ public static class Rewriters
     }
     
     // Obligatory leftmost-longest match rewrite transducer
-    public static Fst ToLmlRewriter(this Fst rule, ISet<char> alphabet)
+    public static Fst ToLmlRewriter(this Fst rewriteRule, ISet<char> alphabet)
     {
         if (alphabet.Intersect(new[] { lb, rb, cb }).Any())
             throw new ArgumentException("The alphabet contains invalid symbols.");
@@ -56,7 +56,7 @@ public static class Rewriters
            if and only if it is followed by a string with a prefix in "R" */
         Fsa LiffR(Fsa lang, Fsa l, Fsa r) => PiffS(lang.Concat(l), r.Concat(lang));
 
-        var ruleDomain = rule.Domain();
+        var ruleDomain = rewriteRule.Domain();
 
         var initialMatch =
             Intro(allSymbols, new HashSet<char> { cb })
@@ -88,7 +88,7 @@ public static class Rewriters
 
         var replacement = 
                 FstBuilder.FromWordPair(lb.ToString(), string.Empty)
-                    .Concat(rule, FstBuilder.FromWordPair(rb.ToString(), string.Empty))
+                    .Concat(rewriteRule, FstBuilder.FromWordPair(rb.ToString(), string.Empty))
                     .ToRewriter(allSymbols);
 
         return initialMatch.Compose(leftToRight, longestMatch, replacement);

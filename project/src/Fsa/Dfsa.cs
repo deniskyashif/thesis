@@ -31,6 +31,7 @@ public class Dfsa
         {
             if (!this.Transitions.ContainsKey((curr, symbol)))
                 return false;
+
             curr = this.Transitions[(curr, symbol)];
         }
 

@@ -8,6 +8,7 @@ public static class Tokenizers
     {
         /*
             INT: [0-9]+
+            FLOAT: INT.INT
             OP: '+' | '-' | '*' | '/'
             epsilon -> WS+ 
         */
@@ -15,7 +16,8 @@ public static class Tokenizers
         var whitespaces = new[] { ' ', '\t' };
         var digits = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
         var operators = new[] { '+', '-', '/', '*' };
-        var alphabet = operators.Concat(digits).Concat(whitespaces).ToHashSet();
+        var floatingPoint = new[] { '.' };
+        var alphabet = operators.Concat(digits).Concat(whitespaces).Concat(floatingPoint).ToHashSet();
 
         var clearWS = FsaBuilder.FromSymbolSet(whitespaces)
             .Plus()
@@ -23,17 +25,58 @@ public static class Tokenizers
             .ToLmlRewriter(alphabet);
 
         var integerFsa = FsaBuilder.FromSymbolSet(digits).Plus();
+        var floatFsa = integerFsa.Concat(FsaBuilder.FromSymbolSet(floatingPoint)).Concat(integerFsa);
         var operatorFsa = FsaBuilder.FromSymbolSet(operators);
         var insertIntBoundary = FstBuilder.FromWordPair(string.Empty, $"<INT>{tokenBoundary}");
+        var insertFloatBoundary = FstBuilder.FromWordPair(string.Empty, $"<FLOAT>{tokenBoundary}");
         var insertOperatorBoundary = FstBuilder.FromWordPair(string.Empty, $"<OP>{tokenBoundary}");
         
         var markTokens = integerFsa
             .Identity()
             .Concat(insertIntBoundary)
-            .Union(operatorFsa.Identity().Concat(insertOperatorBoundary))
+            .Union(
+                floatFsa.Identity().Concat(insertFloatBoundary),
+                operatorFsa.Identity().Concat(insertOperatorBoundary))
             .ToLmlRewriter(alphabet);
 
         return clearWS.Compose(markTokens).ToBimachine(alphabet);
+    }
+
+    public static Bimachine CreateForRegularExpr()
+    {
+        /*
+            SYMBOL: [a-zA-Z0-9]
+            LPAREN: '('
+            RPAREN: ')'
+            OP: '|' | '.' | '*'
+        */
+        const string tokenBoundary = "\n";
+        var upperCaseLetters = Enumerable.Range(65, 27).Select(x => (char)x);
+        var lowerCaseLetters = Enumerable.Range(97, 27).Select(x => (char)x);
+        var letters = upperCaseLetters.Concat(lowerCaseLetters);
+        var digits = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+        var operators = new[] { '|', '.', '*' };
+        var alphabet = letters.Concat(digits).Concat(operators).Concat(new[] { '(', ')' }).ToHashSet();
+
+        var symbolFsa = FsaBuilder.FromSymbolSet(letters.Concat(digits));
+        var operatorFsa = FsaBuilder.FromSymbolSet(operators);
+        var lParenFsa = FsaBuilder.FromSymbolSet(new[] { '(' });
+        var rParenFsa = FsaBuilder.FromSymbolSet(new[] { ')' });
+
+        var insertSymbolBoundary = FstBuilder.FromWordPair(string.Empty, $"<SYMBOL>{tokenBoundary}");
+        var insertOperatorBoundary = FstBuilder.FromWordPair(string.Empty, $"<OP>{tokenBoundary}");
+        var insertLParenBoundary = FstBuilder.FromWordPair(string.Empty, $"<LPAREN>{tokenBoundary}");
+        var insertRParenBoundary = FstBuilder.FromWordPair(string.Empty, $"<RPAREN>{tokenBoundary}");
+
+        return symbolFsa
+            .Identity()
+            .Concat(insertSymbolBoundary)
+            .Union(
+                operatorFsa.Identity().Concat(insertOperatorBoundary),
+                lParenFsa.Identity().Concat(insertLParenBoundary),
+                rParenFsa.Identity().Concat(insertRParenBoundary))
+            .ToLmlRewriter(alphabet)
+            .ToBimachine(alphabet);
     }
 
     public static Bimachine CreateForEnglish()

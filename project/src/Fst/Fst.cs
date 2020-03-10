@@ -31,21 +31,21 @@ public class Fst
     public ICollection<string> Process(string word) =>
         this.Process(word.ToCharArray().Select(x => x.ToString()).ToList());
 
-    public ISet<string> Process(IList<string> tokens)
+    public ISet<string> Process(IList<string> inputs)
     {
         var successfulPaths = new HashSet<string>();
         var path = new Stack<string>();
 
         void TraverseDepthFirst(int state, int index)
         {
-            if (index == tokens.Count)
+            if (index == inputs.Count)
             {
                 if (this.Final.Contains(state))
                     successfulPaths.Add(string.Join(string.Empty, path.Reverse()));
             }
             else
             {
-                foreach (var pair in this.GetTransitions(state, tokens[index]))
+                foreach (var pair in this.GetTransitions(state, inputs[index]))
                 {
                     path.Push(pair.Out);
                     TraverseDepthFirst(pair.To, index + 1);
