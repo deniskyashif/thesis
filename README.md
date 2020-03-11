@@ -4,7 +4,7 @@
 
 - Finite-State Automata \[[NFA-Representation](https://github.com/deniskyashif/thesis/blob/master/project/src/Fsa/Fsa.cs)\] \[[DFA-Representation](https://github.com/deniskyashif/thesis/blob/master/project/src/Fsa/Dfsa.cs)\] \[[Constructions](https://github.com/deniskyashif/thesis/blob/master/project/src/Fsa/FsaBuilder.cs)\] \[[Operations](https://github.com/deniskyashif/thesis/blob/master/project/src/Fsa/FsaOperations.cs)\]
 - Finite-State Transducers \[[Representation](https://github.com/deniskyashif/thesis/blob/master/project/src/Fst/Fst.cs)\] \[[Construction](https://github.com/deniskyashif/thesis/blob/master/project/src/Fst/FstBuilder.cs)\] \[[Operations](https://github.com/deniskyashif/thesis/blob/master/project/src/Fst/FstOperations.cs)\]
-- Bimachines \[[Representation](/https://github.com/deniskyashif/thesis/blob/master/project/src/Bimachine/Bimachine.cs)\] \[[Construction](https://github.com/deniskyashif/thesis/blob/598a69f5b1dccffd63f1935e6f14661c81d66ecb/project/src/Fst/FstOperations.cs#L351)\]
+- Bimachines \[[Representation](https://github.com/deniskyashif/thesis/blob/master/project/src/Bimachine/Bimachine.cs)\] \[[Construction](https://github.com/deniskyashif/thesis/blob/598a69f5b1dccffd63f1935e6f14661c81d66ecb/project/src/Fst/FstOperations.cs#L351)\]
 
 ### Text Rewriters based on Regular Relations
 
@@ -12,7 +12,7 @@
 - Obligatory rewrite transducer
 - Leftmost-longest match rewrite transducer
 
-[Implementations](https://github.com/deniskyashif/thesis/blob/master/project/src/Rewriters.cs)
+[\[Implementations\]](https://github.com/deniskyashif/thesis/blob/master/project/src/Rewriters.cs) [\[Tests\]](https://github.com/deniskyashif/thesis/blob/master/project/test/RewriterTests.cs)
 
 ### Tokenizers
 
@@ -20,7 +20,7 @@
 - Regular expression tokenizer
 - Tokenizer for the English language (incomplete)
 
-[Implementations](https://github.com/deniskyashif/thesis/blob/master/project/src/Tokenizers.cs)
+[\[Implementations\]](https://github.com/deniskyashif/thesis/blob/master/project/src/Tokenizers.cs) [\[Tests\]](https://github.com/deniskyashif/thesis/blob/master/project/test/TokenizerTests.cs)
 
 ### Misc
 

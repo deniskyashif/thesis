@@ -235,7 +235,7 @@ public static class FsaOperations
 
     public static Dfsa Determinize(this Fsa automaton)
     {
-        var fsa = Expand(EpsilonFree(automaton));
+        var fsa = automaton.EpsilonFree().Expand();
 
         var stateTransitionMap = fsa.Transitions
             .GroupBy(t => t.From, t => (t.Label, t.To))

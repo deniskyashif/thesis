@@ -9,6 +9,7 @@
 \theoremstyle{definition}
 \newtheorem{definition}{Дефиниция}[section]
 \newtheorem{theorem}{Теорема}[section]
+\newtheorem{construction}{Конструкция}[section]
 
 \usepackage{geometry}
 \geometry{letterpaper}
@@ -17,9 +18,13 @@
 \usetikzlibrary{decorations.pathreplacing}
 \usetikzlibrary{patterns}
 
+% \setlength{\parskip}{1em}
+
 \title{Лексически Анализ чрез Бимашини}
 
 \begin{document}
+
+\tableofcontents
 
 \section{Крайни Автомати}
 
@@ -58,23 +63,23 @@
 	Нека \( \mathcal{A}_1 \) и \( \mathcal{A}_2 \) са крайни автомати. Казваме, че \( \mathcal{A}_1 \) е еквивалентен на \( \mathcal{A}_2 \) (\( \mathcal{A}_1 \equiv \mathcal{A}_2 \)), ако езиците им съвпадат (\( L(\mathcal{A}_1) = L(\mathcal{A}_2) \))
 \end{definition}
 
-\section{Детерминистични Крайни Автомати}
+\section{Детерминирани Крайни Автомати}
 
 \begin{definition}
-	Kраен автомат \( \mathcal{A} = \langle \Sigma, Q, I, F, \Delta \rangle \) е \emph{детерминистичен}, ако:
+	Kраен автомат \( \mathcal{A} = \langle \Sigma, Q, I, F, \Delta \rangle \) е \emph{детерминиран}, ако:
 
 	\begin{itemize}
 		\item \( \mathcal{A} \) има единствено начално състояние \(I = \{q_0\}\).
 		\item За всяко \( q_1 \in Q \) и символ \( a \in \Sigma \), съществува не повече от едно \( q_2 \in Q \), такова че \( \langle q_1, a, q_2 \rangle \in \Delta \).
 	\end{itemize} 
 
-	\noindent Иначе казано, релацията на прехода може да се представи като частична функция \( \delta: Q \times \Sigma \to Q \) и \emph{детерминистичните автомати} можем преставим в следния вид \[ \mathcal{A_D} = \langle \Sigma, Q, q_0, F, \delta \rangle \]
+	\noindent Иначе казано, релацията на прехода може да се представи като частична функция \( \delta: Q \times \Sigma \to Q \) и \emph{детерминираните автомати} можем преставим в следния вид \[ \mathcal{A}_D = \langle \Sigma, Q, q_0, F, \delta \rangle \]
 
-	Предимството на \emph{детерминистичните автомати} се изразява в това, че могат да разпознават дали дума \( w \) принадлежи на езика на автомата \( L(\mathcal{A_D}) \) за линейно време спрямо дължината ѝ - \( O(|w|) \).
+	Предимството на \emph{детерминираните автомати} се изразява в това, че могат да разпознават дали дума \( w \) принадлежи на езика на автомата \( L(\mathcal{A}_D) \) за линейно време спрямо дължината ѝ - \( O(|w|) \).
 \end{definition}
 
 \begin{definition}
-	Нека \( \mathcal{A} = \langle \Sigma, Q, q_0, F, \delta \rangle \) е \emph{детерминистичен краен автомат}. \emph{Разширена функция на прехода} \( \delta^*: Q \times \Sigma^* \to Q \) дефинираме както следва:
+	Нека \( \mathcal{A}_D = \langle \Sigma, Q, q_0, F, \delta \rangle \) е \emph{детерминиран краен автомат}. \emph{Разширена функция на прехода} \( \delta^*: Q \times \Sigma^* \to Q \) дефинираме индуктивно:
 
 	\begin{itemize}
 		\item \( \delta^*(q, \epsilon) = q \)
@@ -82,19 +87,35 @@
 	\end{itemize}
 \end{definition}
 
+\begin{theorem}
+	За всеки краен автомат \(\mathcal{A} = \langle \Sigma, Q, I, F, \Delta \rangle \), съществува еквивалентен на него, детерминиран краен автомат \( \mathcal{A}_D \).
+	\begin{proof}
+		% Строим \emph{детерминиран краен автомат} \( \mathcal{A}_D = \langle \Sigma, 2^Q, I, F_D, \delta \rangle \), където
+		% \begin{itemize}
+		% 	\item \( F_D = \{ S \in 2^Q \hspace{0.1cm}|\hspace{0.1cm} S \cap F \neq \emptyset \} \)
+		% 	\item \( \delta(S,a) = \{ q \in Q \hspace{0.1cm}|\hspace{0.1cm} \exists q_1 \in S : \langle q_1, a, q \rangle \in \Delta \} \)
+		% \end{itemize}
+		
+	\end{proof}
+\end{theorem}
+
 \section{Бимашини}
 
 \begin{definition}
 	 \emph{Бимашина} дефинираме като тройка \( \mathcal{B} = \langle \mathcal{A}_L, \mathcal{A}_R, \psi \rangle \), където
 
 	\begin{itemize}
-		\item \( \mathcal{A_L} = \langle \Sigma, Q_L, s_L, Q_L, \delta_L \rangle \) и \( \mathcal{A_R} = \langle \Sigma, Q_R, s_R, Q_R, \delta_R \rangle \) са \emph{детерминистични крайни автомати} и ги наричаме съответно \emph{ляв и десен автомат} на бимашината. Всички състояния на тези автомати са финални.
-		\item \( \psi:(Q_L \times \Sigma \times Q_R) \to \Sigma^* \) e частична функция, която наричаме \emph{функция на изхода}.
+		\item \( \mathcal{A}_L = \langle \Sigma, Q_L, s_L, Q_L, \delta_L \rangle \) и \( \mathcal{A}_R = \langle \Sigma, Q_R, s_R, Q_R, \delta_R \rangle \) са \emph{детерминирани крайни автомати} и ги наричаме съответно \emph{ляв и десен автомат} на бимашината. Всички състояния на тези автомати са финални.
+		\item \( \psi:(Q_L \times \Sigma \times Q_R) \to \Sigma^* \) e частична функция, която наричаме \emph{изходна функция}.
 	\end{itemize}
 \end{definition}
 
+\begin{definition}{Изпълнение на Бимашина.}
+	
+\end{definition}
+
 \begin{definition}
-	Нека \( \mathcal{B} = \langle \mathcal{A}_L, \mathcal{A}_R, \psi \rangle \) е бимашина. \emph{Разширената функция на изхода \( \psi^* \)} дефинираме както следва:
+	Нека \( \mathcal{B} = \langle \mathcal{A}_L, \mathcal{A}_R, \psi \rangle \) е бимашина. \emph{Разширената изходна функция \( \psi^* \)} дефинираме индуктивно:
 
 	\begin{itemize}
 		\item \( \psi^*(l, \epsilon, r) = \epsilon \) за всяко \( l \in Q_L, r \in Q_R \)
@@ -102,9 +123,11 @@
 	\end{itemize}
 \end{definition}
 
-\section{Токенизиращи Релации}
+\section{Правила за заместване}
 
-% \subsection{Контексти и застъпване}
+\subsection{Стратегии за разрешаване на конфликти}
+
+\subsection{Токенизация чрез правила за заместване}
 
 % \begin{tikzpicture}
 % 	\draw (0,0) rectangle (3,1); % u_1
