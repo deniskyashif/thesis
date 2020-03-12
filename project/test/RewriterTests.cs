@@ -137,4 +137,26 @@ public class RewriterTests
         Assert.Equal("bbcbcb", fst.Process("bbcbcb"));
         Assert.Equal("a\nba\nbb", fst.Process("ababb"));
     }
+
+    [Fact]
+    public void ContextSensitiveRewriteRuleTest()
+    {
+        // capitalize x if it is between a and one or more b's
+        // x -> X / a__b+
+        var rule = FstBuilder.FromWordPair("x", "X");
+        var leftContext = FsaBuilder.FromWord("a").Identity();
+        var rightContext = FsaBuilder.FromWord("b").Plus().Identity();
+        var alphabet = new HashSet<char> { 'a', 'b', 'x' };
+
+        var rewriter = leftContext
+            .Concat(rule, rightContext)
+            .ToLmlRewriter(alphabet)
+            .ToBimachine(alphabet);
+
+        Assert.Equal("axaXb", rewriter.Process("axaxb"));
+        Assert.Equal("aXbbbbbxb", rewriter.Process("axbbbbbxb"));
+        Assert.Equal("ababbb", rewriter.Process("ababbb"));
+        Assert.Equal("abxa", rewriter.Process("abxa"));
+        Assert.Equal("abaXbb", rewriter.Process("abaxbb"));
+    }
 }
