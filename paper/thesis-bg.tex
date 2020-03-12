@@ -10,6 +10,7 @@
 \newtheorem{definition}{Дефиниция}[section]
 \newtheorem{theorem}{Теорема}[section]
 \newtheorem{construction}{Конструкция}[section]
+\newtheorem{example}{Пример}[section]
 
 \usepackage{geometry}
 \geometry{letterpaper}
@@ -52,7 +53,9 @@
 \end{definition}
 
 \begin{definition} 
-	Нека \( \mathcal{A} = \langle \Sigma, Q, I, F, \Delta \rangle \) е краен автомат. \emph{Път} в \( \mathcal{A} \) наричаме крайна редица от преходи с дължина \( k > 0 \) \[ \pi = q_0 \to^{a_1} q_1 \to^{a_2} \ldots \to^{a_k} q_k \] където \( \langle q_{i-1}, a_i, q_i \rangle \in \Delta \) за \( i = 1 \ldots k \). Казваме, че \emph{пътят} започва от състояние \( q_0 \) и завършва в състояние \( q_k \). Елементите \( q_0,q_1, \ldots ,q_k \) наричаме \emph{състояния на пътя}, а думата \( w = a_1 a_2 \ldots a_k \) наричаме \emph{етикет на пътя}. \newline \emph{Успешен път} в автомата е \emph{път}, който започва от начално състояние и завършва във финално състояние.
+	Нека \( \mathcal{A} = \langle \Sigma, Q, I, F, \Delta \rangle \) е краен автомат. \emph{Път} в \( \mathcal{A} \) наричаме крайна редица от преходи с дължина \( k > 0 \) 
+	\[ \pi = q_0 \to^{a_1} q_1 \to^{a_2} \ldots \to^{a_k} q_k \] 
+	където \( \langle q_{i-1}, a_i, q_i \rangle \in \Delta \) за \( i = 1 \ldots k \). Казваме, че \emph{пътят} започва от състояние \( q_0 \) и завършва в състояние \( q_k \). Елементите \( q_0,q_1, \ldots ,q_k \) наричаме \emph{състояния на пътя}, а думата \( w = a_1 a_2 \ldots a_k \) наричаме \emph{етикет на пътя}. \newline \emph{Успешен път} в автомата е \emph{път}, който започва от начално състояние и завършва във финално състояние.
 \end{definition}
 
 \begin{definition} 
@@ -110,17 +113,32 @@
 	\end{itemize}
 \end{definition}
 
-\begin{definition}{Изпълнение на Бимашина.}
-	
+\begin{definition} 
+	Нека \( \mathcal{B} = \langle \mathcal{A}_L, \mathcal{A}_R, \psi \rangle \) е класическа бимашина, \( \Sigma \) е азбуката на на автоматите \( \mathcal{A}_L \) и \( \mathcal{A}_R \) и \( w = a_1a_2 \dots a_k \in \Sigma^* \) \( (k \geq 0) \), дума и \( a_i \in \Sigma \) \( (1 \leq i \leq k) \) са букви. Ако \( \delta_L^*(a_1a_2 \ldots a_k) \) и \( \delta_R^*(a_ka_{k-1} \dots a_1) \) са дефинирани, то можем да получим двата пътя:
+	\[ \pi_L = l_0 \to^{a_1} l_1 \to^{a_2} \ldots l_{k-1} \to^{a_k} l_k \]
+	\[ \pi_R = r_0 \leftarrow^{a_1} r_1 \leftarrow^{a_2} \ldots r_{k-1} \leftarrow^{a_k} r_k \]
+	Където \( \pi_L \) и \( \pi_R \) са пътища в съответно левия и десния автомат и думата \( w \) се разпознава от \( \mathcal{A}_L \) в посока от ляво на дясно, а от \( \mathcal{A}_R \), съответно от дясно на ляво. Ако за всички тройки \( \langle l_{i-1}, a_i, r_i \rangle \), изходната функция \( \psi(l_{i-1}, a_i, r_i) \) е дефинирана, то двойката пътища \( \langle \pi_L, \pi_R \rangle \) наричаме \emph{успешно изпълнение} на \( \mathcal{B} \) с етикет \( w = a_1a_2 \dots a_k \) и \emph{изход}
+	\[ \mathcal{O_B}(w) = \psi(l_0, a_1, r_1) \cdot \psi(l_1, a_2, r_2) \cdot \dots \cdot \psi(l_{k-1}, a_k, r_k) \]
+	\( \mathcal{O_B} \) наричаме \emph{изходна функция на бимашината} и казваме, че бимашината \emph{превежда} \(w\) в \(m\), ако \( \mathcal{O_B}(w) = m \), където \(m\) е резултат от конкатенация на всички \( \psi(l_{i-1}, a_i, r_i) \) \( 1 \leq i \leq k \).
 \end{definition}
+
+\noindent Бимашината чете входната дума и за всеки символ извежда дума над азбуката си. На всяка стъпка изведената от изходната функция \( \psi \) дума зависи от входния символ и двете състояния в които биха преминали левият и десният автомат, четейки входа съответно от ляво на дястно и от дясно на ляво. Крайният резултат е конкатенацията на всички така изведени думи.
+
+\begin{example}{Бимашина и изпълнение}
+	...
+\end{example}
 
 \begin{definition}
 	Нека \( \mathcal{B} = \langle \mathcal{A}_L, \mathcal{A}_R, \psi \rangle \) е бимашина. \emph{Разширената изходна функция \( \psi^* \)} дефинираме индуктивно:
 
 	\begin{itemize}
 		\item \( \psi^*(l, \epsilon, r) = \epsilon \) за всяко \( l \in Q_L, r \in Q_R \)
-		\item \( \psi^*(l, aw, r) = \psi^*(l, w, \delta_R(r, a)) \cdot \psi(\delta^*_L(l, w), a, r) \), за \( l \in Q_L, r \in Q_R, w \in \Sigma^*, a \in \Sigma \)
+		\item \( \psi^*(l, wa, r) = \psi^*(l, w, \delta_R(r, a)) \cdot \psi(\delta^*_L(l, w), a, r) \), за \( l \in Q_L, r \in Q_R, w \in \Sigma^*, a \in \Sigma \)
 	\end{itemize}
+\end{definition}
+
+\begin{definition}
+	Бимашина \( \mathcal{B} = \langle \mathcal{A}_L, \mathcal{A}_R, \psi \rangle \) наричаме \emph{тотална}, ако функциите на прехода \( \delta_L: Q_L \times \Sigma \to Q_L \) и \( \delta_R: Q_R \times \Sigma \to Q_R \) на левия и десния автомат съответно, както и функцията на изхода \( \psi: (Q_L \times \Sigma \times Q_R) \to \Sigma^* \) са \emph{тотални }.
 \end{definition}
 
 \section{Правила за заместване}
