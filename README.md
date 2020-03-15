@@ -14,7 +14,7 @@
 
 [\[Implementations\]](https://github.com/deniskyashif/thesis/blob/master/project/src/Rewriters.cs) [\[Tests\]](https://github.com/deniskyashif/thesis/blob/master/project/test/RewriterTests.cs)
 
-### Tokenizers
+### Lexical Analyzers
 
 - Arithmetic expression tokenizer
 - Regular expression tokenizer

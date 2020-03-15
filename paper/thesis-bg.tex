@@ -1,4 +1,4 @@
-\documentclass[11pt, oneside]{article} 
+\documentclass[12pt, oneside]{article} 
 
 \usepackage{graphicx}
 \usepackage{amssymb}
@@ -11,6 +11,8 @@
 \newtheorem{theorem}{Теорема}[section]
 \newtheorem{construction}{Конструкция}[section]
 \newtheorem{example}{Пример}[section]
+\newtheorem{proposition}{Твърдение}[section]
+\newtheorem{corollary}{Следствие}[section]
 
 \usepackage{geometry}
 \geometry{letterpaper}
@@ -26,6 +28,9 @@
 \begin{document}
 
 \tableofcontents
+\pagebreak
+
+\section{Увод}
 
 \section{Правила за заместване}
 
@@ -48,27 +53,40 @@
 	\emph{Правило за заместване} представяме във вида
 	\[ E \to \beta \]
 	където \( E \) е регулярен израз над крайна азбука \( \Sigma \), а \( \beta \in \Sigma^* \) е дума.
-	Приложение на правилото върху дума \( \alpha \in \Sigma^* \) представлява заместването на поднизовете на \( \alpha \), които са в езика \( L(E) \) с думата \( \beta \).
+	\emph{Приложение на правилото върху текст} \( t \in \Sigma^* \) представлява заместването на поднизовете на \( t \), които са в езика \( L(E) \) с \( \beta \).
 \end{definition}
 
 \begin{figure}[!htb]
-	...
-	\caption{Приложение на правило за заместване над дума}
+	\centering
+	\begin{tikzpicture}
+		\node[font=\Large] {
+			\( a_1a_2 \dots a_i \dots a_{i+k} \dots a_{j} \dots a_{j+l} \dots a_n \)
+		};
+		\draw [decorate,decoration={brace,amplitude=5pt,raise=0pt},yshift=0pt]
+		(-2.75,0.4) -- (-0.25,0.4) node [black,midway,xshift=0cm,yshift=0.5cm] {\footnotesize $ \in L(E) $};
+		\draw [decorate,decoration={brace,amplitude=5pt,mirror,raise=0pt},yshift=0pt]
+		(-2.75,-0.3) -- (-0.25,-0.3) node [black,midway,xshift=0cm,yshift=-0.5cm] {\footnotesize $ \beta $};
+		\draw [decorate,decoration={brace,amplitude=5pt,raise=0pt},yshift=0pt]
+		(0.8,0.4) -- (3.25,0.4) node [black,midway,xshift=0cm,yshift=0.5cm] {\footnotesize $ \in L(E) $};
+		\draw [decorate,decoration={brace,amplitude=5pt,mirror,raise=0pt},yshift=0pt]
+		(0.8,-0.3) -- (3.25,-0.3) node [black,midway,xshift=0cm,yshift=-0.5cm] {\footnotesize $ \beta $};
+	\end{tikzpicture}
+	\caption{Приложение на правило на заместване}
 \end{figure}
 
 \emph{Правила за заместване} можем да представим като \emph{регулярни стрингови релации}, използвайки единствено алгебрата на регулярните множества и релации. Те могат да се реализират програмно чрез крайни преобразуватели. \cite{kaplan&kay94}
 
-\subsection{Разрешаване на многозначности}
-
 \begin{definition}
-	\emph{Контекст на заместване}
+	Нека разгледаме текст \( t \in \Sigma^* \). \emph{Kонтекст на заместване} наричаме тройка \( \langle u,v,w \rangle \), където \( t = uvw \) и \( u, w \in \Sigma^* \). Също така \( u \) и \( w \) наричаме съответно \emph{префикс} и \emph{суфикс} на контекста, докато \( v \) наричаме \emph{фокус}.
 \end{definition}
 
-При прилагане на правило за заместване могат да възникнат многозначности.
-
 \begin{example}
-	Разглеждаме правилото ... приложено над думата ...
+	Нека разгледаме правилото \( ab|bc \to d \). След приложението му над текста \emph{abb}, ще получим \emph{db}, като \( \langle \epsilon, ab, b \rangle \) е единствения контекст на заместване. Приложението на правилото над \emph{abbacbca} ще доведе до \emph{dbacda} с два контекста на заместване \( \langle \epsilon, ab, bacbca \rangle \) и \( \langle abbac, bc, a \rangle \).
 \end{example}
+
+\subsection{Разрешаване на многозначности}
+
+При прилагане на правило за заместване могат да възникнат многозначности.
 
 \begin{figure}[!htb]
 	\centering
@@ -90,12 +108,70 @@
 	\draw [decorate,decoration={brace,amplitude=10pt,raise=3pt},yshift=0pt]
 		(7,1) -- (11,1) node [black,midway,xshift=0cm,yshift=0.75cm] {\footnotesize $w_1$};
 	\draw [decorate,decoration={brace,amplitude=10pt,mirror,raise=3pt},yshift=0pt]
-		(8,0) -- (11,0) node [black,midway,xshift=0cm,yshift=-0.75cm] {\footnotesize $w_3$};
+		(8,0) -- (11,0) node [black,midway,xshift=0cm,yshift=-0.75cm] {\footnotesize $w_2$};
 	\end{tikzpicture}
 	\caption{Застъпващи се контексти}
 \end{figure}
 
-\subsection{Лексически анализ чрез регулярни релации}
+\begin{figure}[!htb]
+	\centering
+	\begin{tikzpicture}
+	\draw (0,0) rectangle (3,1); % u_1
+	\draw (0,0) rectangle (3,1); % u_2
+	\draw[pattern=horizontal lines] (3,0) rectangle (8,1); % v_1
+	\draw[pattern=vertical lines] (3,0) rectangle (6,1); % v_2
+	\draw (8,0) rectangle (11,1); % w_1
+	\draw (6,0) rectangle (11,1); % w_2
+	\draw [decorate,decoration={brace,amplitude=10pt,raise=3pt},yshift=0pt]
+		(0,1) -- (3,1) node [black,midway,xshift=0cm,yshift=0.75cm] {\footnotesize $u_1$};
+	\draw [decorate,decoration={brace,amplitude=10pt,mirror,raise=3pt},yshift=0pt] 
+		(0,0) -- (3,0) node [black,midway,xshift=0cm,yshift=-0.75cm] {\footnotesize $u_2$};
+	\draw [decorate,decoration={brace,amplitude=10pt,raise=3pt},yshift=0pt]
+		(3,1) -- (8,1) node [black,midway,xshift=0cm,yshift=0.75cm] {\footnotesize $v_1$};
+	\draw [decorate,decoration={brace,amplitude=10pt,mirror,raise=3pt},yshift=0pt]
+		(3,0) -- (6,0) node [black,midway,xshift=0cm,yshift=-0.75cm] {\footnotesize $v_2$};
+	\draw [decorate,decoration={brace,amplitude=10pt,raise=3pt},yshift=0pt]
+		(8,1) -- (11,1) node [black,midway,xshift=0cm,yshift=0.75cm] {\footnotesize $w_1$};
+	\draw [decorate,decoration={brace,amplitude=10pt,mirror,raise=3pt},yshift=0pt]
+		(6,0) -- (11,0) node [black,midway,xshift=0cm,yshift=-0.75cm] {\footnotesize $w_2$};
+	\end{tikzpicture}
+	\caption{Застъпващи се контексти с еднакво начало}
+\end{figure}
+
+\begin{example}
+	(пример за многозначност) Разглеждаме правилото ... приложено над думата ...
+\end{example}
+
+\begin{definition}
+	\emph{Застъпващи се контексти}
+\end{definition}
+
+Използваме стратегията най-ляво-най-дълго срещане.
+
+\begin{definition}
+	\emph{Дефинираме следните функции над множества от контексти. OVER, MOST, LONGEST}
+\end{definition}
+
+\begin{definition}
+	\emph{Множество на най-левите и най-дълги контексти} LML(A)
+\end{definition}
+
+\begin{proposition}
+	LML(A) съдържа само незастъпващи се контексти.
+	\begin{proof}
+		...
+	\end{proof}
+\end{proposition}
+
+\begin{definition}
+	\emph{Приложение на правило за заместване над дума в текст под стратегията LML}
+\end{definition}
+
+\begin{corollary}
+	Ако релацията е функционална, то LML е функция.
+\end{corollary}
+
+\subsection{Регулярни релации за лексически анализ}
 
 \emph{Релация за лексически анализ} за даден език дефинираме като комбинация на \emph{правила за заместване}. Тези правила биват два вида - такива, които \emph{маркират} дадена лексема, или \emph{нормализиращи правила}, които служат за предварителна обработка входния текст, като на пример за премахване на излишни символи.
 
@@ -103,7 +179,7 @@
 	\begin{enumerate}
 		\item \verb/WHITESPACE+/ \( \to \epsilon \)
 		\item \verb/[0-9]+/ \( \to \dots \) \verb/TB/
-		\item \verb/+|-|*|\/ \( \to \dots \) \verb/TB/
+		\item \verb/+|-|*|// \( \to \dots \) \verb/TB/
 	\end{enumerate}
 \end{example}
 
@@ -116,7 +192,7 @@
 Стратегията най-ляво-най-дълго срещане приложена над функционални релации, каквито са правилата в лексическата граматика, гарантира, че получената релация също е функционална. Това означава, че процесът на токенизация винаги ще има най-много един резултат.
 
 \[ R(\verb/"2 + 14"/) = \verb/"2 TB + TB 14 TB"/ \]
-\[ R(\verb/"42 - 15 * 5"/) = \verb/"42 TB - TB 15 TB * TB 5 TB"/ \]
+\[ R(\verb/"42-15*5"/) = \verb/"42 TB - TB 15 TB * TB 5 TB"/ \]
 
 \section{Крайни Автомати}
 
@@ -184,6 +260,7 @@
 \begin{theorem}
 	За всеки краен автомат \(\mathcal{A} = \langle \Sigma, Q, I, F, \Delta \rangle \), съществува еквивалентен на него, детерминиран краен автомат \( \mathcal{A}_D \).
 	\begin{proof}
+		...
 		% Строим \emph{детерминиран краен автомат} \( \mathcal{A}_D = \langle \Sigma, 2^Q, I, F_D, \delta \rangle \), където
 		% \begin{itemize}
 		% 	\item \( F_D = \{ S \in 2^Q \hspace{0.1cm}|\hspace{0.1cm} S \cap F \neq \emptyset \} \)
@@ -229,8 +306,14 @@
 \end{definition}
 
 \begin{definition}
-	Бимашина \( \mathcal{B} = \langle \mathcal{A}_L, \mathcal{A}_R, \psi \rangle \) наричаме \emph{тотална}, ако функциите на прехода \( \delta_L: Q_L \times \Sigma \to Q_L \) и \( \delta_R: Q_R \times \Sigma \to Q_R \) на левия и десния автомат съответно, както и функцията на изхода \( \psi: (Q_L \times \Sigma \times Q_R) \to \Sigma^* \) са \emph{тотални }.
+	Бимашина \( \mathcal{B} = \langle \mathcal{A}_L, \mathcal{A}_R, \psi \rangle \) наричаме \emph{тотална}, ако функциите на прехода \( \delta_L: Q_L \times \Sigma \to Q_L \) и \( \delta_R: Q_R \times \Sigma \to Q_R \) на левия и десния автомат съответно, както и функцията на изхода \( \psi: (Q_L \times \Sigma \times Q_R) \to \Sigma^* \) са \emph{тотални}.
 \end{definition}
+
+\begin{theorem}
+	Еквивалентност на регулярните стрингови функции и бимашините ...
+\end{theorem}
+
+\pagebreak
 
 \begin{thebibliography}{9}
 	\bibitem{kaplan&kay94} 
