@@ -113,8 +113,7 @@ public static class Rewriters
     static Fst IntroX(ISet<char> alphabet, ISet<char> symbols)
     {
         return Intro(alphabet, symbols)
-            .Concat(
-                FsaBuilder.FromSymbolSet(alphabet.Except(symbols)).Identity())
+            .Concat(FsaBuilder.FromSymbolSet(alphabet.Except(symbols)).Identity())
             .Optional();
     }
 
@@ -130,13 +129,19 @@ public static class Rewriters
     /* For a given automaton L and a set of symbols S, construct the automaton 
         which recognizes all words from L with freely introduced symbols from S */
     static Fsa Ignore(Fsa fsa, ISet<char> fsaAlphabet, ISet<char> symbols) =>
-        fsa.Identity().Compose(Intro(fsaAlphabet, symbols)).Range();
+        fsa.Identity()
+            .Compose(Intro(fsaAlphabet, symbols))
+            .Range();
 
     // Same as "Ignore" except symbols from S cannot be at the end
     static Fsa IgnoreX(Fsa fsa, ISet<char> fsaAlphabet, ISet<char> symbols) =>
-        fsa.Identity().Compose(IntroX(fsaAlphabet, symbols)).Range();
+        fsa.Identity()
+            .Compose(IntroX(fsaAlphabet, symbols))
+            .Range();
 
     // Same as "Ignore" except symbols from S cannot be at the beginning
     static Fsa XIgnore(Fsa fsa, ISet<char> fsaAlphabet, ISet<char> symbols) =>
-        fsa.Identity().Compose(Xintro(fsaAlphabet, symbols)).Range();
+        fsa.Identity()
+            .Compose(Xintro(fsaAlphabet, symbols))
+            .Range();
 }

@@ -273,7 +273,10 @@ public static class FstOperations
 
     // Produce a transducer by removing the epsilon transitions on the upper tape.
     public static (Fst Transducer, ISet<string> EpsilonOutputs) ToRealTime(this Fst fst) =>
-        fst.Trim().EpsilonFree().Expand().RemoveUpperEpsilon();
+        fst.Trim()
+            .EpsilonFree()
+            .Expand()
+            .RemoveUpperEpsilon();
 
     private static (Fst, ISet<string>) RemoveUpperEpsilon(this Fst fst)
     {

@@ -32,7 +32,9 @@
 
 \section{Увод}
 
-\section{Правила за заместване}
+\section{Мотивация}
+
+\section{Правила за заместване като регулярни релации}
 
 \begin{definition}
 	Нека \( \Sigma_1, \Sigma_2 \) са крайни азбуки. \emph{Двоична стрингова релация} \( R \subseteq \Sigma_1^* \times \Sigma_2^* \) наричаме множество от двойки \( \langle u, v \rangle \), където \( u \in \Sigma_1^* \) и \( v \in \Sigma_2^* \).
@@ -67,9 +69,9 @@
 		\draw [decorate,decoration={brace,amplitude=5pt,mirror,raise=0pt},yshift=0pt]
 		(-2.75,-0.3) -- (-0.25,-0.3) node [black,midway,xshift=0cm,yshift=-0.5cm] {\footnotesize $ \beta $};
 		\draw [decorate,decoration={brace,amplitude=5pt,raise=0pt},yshift=0pt]
-		(0.8,0.4) -- (3.25,0.4) node [black,midway,xshift=0cm,yshift=0.5cm] {\footnotesize $ \in L(E) $};
+		(0.8,0.4) -- (3.15,0.4) node [black,midway,xshift=0cm,yshift=0.5cm] {\footnotesize $ \in L(E) $};
 		\draw [decorate,decoration={brace,amplitude=5pt,mirror,raise=0pt},yshift=0pt]
-		(0.8,-0.3) -- (3.25,-0.3) node [black,midway,xshift=0cm,yshift=-0.5cm] {\footnotesize $ \beta $};
+		(0.8,-0.3) -- (3.15,-0.3) node [black,midway,xshift=0cm,yshift=-0.5cm] {\footnotesize $ \beta $};
 	\end{tikzpicture}
 	\caption{Приложение на правило на заместване}
 \end{figure}
@@ -86,7 +88,11 @@
 
 \subsection{Разрешаване на многозначности}
 
-При прилагане на правило за заместване могат да възникнат многозначности.
+При прилагане на правило за заместване могат да възникнат многозначности в случаите, в които два контекста имат застъпващи се фокуси.
+
+\begin{definition}
+	Два контекста на заместване \( \langle u_1,v_1,w_1 \rangle \) и \( \langle u_2,v_2,w_2 \rangle \) за даден текст \( t \) \emph{се застъпват}, ако \( u_1 < u_2 < u_1v_1 \). Израза \( u_1 < u_2 \) четем като \( u_1 \) е \emph{префикс} на \( u_2 \).
+\end{definition}
 
 \begin{figure}[!htb]
 	\centering
@@ -112,6 +118,10 @@
 	\end{tikzpicture}
 	\caption{Застъпващи се контексти}
 \end{figure}
+
+\begin{example}
+	Нека разгледаме правилото \( ab|bc \to d \) приложено над текста \( t = aabcb \). Получаваме контекстите \( \langle a, ab, cb \rangle \) и \( \langle aa, bc, b \rangle \), които очвевидно се застъпват и съответно стигаме до две различни валидни замествания \emph{adcb} и \emph{aadb}.
+\end{example}
 
 \begin{figure}[!htb]
 	\centering
@@ -139,14 +149,8 @@
 \end{figure}
 
 \begin{example}
-	(пример за многозначност) Разглеждаме правилото ... приложено над думата ...
+	Друг вид многозначност може да получим, когато фокусите на два контекста имат еднакво начало. Например, ако приложим правилото \(a^+ \to d \) над тескт \( t = aa \), може получим превода \emph{dd}, на който отговарят контекстите \( \langle a, a, \epsilon \rangle \) и \( \langle \epsilon, a, a \rangle \), и \emph{d} с контекст \( \langle \epsilon, aa, \epsilon \rangle \).
 \end{example}
-
-\begin{definition}
-	\emph{Застъпващи се контексти}
-\end{definition}
-
-Използваме стратегията най-ляво-най-дълго срещане.
 
 \begin{definition}
 	\emph{Дефинираме следните функции над множества от контексти. OVER, MOST, LONGEST}
