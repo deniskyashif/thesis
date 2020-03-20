@@ -385,4 +385,26 @@ public class FstTests
 
         Assert.Throws<ArgumentException>(() => fst.ToRealTime());
     }
+
+    [Fact]
+    public void PseudoDetermFstTest()
+    {
+        var fst = new Fst(
+            new[] { 0, 1, 2 },
+            new[] { 0 },
+            new[] { 1 },
+            new[] { 
+                (0, "a", "A", 1), 
+                (0, "a", "A", 2), 
+                (2, "b", "B", 1) 
+            });
+
+        var dfst = fst.PseudoDeterminize();
+
+        Assert.Equal(3, dfst.States.Count);
+        Assert.Equal(2, dfst.Transitions.Count);
+
+        Assert.Equal("A", dfst.Process("a").Single());
+        Assert.Equal("AB", dfst.Process("ab").Single());
+    }
 }

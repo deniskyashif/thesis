@@ -505,6 +505,44 @@ public static class FstOperations
 
     public static Fst PseudoDeterminize(this Fst fst)
     {
+        var stateTransitionMap = fst.Transitions
+            .GroupBy(t => t.From)
+            .ToDictionary(g => g.Key, g => g.Select(t => (t.In, t.Out, t.To)));
+
+        var subsetStates = new List<ISet<int>> { fst.Initial.ToHashSet() };
+        var dfstTransitions = new HashSet<(int, string, string, int)>();
+
+        for (int n = 0; n < subsetStates.Count; n++)
+        {
+            var labelToStates = subsetStates[n]
+                .Where(state => stateTransitionMap.ContainsKey(state))
+                .SelectMany(state => stateTransitionMap[state])
+                .Distinct()
+                .GroupBy(t => (t.In, t.Out), t => t.To)
+                .ToDictionary(g => g.Key, g => g.ToHashSet());
+            
+            foreach (var kvp in labelToStates)
+            {
+                var label = kvp.Key;
+                var target = kvp.Value;
+                
+                if (!subsetStates.Any(ss => ss.SetEquals(target)))
+                    subsetStates.Add(target);
+                
+                var targetIndex = subsetStates.FindIndex(ss => ss.SetEquals(target));
+                dfstTransitions.Add((n, label.In, label.Out, targetIndex));
+            }
+        }
+
+        var dfstStates = Enumerable.Range(0, subsetStates.Count);
+        var dfstFinal = dfstStates
+            .Where(index => subsetStates[index].Intersect(fst.Final).Any());
+
+        return new Fst(dfstStates, new[] { 0 }, dfstFinal, dfstTransitions).Trim();
+    }
+
+    public static Fst PseudoMinimal(this Fst fst)
+    {
         throw new NotImplementedException();
     }
 
@@ -514,11 +552,6 @@ public static class FstOperations
     }
 
     public static bool IsFunctional(this Fst fst)
-    {
-        throw new NotImplementedException();
-    }
-
-    public static Fst PseudoMinimal(this Fst fst)
     {
         throw new NotImplementedException();
     }

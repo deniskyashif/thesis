@@ -241,7 +241,7 @@ public static class FsaOperations
             .GroupBy(t => t.From, t => (t.Label, t.To))
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        var subsetStates = new List<List<int>> { fsa.Initial.ToList() };
+        var subsetStates = new List<ISet<int>> { fsa.Initial.ToHashSet() };
         var dfsaTransitions = new Dictionary<(int, char), int>();
 
         for (var n = 0; n < subsetStates.Count; n++) // we break from the loop when there is no unexamined state
@@ -251,16 +251,20 @@ public static class FsaOperations
                 .SelectMany(s => stateTransitionMap[s]) // flatten into a set of (symbol, target) pairs
                 .Distinct()
                 .GroupBy(p => p.Label.Single(), p => p.To) // group them by symbol (fsa has only symbol transitions becase of "Expand")
-                .ToDictionary(g => g.Key, g => g.ToList()); // convert to dictionary of type <symbol, set of states>
+                .ToDictionary(g => g.Key, g => g.ToHashSet()); // convert to dictionary of type <symbol, set of states>
 
-            foreach (var state in symbolToStates.Select(p => p.Value)) // the newly formed state sets are in the Dfsa
-                if (!subsetStates.Any(ss => ss.SequenceEqual(state))) // check if it has been added
+            foreach (var kvp in symbolToStates) 
+            {
+                var state = kvp.Value; // the newly formed state sets are in the Dfsa
+                var label = kvp.Key;
+
+                if (!subsetStates.Any(ss => ss.SetEquals(state))) // check if it has been added
                     subsetStates.Add(state);
 
-            foreach (var pair in symbolToStates)
                 dfsaTransitions.Add(
-                    (n, pair.Key), // n is the index of the currently examined subset state, pair.Key (symbol) is the trans. label
-                    subsetStates.FindIndex(ss => ss.SequenceEqual(pair.Value))); // goes to the index of the subset
+                    (n, label), // n is the index of the currently examined subset state, pair.Key (symbol) is the trans. label
+                    subsetStates.FindIndex(ss => ss.SetEquals(state))); // goes to the index of the subset
+            }
         }
 
         // DFA state names are the indices of the state subsets
@@ -269,8 +273,7 @@ public static class FsaOperations
         // if a state subset contains a final state from the original automaton
         // then it is marked as final in the deterministic automaton
         var finalStates = renamedStates
-            .Where(index => subsetStates[index].Intersect(fsa.Final).Any())
-            .ToList();
+            .Where(index => subsetStates[index].Intersect(fsa.Final).Any());
 
         return new Dfsa(renamedStates, 0, finalStates, dfsaTransitions);
     }
@@ -420,9 +423,7 @@ public static class FsaOperations
     }
 
     public static Fsa Difference(this Fsa first, Fsa second) =>
-        first.Determinize()
-            .Difference(second.Determinize())
-            .ToFsa();
+        first.Determinize().Difference(second.Determinize()).ToFsa();
 
     public static Fsa ToFsa(this Dfsa automaton) =>
         new Fsa(
@@ -440,13 +441,10 @@ public static class FsaOperations
             fst.Transitions.Select(t => (t.From, t.Label, t.Label, t.To)));
 
     /* Splits a set of states to equivalence classes 
-        based on a custom eq. class selector function */
+        based on a custom equivalence class selector function */
     static Dictionary<int, int> Kernel(IEnumerable<int> states, Func<int, int> eqClassSelector)
     {
-        var eqClasses = states
-            .Select(s => eqClassSelector(s))
-            .Distinct()
-            .ToList();
+        var eqClasses = states.Select(s => eqClassSelector(s)).Distinct().ToList();
 
         return states
             .Select(s => (State: s, Class: eqClasses.IndexOf(eqClassSelector(s))))
@@ -459,10 +457,8 @@ public static class FsaOperations
         IDictionary<int, int> eqRel1, 
         IDictionary<int, int> eqRel2)
     {
-        var eqClassPairs = states
-            .Select(s => (eqRel1[s], eqRel2[s]))
-            .ToList();
-        
+        var eqClassPairs = states.Select(s => (eqRel1[s], eqRel2[s])).Distinct().ToList();
+
         return states
             .Select(s => (State: s, Class: eqClassPairs.IndexOf((eqRel1[s], eqRel2[s]))))
             .ToDictionary(p => p.State, p => p.Class);
@@ -470,49 +466,52 @@ public static class FsaOperations
 
     public static Dfsa Minimal(this Dfsa automaton)
     {
+        int EquivClassCount(Dictionary<int, int> eqRel) => eqRel.Values.Distinct().Count();
+
         var states = automaton.States;
         var transitions = automaton.Transitions;
-        var alphabet = automaton.Transitions.Select(t => t.Key.Label).Distinct();
+        var alphabet = transitions.Select(t => t.Key.Label).Distinct();
 
-        var eqClassCount = 0;
         // The initial two equivalence classes are the final and non-final states
-        var eqClassesPerState = Kernel(states, st => automaton.Final.Contains(st) ? 0 : -1);
+        var eqRel = Kernel(states, st => automaton.Final.Contains(st) ? 0 : -1);
+        var prevEqClassCount = 0;
 
-        while (alphabet.Any() && eqClassCount != eqClassesPerState.Values.Distinct().Count())
+        while (alphabet.Any() && prevEqClassCount < EquivClassCount(eqRel))
         {
-            var kernelsPerSymbol = alphabet.Select(symbol => 
-                Kernel(
-                    states, 
-                    st => transitions.ContainsKey((st, symbol)) 
-                        ? eqClassesPerState[automaton.Transitions[(st, symbol)]]
-                        : -1))
-                .ToList();
+            var kernelsPerSymbol = new List<IDictionary<int,int>>();
+
+            foreach (var symbol in alphabet)
+            {
+                Func<int, int> eqClassSelector = state =>
+                    transitions.ContainsKey((state, symbol)) 
+                        ? eqRel[transitions[(state, symbol)]]
+                        : -1;
+                kernelsPerSymbol.Add(Kernel(states, eqClassSelector));
+            }
             
             var nextEqRel = kernelsPerSymbol.Count > 1 
                 ? IntersectEqRel(states, kernelsPerSymbol[0], kernelsPerSymbol[1])
                 : kernelsPerSymbol[0];
-
             for (int i = 2; i < kernelsPerSymbol.Count; i++)
                 nextEqRel = IntersectEqRel(states, nextEqRel, kernelsPerSymbol[i]);
             
-            eqClassCount = eqClassesPerState.Values.Distinct().Count();
-            eqClassesPerState = IntersectEqRel(states, eqClassesPerState, nextEqRel);
+            prevEqClassCount = EquivClassCount(eqRel);
+            eqRel = IntersectEqRel(states, eqRel, nextEqRel);
         }
 
         var minTransitions = new Dictionary<(int, char), int>();
 
-        foreach (var tr in automaton.Transitions)
+        foreach (var tr in transitions)
         {
-            var key = (eqClassesPerState[tr.Key.From], tr.Key.Label);
-            
+            var key = (eqRel[tr.Key.From], tr.Key.Label);
             if (!minTransitions.ContainsKey(key))
-                minTransitions.Add(key, eqClassesPerState[tr.Value]);
+                minTransitions.Add(key, eqRel[tr.Value]);
         }
 
         return new Dfsa(
-            states.Select(s => eqClassesPerState[s]),
-            eqClassesPerState[automaton.Initial],
-            automaton.Final.Select(s => eqClassesPerState[s]),
+            states.Select(s => eqRel[s]),
+            eqRel[automaton.Initial],
+            automaton.Final.Select(s => eqRel[s]),
             minTransitions)
             .Trim();
     }
