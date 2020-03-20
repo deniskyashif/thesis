@@ -46,7 +46,7 @@ public static class Rewriters
         // Automaton recognizing all words that contain an occurrence of a word from the input automaton
         Fsa ContainsLang(Fsa lang) => allSymbolsStarFsa.Concat(lang, allSymbolsStarFsa);
 
-        // All words w where each prefix of w representing a string in "P" is followed by a suffix which is in "S".
+        // All words w where each prefix of w representing a string in "P" is followed by a suffix which is in "S"
         Fsa IfPThenS(Fsa p, Fsa s) => NotInLang(p.Concat(NotInLang(s)));
         
         // All words for which each suffix from "S" is preceeded by a prefix from "P"

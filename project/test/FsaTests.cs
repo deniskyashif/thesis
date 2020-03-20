@@ -600,9 +600,9 @@ public class FsaTests
             { (1, 'a'), 2 }, { (5, 'a'), 6 },
             { (2, 'a'), 3 }, { (6, 'a'), 7 },
             { (3, 'a'), 4 }, { (7, 'a'), 8 },
-            
-            { (1, 'b'), 9 }, { (2, 'b'), 9 }, { (3, 'b'), 9 }, 
-            { (4, 'b'), 9 }, { (5, 'b'), 9 }, { (6, 'b'), 9 },
+            { (1, 'b'), 9 }, { (2, 'b'), 9 }, 
+            { (3, 'b'), 9 }, { (4, 'b'), 9 }, 
+            { (5, 'b'), 9 }, { (6, 'b'), 9 },
             { (7, 'b'), 9 }, { (8, 'b'), 9 }, 
             { (9, 'a'), 9 }, { (9, 'b'), 9 }
         };
@@ -614,5 +614,72 @@ public class FsaTests
         Assert.True(dfsa.Recognize("aaaa"));
         Assert.True(dfsa.Recognize("baaa"));
         Assert.False(dfsa.Recognize("aaab"));
+    }
+
+    [Fact]
+    public void MinDfsaTest1()
+    {
+        var states = new[] { 0, 1, 2, 3, 4 };
+        var final = new[] { 4 };
+        var transitions = new Dictionary<(int, char), int>
+        {
+            { (0, 'a'), 1 }, { (0, 'b'), 2 }, { (1, 'a'), 1 },
+            { (1, 'b'), 3 }, { (2, 'a'), 1 }, { (2, 'b'), 2 },
+            { (3, 'a'), 1 }, { (3, 'b'), 4 }, { (4, 'a'), 1 },
+            { (4, 'b'), 2 },
+        };
+
+        var dfsa = new Dfsa(states, 0, final, transitions).Minimal();
+
+        Assert.Equal(4, dfsa.States.Count);
+        Assert.Equal(8, dfsa.Transitions.Count);
+        Assert.True(dfsa.Recognize("aaabb"));
+        Assert.True(dfsa.Recognize("babb"));
+        Assert.True(dfsa.Recognize("bababb"));
+        Assert.True(dfsa.Recognize("babababababb"));
+        Assert.False(dfsa.Recognize("aba"));
+    }
+
+    [Fact]
+    public void MinDfsaTest2()
+    {
+        var states = new[] { 0, 1, 2, 3, 4, 5 };
+        var final = new[] { 2, 3, 4 };
+        var transitions = new Dictionary<(int, char), int>
+        {
+            { (0, 'a'), 1 }, { (0, 'b'), 2 },
+            { (1, 'a'), 0 }, { (1, 'b'), 3 },
+            { (2, 'a'), 4 }, { (2, 'b'), 5 },
+            { (3, 'a'), 4 }, { (3, 'b'), 5 },
+            { (4, 'a'), 4 }, { (4, 'b'), 5 },
+            { (5, 'a'), 5 }, { (5, 'b'), 5 },
+        };
+
+        var dfsa = new Dfsa(states, 0, final, transitions).Minimal();
+
+        Assert.Equal(2, dfsa.States.Count);
+        Assert.Equal(3, dfsa.Transitions.Count);
+        Assert.True(new[] { "ab", "aba", "b", "ba", "baaa", "aaaabaaa" }.All(dfsa.Recognize));
+        Assert.False(dfsa.Recognize("bb"));
+        Assert.False(dfsa.Recognize("abba"));
+    }
+
+    [Fact]
+    public void MinDfsaTest3()
+    {
+        var states = new[] { 0, 1 };
+        var final = new[] { 0, 1 };
+        var transitions = new Dictionary<(int, char), int>
+        {
+            { (0, 'a'), 1 }
+        };
+
+        var dfsa = new Dfsa(states, 0, final, transitions).Minimal();
+
+        Assert.Equal(2, dfsa.States.Count);
+        Assert.Equal(1, dfsa.Transitions.Count);
+        Assert.True(dfsa.Recognize(string.Empty));
+        Assert.True(dfsa.Recognize("a"));
+        Assert.False(dfsa.Recognize("aa"));
     }
 }

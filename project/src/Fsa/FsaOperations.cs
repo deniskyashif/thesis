@@ -365,6 +365,9 @@ public static class FsaOperations
 
     public static Dfsa Intersect(this Dfsa first, Dfsa second)
     {
+        first = first.Minimal();
+        second = second.Minimal();
+
         var product = Product(
             (first.Initial, first.Transitions),
             (second.Initial, second.Transitions));
@@ -385,6 +388,9 @@ public static class FsaOperations
 
     public static Dfsa Difference(this Dfsa first, Dfsa second)
     {
+        first = first.Minimal();
+        second = second.Minimal();
+
         // The second automaton's transition function needs to be total
         var combinedAlphabet = first.Transitions.Select(t => t.Key.Label)
             .Concat(second.Transitions.Select(t => t.Key.Label))
@@ -415,8 +421,7 @@ public static class FsaOperations
 
     public static Fsa Difference(this Fsa first, Fsa second) =>
         first.Determinize()
-            .Minimal()
-            .Difference(second.Determinize().Minimal())
+            .Difference(second.Determinize())
             .ToFsa();
 
     public static Fsa ToFsa(this Dfsa automaton) =>
@@ -436,9 +441,7 @@ public static class FsaOperations
 
     /* Splits a set of states to equivalence classes 
         based on a custom eq. class selector function */
-    private static Dictionary<int, int> Kernel(
-        IEnumerable<int> states, 
-        Func<int, int> eqClassSelector)
+    static Dictionary<int, int> Kernel(IEnumerable<int> states, Func<int, int> eqClassSelector)
     {
         var eqClasses = states
             .Select(s => eqClassSelector(s))
@@ -451,13 +454,12 @@ public static class FsaOperations
     }
 
     // Intersects two equivalence relations
-    private static Dictionary<int, int> IntersectEqRel(
+    static Dictionary<int, int> IntersectEqRel(
         IEnumerable<int> states, 
         IDictionary<int, int> eqRel1, 
         IDictionary<int, int> eqRel2)
     {
         var eqClassPairs = states
-            // .Where(s => eqRel1.ContainsKey(s) && eqRel2.ContainsKey(s))
             .Select(s => (eqRel1[s], eqRel2[s]))
             .ToList();
         
@@ -469,19 +471,21 @@ public static class FsaOperations
     public static Dfsa Minimal(this Dfsa automaton)
     {
         var states = automaton.States;
+        var transitions = automaton.Transitions;
         var alphabet = automaton.Transitions.Select(t => t.Key.Label).Distinct();
 
+        var eqClassCount = 0;
         // The initial two equivalence classes are the final and non-final states
-        var eqClassesPerState = Kernel(states, st => automaton.Final.Contains(st) ? 1 : 0);
+        var eqClassesPerState = Kernel(states, st => automaton.Final.Contains(st) ? 0 : -1);
 
-        for (var n = 0; n < eqClassesPerState.Count; n++)
+        while (alphabet.Any() && eqClassCount != eqClassesPerState.Values.Distinct().Count())
         {
-            var kernelsPerSymbol = alphabet.Select(
-                symbol => Kernel(
-                    automaton.States, 
-                    state => automaton.Transitions.ContainsKey((state, symbol)) 
-                        ? eqClassesPerState[automaton.Transitions[(state, symbol)]]
-                        : 0))
+            var kernelsPerSymbol = alphabet.Select(symbol => 
+                Kernel(
+                    states, 
+                    st => transitions.ContainsKey((st, symbol)) 
+                        ? eqClassesPerState[automaton.Transitions[(st, symbol)]]
+                        : -1))
                 .ToList();
             
             var nextEqRel = kernelsPerSymbol.Count > 1 
@@ -491,24 +495,25 @@ public static class FsaOperations
             for (int i = 2; i < kernelsPerSymbol.Count; i++)
                 nextEqRel = IntersectEqRel(states, nextEqRel, kernelsPerSymbol[i]);
             
+            eqClassCount = eqClassesPerState.Values.Distinct().Count();
             eqClassesPerState = IntersectEqRel(states, eqClassesPerState, nextEqRel);
         }
 
-        var transitions = new Dictionary<(int, char), int>();
+        var minTransitions = new Dictionary<(int, char), int>();
 
         foreach (var tr in automaton.Transitions)
         {
             var key = (eqClassesPerState[tr.Key.From], tr.Key.Label);
             
-            if (!transitions.ContainsKey(key))
-                transitions.Add(key, eqClassesPerState[tr.Value]);
+            if (!minTransitions.ContainsKey(key))
+                minTransitions.Add(key, eqClassesPerState[tr.Value]);
         }
 
         return new Dfsa(
             states.Select(s => eqClassesPerState[s]),
             eqClassesPerState[automaton.Initial],
             automaton.Final.Select(s => eqClassesPerState[s]),
-            transitions)
+            minTransitions)
             .Trim();
     }
 }

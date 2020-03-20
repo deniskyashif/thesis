@@ -518,7 +518,7 @@ public static class FstOperations
         throw new NotImplementedException();
     }
 
-    public static Fst PseudoMinimize(this Fst fst)
+    public static Fst PseudoMinimal(this Fst fst)
     {
         throw new NotImplementedException();
     }

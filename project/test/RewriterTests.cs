@@ -33,6 +33,16 @@ public class RewriterTests
     }
 
     [Fact]
+    public void SingleRuleLmlRewriterTest()
+    {
+        var alphabet = new HashSet<char> {'a', 'b'};
+        var rule = FstBuilder.FromWordPair("a", "b");
+        var tr = rule.ToLmlRewriter(alphabet);
+
+        Assert.Equal("bb", tr.Process("aa").Single());
+    }
+
+    [Fact]
     public void LmlRewriterTest()
     {
         var alphabet = new HashSet<char> {'a', 'b', 'c', 'd'};
