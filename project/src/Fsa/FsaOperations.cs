@@ -492,6 +492,7 @@ public static class FsaOperations
             var nextEqRel = kernelsPerSymbol.Count > 1 
                 ? IntersectEqRel(states, kernelsPerSymbol[0], kernelsPerSymbol[1])
                 : kernelsPerSymbol[0];
+
             for (int i = 2; i < kernelsPerSymbol.Count; i++)
                 nextEqRel = IntersectEqRel(states, nextEqRel, kernelsPerSymbol[i]);
             

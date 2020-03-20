@@ -216,8 +216,8 @@ public static class FstOperations
 
     public static Fst Compose(this Fst first, Fst second)
     {
-        first = first.Expand();
-        second = second.Expand();
+        first = first.Expand().PseudoMinimal();
+        second = second.Expand().PseudoMinimal();
 
         var firstOutgoingTransitions = first.Transitions
             .Concat(first.States.Select(s => (From: s, In: string.Empty, Out: string.Empty, To: s)))
@@ -436,7 +436,7 @@ public static class FstOperations
                         targetLeftSState.UnionWith(
                             fstTransGroupedBy_21to43[(symbol, st)].Select(x => x.To));
 
-                if (!targetLeftSState.Any())    
+                if (!targetLeftSState.Any())
                     continue;
 
                 var targetSelector = new Dictionary<int, int>();
@@ -520,15 +520,15 @@ public static class FstOperations
                 .Distinct()
                 .GroupBy(t => (t.In, t.Out), t => t.To)
                 .ToDictionary(g => g.Key, g => g.ToHashSet());
-            
+
             foreach (var kvp in labelToStates)
             {
                 var label = kvp.Key;
                 var target = kvp.Value;
-                
+
                 if (!subsetStates.Any(ss => ss.SetEquals(target)))
                     subsetStates.Add(target);
-                
+
                 var targetIndex = subsetStates.FindIndex(ss => ss.SetEquals(target));
                 dfstTransitions.Add((n, label.In, label.Out, targetIndex));
             }
@@ -541,9 +541,80 @@ public static class FstOperations
         return new Fst(dfstStates, new[] { 0 }, dfstFinal, dfstTransitions).Trim();
     }
 
+    /* Splits a set of states to equivalence classes 
+        based on a custom equivalence class selector function */
+    static Dictionary<int, int> Kernel(IEnumerable<int> states, Func<int, int> eqClassSelector)
+    {
+        var eqClasses = states.Select(s => eqClassSelector(s)).Distinct().ToList();
+
+        return states
+            .Select(s => (State: s, Class: eqClasses.IndexOf(eqClassSelector(s))))
+            .ToDictionary(p => p.State, p => p.Class);
+    }
+
+    // Intersects two equivalence relations
+    static Dictionary<int, int> IntersectEqRel(
+        IEnumerable<int> states,
+        IDictionary<int, int> eqRel1,
+        IDictionary<int, int> eqRel2)
+    {
+        var eqClassPairs = states.Select(s => (eqRel1[s], eqRel2[s])).Distinct().ToList();
+
+        return states
+            .Select(s => (State: s, Class: eqClassPairs.IndexOf((eqRel1[s], eqRel2[s]))))
+            .ToDictionary(p => p.State, p => p.Class);
+    }
+
     public static Fst PseudoMinimal(this Fst fst)
     {
-        throw new NotImplementedException();
+        int EquivClassCount(Dictionary<int, int> eqRel) => eqRel.Values.Distinct().Count();
+
+        fst = fst.PseudoDeterminize();
+        var states = fst.States;
+        var alphabet = fst.Transitions.Select(t => (t.In, t.Out)).Distinct();
+        var transitionMap = fst.Transitions
+            .GroupBy(t => (t.From, (t.In, t.Out)), t => t.To)
+            .ToDictionary(g => g.Key, g => g.Single());
+
+        // The initial two equivalence classes are the final and non-final states
+        var eqRel = Kernel(states, st => fst.Final.Contains(st) ? 0 : -1);
+        var prevEqClassCount = 0;
+
+        while (alphabet.Any() && prevEqClassCount < EquivClassCount(eqRel))
+        {
+            var kernelsPerLabel = new List<IDictionary<int, int>>();
+
+            foreach (var pair in alphabet)
+            {
+                Func<int, int> eqClassSelector = state =>
+                    transitionMap.ContainsKey((state, pair))
+                        ? eqRel[transitionMap[(state, pair)]]
+                        : -1;
+                kernelsPerLabel.Add(Kernel(states, eqClassSelector));
+            }
+
+            var nextEqRel = kernelsPerLabel.Count > 1
+                ? IntersectEqRel(states, kernelsPerLabel[0], kernelsPerLabel[1])
+                : kernelsPerLabel[0];
+
+            for (int i = 2; i < kernelsPerLabel.Count; i++)
+                nextEqRel = IntersectEqRel(states, nextEqRel, kernelsPerLabel[i]);
+
+            prevEqClassCount = EquivClassCount(eqRel);
+            eqRel = IntersectEqRel(states, eqRel, nextEqRel);
+        }
+
+        var minTransitions = new HashSet<(int, string, string, int)>();
+
+        foreach (var tr in fst.Transitions)
+            minTransitions.Add((eqRel[tr.From], tr.In, tr.Out, eqRel[tr.To]));
+
+        return new Fst(
+            states.Select(s => eqRel[s]),
+            fst.Initial.Select(s => eqRel[s]),
+            fst.Final.Select(s => eqRel[s]),
+            minTransitions)
+            .Trim();
     }
 
     public static Fst SquaredOutput(this Fst fst)

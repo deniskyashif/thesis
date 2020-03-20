@@ -108,7 +108,7 @@ public static class Tokenizers
 
         Console.WriteLine("Constructing the \"multi word expression list\" transducer.");
         
-        var multiWordExprList = new[] { "AT LEAST", "IN SPITE OF" };
+        var multiWordExprList = new[] { "AT LEAST", "IN SPITE OF", "HEAD OVER HEELS" };
         var multiWordExpr = 
             multiWordExprList
                 .Select(exp => FsaBuilder.FromWord(exp))
