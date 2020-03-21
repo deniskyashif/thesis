@@ -29,4 +29,14 @@ public class TokenizerTests
             t.Process("(a|1)*"));
         Assert.Throws<ArgumentException>(() => t.Process("a/b"));
     }
+
+    [Fact]
+    public void EnglishTokenizerTest()
+    {
+        var t = Tokenizers.CreateForEnglish();
+
+        Assert.Equal("They\nwon\nat least\n'\n10\n'\ntimes\n.\n", t.Process("They won at least '10' times."));
+        Assert.Equal("HEAD over hEelS\n", t.Process("HEAD over hEelS"));
+        Assert.Equal("Not\nto\n,\n,\nworry\n", t.Process("Not to,, worry"));
+    }
 }
