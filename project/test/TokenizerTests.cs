@@ -8,12 +8,12 @@ public class TokenizerTests
     {
         var t = Tokenizers.CreateForArithmeticExpr();
 
-        Assert.Equal("1<INT>\n+<OP>\n1<INT>\n", t.Process("1 + 1"));
-        Assert.Equal("1.2<FLOAT>\n", t.Process("1.2"));
+        Assert.Equal("1[INT]\n+[OP]\n1[INT]\n", t.Process("1 + 1"));
+        Assert.Equal("1.2[FLOAT]\n", t.Process("1.2"));
         Assert.Equal(
-            "10<INT>\n/<OP>\n1<INT>\n-<OP>\n3<INT>\n*<OP>\n0.1193<FLOAT>\n",
+            "10[INT]\n/[OP]\n1[INT]\n-[OP]\n3[INT]\n*[OP]\n0.1193[FLOAT]\n",
             t.Process("10 / 1 - 3 * 0.1193"));
-        Assert.Equal("1<INT>\n+<OP>\n+<OP>\n-<OP>\n", t.Process("1+ +-"));
+        Assert.Equal("1[INT]\n+[OP]\n+[OP]\n-[OP]\n", t.Process("1+ +-"));
         Assert.Throws<ArgumentException>(() => t.Process("123 + x"));
     }
 

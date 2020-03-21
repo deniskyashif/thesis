@@ -27,11 +27,11 @@ public class Bimachine
     {
         var leftRun = this.Left.RecognitionPathLToR(word);
         if (!leftRun.Success) 
-            throw new ArgumentException("Unrecognized input.");
+            throw new ArgumentException($"Unrecognized input. {word[leftRun.Path.Count - 1]}");
 
         var rightRun = this.Right.RecognitionPathRToL(word);
         if (!rightRun.Success)
-            throw new ArgumentException("Unrecognized input.");
+            throw new ArgumentException($"Unrecognized input. {word[rightRun.Path.Count - 1]}");
 
         var output = new StringBuilder();
 

@@ -219,53 +219,62 @@ public static class FstOperations
         first = first.Expand().PseudoMinimal();
         second = second.Expand().PseudoMinimal();
 
-        var firstOutgoingTransitions = first.Transitions
+        var firstTransPerState = first.Transitions
             .Concat(first.States.Select(s => (From: s, In: string.Empty, Out: string.Empty, To: s)))
             .GroupBy(t => t.From, t => (t.In, t.Out, t.To))
             .ToDictionary(g => g.Key, g => g);
 
-        var secondOutgoingTransitions = second.Transitions
+        var secondTransPerState = second.Transitions
             .Concat(second.States.Select(s => (From: s, In: string.Empty, Out: string.Empty, To: s)))
             .GroupBy(t => t.From, t => (t.In, t.Out, t.To))
             .ToDictionary(g => g.Key, g => g);
 
-        var states = new List<(int, int)>();
+        var prodStates = new List<(int, int)>();
         var transitions = new HashSet<(int, string, string, int)>();
 
         foreach (var i1 in first.Initial)
             foreach (var i2 in second.Initial)
-                states.Add((i1, i2));
+                prodStates.Add((i1, i2));
 
-        var addedStates = new HashSet<(int, int)>(states);
+        var addedStates = new HashSet<(int, int)>(prodStates);
 
-        for (int n = 0; n < states.Count; n++)
+        for (int n = 0; n < prodStates.Count; n++)
         {
-            var curr = states[n];
-            var composedTransitions = firstOutgoingTransitions[curr.Item1]
-                .SelectMany(t1 => secondOutgoingTransitions[curr.Item2]
-                    .Where(t2 => t2.In == t1.Out) // (a, b) * (b, c) -> (a, c)
-                    .Select(t2 => (Label: (t1.In, t2.Out), To: (t1.To, t2.To))));
+            var curr = prodStates[n];
+            var compositeTransitions =
+                new HashSet<((string In, string Out) Label, (int, int) To)>();
 
-            foreach (var tr in composedTransitions)
+            foreach (var tr1 in firstTransPerState[curr.Item1])
+                foreach (var tr2 in secondTransPerState[curr.Item2])
+                    if (tr1.Out == tr2.In)
+                        compositeTransitions.Add(
+                            ((tr1.In, tr2.Out), (tr1.To, tr2.To)));
+
+            foreach (var tr in compositeTransitions)
             {
                 if (!addedStates.Contains(tr.To))
                 {
-                    states.Add(tr.To);
+                    prodStates.Add(tr.To);
                     addedStates.Add(tr.To);
                 }
             }
 
             transitions.UnionWith(
-                composedTransitions.Select(t => (n, t.Label.In, t.Label.Out, states.IndexOf(t.To))));
+                compositeTransitions.Select(tr =>
+                    (n, tr.Label.In, tr.Label.Out, prodStates.IndexOf(tr.To))));
         }
 
-        var stateIndices = Enumerable.Range(0, states.Count);
-        var initial = stateIndices.Where(s =>
-            first.Initial.Contains(states[s].Item1) && second.Initial.Contains(states[s].Item2));
-        var final = stateIndices.Where(s =>
-            first.Final.Contains(states[s].Item1) && second.Final.Contains(states[s].Item2));
+        var prodStateIndices = Enumerable.Range(0, prodStates.Count);
 
-        return new Fst(stateIndices, initial, final, transitions).EpsilonFree().Trim();
+        var initial = prodStateIndices.Where(s =>
+            first.Initial.Contains(prodStates[s].Item1) &&
+            second.Initial.Contains(prodStates[s].Item2));
+
+        var final = prodStateIndices.Where(s =>
+            first.Final.Contains(prodStates[s].Item1) &&
+            second.Final.Contains(prodStates[s].Item2));
+
+        return new Fst(prodStateIndices, initial, final, transitions).EpsilonFree().Trim();
     }
 
     public static Fst Compose(this Fst fst, params Fst[] automata) =>
@@ -351,6 +360,26 @@ public static class FstOperations
         return transitiveClosure;
     }
 
+    static bool AreSelectorsEqual(IDictionary<int, int> sel1, IDictionary<int, int> sel2)
+    {
+        if (sel1.Count != sel2.Count)
+            return false;
+
+        foreach (var p1 in sel1)
+            if (sel2.TryGetValue(p1.Key, out int val) && val != p1.Value)
+                return false;
+
+        return true;
+    }
+
+    static bool AreLeftStatesEqual(
+        (ISet<int> SState, IDictionary<int, int> Selector) ls1,
+        (ISet<int> SState, IDictionary<int, int> Selector) ls2)
+    {
+        return ls1.SState.SetEquals(ls2.SState)
+            && AreSelectorsEqual(ls1.Selector, ls2.Selector);
+    }
+
     public static Bimachine ToBimachine(this Fst fst, ISet<char> alphabet)
     {
         // TODO: Handle epsilon inputs
@@ -363,42 +392,38 @@ public static class FstOperations
             .ToDictionary(g => g.Key, g => g.Select(tr => (In: tr.In, To: tr.From)));
 
         var rightSStates = new List<ISet<int>> { rtFst.Final.ToHashSet() };
-        var rightTransitions = new Dictionary<(int, char), int>();
+        var rightTrans = new Dictionary<(int From, char Label), int>();
 
         for (int n = 0; n < rightSStates.Count; n++)
         {
-            var sState = rightSStates[n];
-            var symbolToSStates = sState
+            var symbolToSStates = rightSStates[n]
                 .Where(st => fstTransGroupedBy_4to12.ContainsKey(st))
                 .SelectMany(st => fstTransGroupedBy_4to12[st])
-                .GroupBy(tr => tr.In)
-                .ToDictionary(g => g.Key, g => g.Select(tr => tr.To).ToHashSet());
+                .GroupBy(tr => tr.In, tr => tr.To)
+                .ToDictionary(g => g.Key, g => g.ToHashSet());
 
             foreach (var subsetState in symbolToSStates.Select(p => p.Value))
                 if (!rightSStates.Any(rs => rs.SetEquals(subsetState)))
                     rightSStates.Add(subsetState);
 
             foreach (var (label, targetSState) in symbolToSStates)
-                rightTransitions.Add(
-                    (n, label[0]),
+                rightTrans.Add(
+                    (n, label.Single()),
                     rightSStates.FindIndex(ss => ss.SetEquals(targetSState)));
         }
 
         // Group right Dfa's transitions by a destination state
-        var rightDfaTransGroupedBy_3to12 = rightTransitions
-            .GroupBy(kvp => kvp.Value)
-            .ToDictionary(
-                g => g.Key,
-                g => g.Select(kvp => (To: kvp.Key.Item1, Symbol: kvp.Key.Item2)).ToHashSet());
-
+        var rDfaTransGroupedBy_3to12 = rightTrans
+            .GroupBy(kvp => kvp.Value, kvp => (To: kvp.Key.From, Symbol: kvp.Key.Label))
+            .ToDictionary(g => g.Key, g => g);
         var fstTransGroupedBy_21to43 = new Dictionary<(char In, int From), ISet<(int To, string Out)>>();
 
         foreach (var tr in rtFst.Transitions)
         {
             if (!fstTransGroupedBy_21to43.ContainsKey((tr.In[0], tr.From)))
-                fstTransGroupedBy_21to43[(tr.In[0], tr.From)] = new HashSet<(int, string)>();
+                fstTransGroupedBy_21to43[(tr.In.Single(), tr.From)] = new HashSet<(int, string)>();
 
-            fstTransGroupedBy_21to43[(tr.In[0], tr.From)].Add((tr.To, tr.Out));
+            fstTransGroupedBy_21to43[(tr.In.Single(), tr.From)].Add((tr.To, tr.Out));
         }
 
         // Construct the left Dfa and the bimachine's output function
@@ -406,13 +431,12 @@ public static class FstOperations
         var leftTransitions = new Dictionary<(int, char), int>();
         var bmOutput = new Dictionary<(int, char, int), string>();
 
-        // Construct left Dfa's initial state selector
+        // Construct left Dfa's initial selector function
         var initStateSelector = new Dictionary<int, int>();
 
         for (int rIndex = 0; rIndex < rightSStates.Count; rIndex++)
         {
             var initStates = rightSStates[rIndex].Intersect(rtFst.Initial);
-
             if (initStates.Any())
                 initStateSelector.Add(rIndex, initStates.First());
         }
@@ -421,84 +445,79 @@ public static class FstOperations
 
         for (int k = 0; k < leftStates.Count; k++)
         {
-            var current = leftStates[k];
-
+            var curr = leftStates[k];
             // Find target states & their selectors on each alphabet symbol
-            var targetTransForCurrentOnSymbol =
+            var targetLStatesPerSymbol =
                 new Dictionary<char, (ISet<int> LeftSState, IDictionary<int, int> SelectorForSymbol)>();
 
             foreach (var symbol in alphabet)
             {
-                var targetLeftSState = new HashSet<int>();
+                var targetLSState = new HashSet<int>();
 
-                foreach (var st in current.SState)
+                foreach (var st in curr.SState)
                     if (fstTransGroupedBy_21to43.ContainsKey((symbol, st)))
-                        targetLeftSState.UnionWith(
+                        targetLSState.UnionWith(
                             fstTransGroupedBy_21to43[(symbol, st)].Select(x => x.To));
 
-                if (!targetLeftSState.Any())
+                if (!targetLSState.Any())
                     continue;
 
                 var targetSelector = new Dictionary<int, int>();
 
-                foreach (var (toRightIndex, fstState) in current.Selector)
+                foreach (var (toRIndex, fstState) in curr.Selector)
                 {
-                    if (!rightDfaTransGroupedBy_3to12.ContainsKey(toRightIndex))
+                    if (!rDfaTransGroupedBy_3to12.ContainsKey(toRIndex))
                         continue;
 
-                    foreach (var (fromRIndex, _) in rightDfaTransGroupedBy_3to12[toRightIndex].Where(p => p.Symbol == symbol))
+                    foreach (var (fromRIndex, _) in
+                        rDfaTransGroupedBy_3to12[toRIndex].Where(p => p.Symbol == symbol))
                     {
                         if (!fstTransGroupedBy_21to43.ContainsKey((symbol, fstState)))
                             continue;
 
-                        var reachableTargets = fstTransGroupedBy_21to43[(symbol, fstState)]
-                            .Where(p => rightSStates[fromRIndex].Contains(p.To));
+                        var reachableTarget = fstTransGroupedBy_21to43[(symbol, fstState)]
+                            .FirstOrDefault(p => rightSStates[fromRIndex].Contains(p.To));
 
-                        if (reachableTargets.Any() && !targetSelector.ContainsKey(fromRIndex))
-                            targetSelector.Add(fromRIndex, reachableTargets.First().To);
+                        if (reachableTarget != default)
+                            targetSelector.Add(fromRIndex, reachableTarget.To);
                     }
                 }
 
-                if (targetLeftSState.Any() && targetSelector.Any())
-                    targetTransForCurrentOnSymbol.Add(symbol, (targetLeftSState, targetSelector));
+                if (!targetSelector.Any())
+                    continue;
+
+                targetLStatesPerSymbol.Add(symbol, (targetLSState, targetSelector));
             }
 
-            foreach (var tr in targetTransForCurrentOnSymbol)
+            foreach (var (symbol, (targetSState, targetSelector)) in targetLStatesPerSymbol)
             {
-                var symbol = tr.Key;
-                var (targetSState, targetSelector) = tr.Value;
-
                 // Add to the bimachine's output function
                 foreach (var (fromRIndex, fstState) in targetSelector)
                 {
-                    if (!rightTransitions.ContainsKey((fromRIndex, symbol)))
-                        continue;
-                    if (!current.Selector.ContainsKey(rightTransitions[(fromRIndex, symbol)]))
-                        continue;
-
-                    var state = current.Selector[rightTransitions[(fromRIndex, symbol)]];
-                    var destinationStates = fstTransGroupedBy_21to43[(symbol, state)].Where(p => p.To == fstState);
+                    var state = curr.Selector[rightTrans[(fromRIndex, symbol)]];
+                    var destinationStates = fstTransGroupedBy_21to43[(symbol, state)]
+                        .Where(p => p.To == fstState);
 
                     foreach (var (toState, word) in destinationStates)
-                        if (!bmOutput.ContainsKey((k, symbol, fromRIndex)))
-                            bmOutput.Add((k, symbol, fromRIndex), word);
+                        bmOutput.Add((k, symbol, fromRIndex), word);
                 }
 
+                var nextLState = (targetSState, targetSelector);
                 // Left Dfa's states
-                if (!leftStates.Any(ls => ls.SState.SetEquals(targetSState)))
+                if (!leftStates.Any(ls => AreLeftStatesEqual(ls, nextLState)))
                     leftStates.Add((targetSState, targetSelector));
 
                 // Left Dfa's transitions
                 leftTransitions.Add(
                     (k, symbol),
-                    leftStates.FindIndex(p => p.SState.SetEquals(targetSState)));
+                    leftStates.FindIndex(ls => AreLeftStatesEqual(ls, nextLState)));
             }
         }
 
         var leftStateIndices = Enumerable.Range(0, leftStates.Count);
         var leftDfsa = new Dfsa(leftStateIndices, 0, leftStateIndices, leftTransitions);
         var rightStateIndices = Enumerable.Range(0, rightSStates.Count);
-        var rightDfsa = new Dfsa(rightStateIndices, 0, rightStateIndices, rightTransitions);
+        var rightDfsa = new Dfsa(rightStateIndices, 0, rightStateIndices, rightTrans);
 
         return new Bimachine(leftDfsa, rightDfsa, bmOutput);
     }
@@ -570,14 +589,13 @@ public static class FstOperations
         int EquivClassCount(Dictionary<int, int> eqRel) => eqRel.Values.Distinct().Count();
 
         fst = fst.PseudoDeterminize();
-        var states = fst.States;
         var alphabet = fst.Transitions.Select(t => (t.In, t.Out)).Distinct();
         var transitionMap = fst.Transitions
             .GroupBy(t => (t.From, (t.In, t.Out)), t => t.To)
             .ToDictionary(g => g.Key, g => g.Single());
 
         // The initial two equivalence classes are the final and non-final states
-        var eqRel = Kernel(states, st => fst.Final.Contains(st) ? 0 : -1);
+        var eqRel = Kernel(fst.States, st => fst.Final.Contains(st) ? 0 : -1);
         var prevEqClassCount = 0;
 
         while (alphabet.Any() && prevEqClassCount < EquivClassCount(eqRel))
@@ -590,18 +608,18 @@ public static class FstOperations
                     transitionMap.ContainsKey((state, pair))
                         ? eqRel[transitionMap[(state, pair)]]
                         : -1;
-                kernelsPerLabel.Add(Kernel(states, eqClassSelector));
+                kernelsPerLabel.Add(Kernel(fst.States, eqClassSelector));
             }
 
             var nextEqRel = kernelsPerLabel.Count > 1
-                ? IntersectEqRel(states, kernelsPerLabel[0], kernelsPerLabel[1])
+                ? IntersectEqRel(fst.States, kernelsPerLabel[0], kernelsPerLabel[1])
                 : kernelsPerLabel[0];
 
             for (int i = 2; i < kernelsPerLabel.Count; i++)
-                nextEqRel = IntersectEqRel(states, nextEqRel, kernelsPerLabel[i]);
+                nextEqRel = IntersectEqRel(fst.States, nextEqRel, kernelsPerLabel[i]);
 
             prevEqClassCount = EquivClassCount(eqRel);
-            eqRel = IntersectEqRel(states, eqRel, nextEqRel);
+            eqRel = IntersectEqRel(fst.States, eqRel, nextEqRel);
         }
 
         var minTransitions = new HashSet<(int, string, string, int)>();
@@ -610,7 +628,7 @@ public static class FstOperations
             minTransitions.Add((eqRel[tr.From], tr.In, tr.Out, eqRel[tr.To]));
 
         return new Fst(
-            states.Select(s => eqRel[s]),
+            fst.States.Select(s => eqRel[s]),
             fst.Initial.Select(s => eqRel[s]),
             fst.Final.Select(s => eqRel[s]),
             minTransitions)

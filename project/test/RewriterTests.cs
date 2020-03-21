@@ -52,7 +52,8 @@ public class RewriterTests
         var rule2 = FstBuilder.FromWordPair("cd", "CD");
 
         var transducer = rule1.ToLmlRewriter(alphabet)
-            .Compose(rule2.ToLmlRewriter(alphabet));
+            .Compose(rule2.ToLmlRewriter(alphabet))
+            .PseudoMinimal();
 
         Assert.Equal(string.Empty, transducer.Process(string.Empty).Single());
         Assert.Equal("dc", transducer.Process("abc").Single());
@@ -80,7 +81,7 @@ public class RewriterTests
                 (0, "a", string.Empty, 3),
                 (3, "a", "X", 4),
             });
-        var transducer = rule.ToLmlRewriter(alphabet);
+        var transducer = rule.ToLmlRewriter(alphabet).PseudoMinimal();
 
         Assert.Equal("X", transducer.Process("aaab").Single());
         Assert.Equal("XX", transducer.Process("aaaa").Single());
@@ -91,7 +92,7 @@ public class RewriterTests
     }
 
     [Fact]
-    public void ComposedLmlRewriterTest()
+    public void CompositeLmlRewriterTest()
     {
         // (a|b)* -> d -> D
         var alphabet = new HashSet<char> {'a', 'b', 'c', 'd', 'D' };
@@ -100,7 +101,7 @@ public class RewriterTests
             .Star()
             .Compose(FstBuilder.FromWordPair("d", "D"));
 
-        var transducer = rule.ToLmlRewriter(alphabet);
+        var transducer = rule.ToLmlRewriter(alphabet).PseudoMinimal();
 
         Assert.Equal("DDDDDDDDcDDD", transducer.Process("abababbbcbba").Single());
         Assert.Equal("DDDD", transducer.Process("aaaa").Single());
@@ -110,6 +111,28 @@ public class RewriterTests
         Assert.Equal("DDDDDDDDcDDD", bm.Process("abababbbcbba"));
         Assert.Equal("DDDD", bm.Process("aaaa"));
         Assert.Equal("cc", bm.Process("cc"));
+    }
+
+    [Fact]
+    public void CompositeBmLmlRewriterTest()
+    {
+        var whitespaces = new[] { ' ', };
+        var alphabet = new[] { 'b' }.Concat(whitespaces).ToHashSet();
+
+        var clearWS = FsaBuilder.FromSymbolSet(whitespaces)
+            .Plus()
+            .Product(FsaBuilder.FromEpsilon())
+            .ToLmlRewriter(alphabet);
+
+        var rule = FsaBuilder.FromWord("b").Plus()
+            .Product(FsaBuilder.FromWord("qwer"))
+            .ToLmlRewriter(alphabet);
+
+        var rewriter = clearWS.Compose(rule).ToBimachine(alphabet);
+
+        Assert.Equal("", rewriter.Process("   "));
+        Assert.Equal("qwer", rewriter.Process(" b   "));
+        Assert.Equal("qwer", rewriter.Process("bb   b  "));
     }
 
     [Fact]

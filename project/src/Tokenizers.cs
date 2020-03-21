@@ -31,9 +31,9 @@ public static class Tokenizers
         var integerFsa = FsaBuilder.FromSymbolSet(digits).Plus();
         var floatFsa = integerFsa.Concat(FsaBuilder.FromSymbolSet(floatingPoint)).Concat(integerFsa);
         var operatorFsa = FsaBuilder.FromSymbolSet(operators);
-        var insertIntBoundary = FstBuilder.FromWordPair(string.Empty, $"<INT>{tokenBoundary}");
-        var insertFloatBoundary = FstBuilder.FromWordPair(string.Empty, $"<FLOAT>{tokenBoundary}");
-        var insertOperatorBoundary = FstBuilder.FromWordPair(string.Empty, $"<OP>{tokenBoundary}");
+        var insertIntBoundary = FstBuilder.FromWordPair(string.Empty, $"[INT]{tokenBoundary}");
+        var insertFloatBoundary = FstBuilder.FromWordPair(string.Empty, $"[FLOAT]{tokenBoundary}");
+        var insertOperatorBoundary = FstBuilder.FromWordPair(string.Empty, $"[OP]{tokenBoundary}");
         
         var markTokens = integerFsa
             .Identity()
