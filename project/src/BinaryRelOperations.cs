@@ -1,7 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public static class BinaryRelationOperations
+public static class RelationOperations
 {
     public static ICollection<(int, int)> TransitiveClosure(this ISet<(int, int)> rel)
     {
@@ -30,5 +31,29 @@ public static class BinaryRelationOperations
         }
 
         return transitiveClosure;
+    }
+
+    /* Splits a set of states to equivalence classes based on a custom 
+        equivalence class selector function. Used for Dfsa & Fst minimization. */
+    internal static Dictionary<int, int> Kernel(IEnumerable<int> states, Func<int, int> eqClassSelector)
+    {
+        var eqClasses = states.Select(s => eqClassSelector(s)).Distinct().ToList();
+
+        return states
+            .Select(s => (State: s, Class: eqClasses.IndexOf(eqClassSelector(s))))
+            .ToDictionary(p => p.State, p => p.Class);
+    }
+
+    // Intersects two equivalence relations. Used for Dfsa & Fst minimization.
+    internal static Dictionary<int, int> IntersectEqRel(
+        IEnumerable<int> states, 
+        IDictionary<int, int> eqRel1, 
+        IDictionary<int, int> eqRel2)
+    {
+        var eqClassPairs = states.Select(s => (eqRel1[s], eqRel2[s])).Distinct().ToList();
+
+        return states
+            .Select(s => (State: s, Class: eqClassPairs.IndexOf((eqRel1[s], eqRel2[s]))))
+            .ToDictionary(p => p.State, p => p.Class);
     }
 }

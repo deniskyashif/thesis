@@ -560,30 +560,6 @@ public static class FstOperations
         return new Fst(dfstStates, new[] { 0 }, dfstFinal, dfstTransitions).Trim();
     }
 
-    /* Splits a set of states to equivalence classes 
-        based on a custom equivalence class selector function */
-    static Dictionary<int, int> Kernel(IEnumerable<int> states, Func<int, int> eqClassSelector)
-    {
-        var eqClasses = states.Select(s => eqClassSelector(s)).Distinct().ToList();
-
-        return states
-            .Select(s => (State: s, Class: eqClasses.IndexOf(eqClassSelector(s))))
-            .ToDictionary(p => p.State, p => p.Class);
-    }
-
-    // Intersects two equivalence relations
-    static Dictionary<int, int> IntersectEqRel(
-        IEnumerable<int> states,
-        IDictionary<int, int> eqRel1,
-        IDictionary<int, int> eqRel2)
-    {
-        var eqClassPairs = states.Select(s => (eqRel1[s], eqRel2[s])).Distinct().ToList();
-
-        return states
-            .Select(s => (State: s, Class: eqClassPairs.IndexOf((eqRel1[s], eqRel2[s]))))
-            .ToDictionary(p => p.State, p => p.Class);
-    }
-
     public static Fst PseudoMinimal(this Fst fst)
     {
         int EquivClassCount(Dictionary<int, int> eqRel) => eqRel.Values.Distinct().Count();
@@ -595,7 +571,9 @@ public static class FstOperations
             .ToDictionary(g => g.Key, g => g.Single());
 
         // The initial two equivalence classes are the final and non-final states
-        var eqRel = Kernel(fst.States, st => fst.Final.Contains(st) ? 0 : -1);
+        var eqRel = RelationOperations.Kernel(
+            fst.States, 
+            st => fst.Final.Contains(st) ? 0 : -1);
         var prevEqClassCount = 0;
 
         while (alphabet.Any() && prevEqClassCount < EquivClassCount(eqRel))
@@ -608,18 +586,18 @@ public static class FstOperations
                     transitionMap.ContainsKey((state, pair))
                         ? eqRel[transitionMap[(state, pair)]]
                         : -1;
-                kernelsPerLabel.Add(Kernel(fst.States, eqClassSelector));
+                kernelsPerLabel.Add(RelationOperations.Kernel(fst.States, eqClassSelector));
             }
 
             var nextEqRel = kernelsPerLabel.Count > 1
-                ? IntersectEqRel(fst.States, kernelsPerLabel[0], kernelsPerLabel[1])
+                ? RelationOperations.IntersectEqRel(fst.States, kernelsPerLabel[0], kernelsPerLabel[1])
                 : kernelsPerLabel[0];
 
             for (int i = 2; i < kernelsPerLabel.Count; i++)
-                nextEqRel = IntersectEqRel(fst.States, nextEqRel, kernelsPerLabel[i]);
+                nextEqRel = RelationOperations.IntersectEqRel(fst.States, nextEqRel, kernelsPerLabel[i]);
 
             prevEqClassCount = EquivClassCount(eqRel);
-            eqRel = IntersectEqRel(fst.States, eqRel, nextEqRel);
+            eqRel = RelationOperations.IntersectEqRel(fst.States, eqRel, nextEqRel);
         }
 
         var minTransitions = new HashSet<(int, string, string, int)>();
@@ -633,15 +611,5 @@ public static class FstOperations
             fst.Final.Select(s => eqRel[s]),
             minTransitions)
             .Trim();
-    }
-
-    public static Fst SquaredOutput(this Fst fst)
-    {
-        throw new NotImplementedException();
-    }
-
-    public static bool IsFunctional(this Fst fst)
-    {
-        throw new NotImplementedException();
     }
 }

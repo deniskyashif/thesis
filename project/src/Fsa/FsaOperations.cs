@@ -440,30 +440,6 @@ public static class FsaOperations
             fst.Final,
             fst.Transitions.Select(t => (t.From, t.Label, t.Label, t.To)));
 
-    /* Splits a set of states to equivalence classes 
-        based on a custom equivalence class selector function */
-    static Dictionary<int, int> Kernel(IEnumerable<int> states, Func<int, int> eqClassSelector)
-    {
-        var eqClasses = states.Select(s => eqClassSelector(s)).Distinct().ToList();
-
-        return states
-            .Select(s => (State: s, Class: eqClasses.IndexOf(eqClassSelector(s))))
-            .ToDictionary(p => p.State, p => p.Class);
-    }
-
-    // Intersects two equivalence relations
-    static Dictionary<int, int> IntersectEqRel(
-        IEnumerable<int> states, 
-        IDictionary<int, int> eqRel1, 
-        IDictionary<int, int> eqRel2)
-    {
-        var eqClassPairs = states.Select(s => (eqRel1[s], eqRel2[s])).Distinct().ToList();
-
-        return states
-            .Select(s => (State: s, Class: eqClassPairs.IndexOf((eqRel1[s], eqRel2[s]))))
-            .ToDictionary(p => p.State, p => p.Class);
-    }
-
     public static Dfsa Minimal(this Dfsa automaton)
     {
         int EquivClassCount(Dictionary<int, int> eqRel) => eqRel.Values.Distinct().Count();
@@ -473,7 +449,8 @@ public static class FsaOperations
         var alphabet = transitions.Select(t => t.Key.Label).Distinct();
 
         // The initial two equivalence classes are the final and non-final states
-        var eqRel = Kernel(states, st => automaton.Final.Contains(st) ? 0 : -1);
+        var eqRel = RelationOperations.Kernel(
+            states, st => automaton.Final.Contains(st) ? 0 : -1);
         var prevEqClassCount = 0;
 
         while (alphabet.Any() && prevEqClassCount < EquivClassCount(eqRel))
@@ -486,18 +463,18 @@ public static class FsaOperations
                     transitions.ContainsKey((state, symbol)) 
                         ? eqRel[transitions[(state, symbol)]]
                         : -1;
-                kernelsPerSymbol.Add(Kernel(states, eqClassSelector));
+                kernelsPerSymbol.Add(RelationOperations.Kernel(states, eqClassSelector));
             }
             
             var nextEqRel = kernelsPerSymbol.Count > 1 
-                ? IntersectEqRel(states, kernelsPerSymbol[0], kernelsPerSymbol[1])
+                ? RelationOperations.IntersectEqRel(states, kernelsPerSymbol[0], kernelsPerSymbol[1])
                 : kernelsPerSymbol[0];
 
             for (int i = 2; i < kernelsPerSymbol.Count; i++)
-                nextEqRel = IntersectEqRel(states, nextEqRel, kernelsPerSymbol[i]);
+                nextEqRel = RelationOperations.IntersectEqRel(states, nextEqRel, kernelsPerSymbol[i]);
             
             prevEqClassCount = EquivClassCount(eqRel);
-            eqRel = IntersectEqRel(states, eqRel, nextEqRel);
+            eqRel = RelationOperations.IntersectEqRel(states, eqRel, nextEqRel);
         }
 
         var minTransitions = new Dictionary<(int, char), int>();
