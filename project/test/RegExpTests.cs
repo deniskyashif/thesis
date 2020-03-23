@@ -119,4 +119,14 @@ public class RegExpTests
         Assert.False(re.Match("eccdd"));
         Assert.False(re.Match(string.Empty));
     }
+
+    [Fact]
+    public void FromPatternShouldMatchCorrectly9()
+    {
+        var re = new RegExp("(π|©)ю+_¡˚\\*");
+
+        Assert.True(re.Match("©ю_¡˚*"));
+        Assert.True(re.Match("πюююююю_¡˚*"));
+        Assert.False(re.Match("π_¡˚*"));
+    }
 }

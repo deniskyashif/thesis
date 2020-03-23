@@ -4,25 +4,12 @@ using System.Linq;
 
 public class RegExp
 {
-    static readonly char[] digits = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
-    static readonly char[] lowerCaseLetters = new char[]
-    {
-        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-    };
-    static readonly char[] upperCaseLetters = new char[]
-    {
-        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-    };
-    static readonly char[] symbols = new char[]
-    {
-        '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/', ':',
-        ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~',
-    };
-    static readonly ISet<char> allChars 
-        = symbols.Concat(lowerCaseLetters).Concat(upperCaseLetters).Concat(digits).ToHashSet();
+    static readonly ISet<char> allChars = 
+        Enumerable.Range(char.MinValue, char.MaxValue)
+            .Select(c => (char)c)
+            .ToHashSet();
     static readonly ISet<char> metaChars = new HashSet<char> { '?', '*', '+' };
+    static readonly Fsa allCharsFsa = FsaBuilder.FromSymbolSet(allChars);
 
     string originalPattern;
     string pattern;
@@ -40,7 +27,9 @@ public class RegExp
 
     char Peek() => this.pattern[this.pos];
 
-    bool HasMore() => this.pos < this.pattern.Length;
+    bool HasMoreChars() => this.pos < this.pattern.Length;
+
+    bool IsMetaChar(char ch) => metaChars.Contains(ch);
 
     void Eat(char ch)
     {
@@ -62,7 +51,7 @@ public class RegExp
     {
         var term = this.Term();
 
-        if (this.HasMore() && this.Peek() == '|')
+        if (this.HasMoreChars() && this.Peek() == '|')
         {
             this.Eat('|');
             return term.Union(this.Expr());
@@ -73,7 +62,7 @@ public class RegExp
 
     Fsa Term()
     {
-        if (this.HasMore() && this.Peek() != ')' && this.Peek() != '|')
+        if (this.HasMoreChars() && this.Peek() != ')' && this.Peek() != '|')
             return this.Factor().Concat(this.Term());
 
         return FsaBuilder.FromEpsilon();
@@ -83,7 +72,7 @@ public class RegExp
     {
         var atom = this.Atom();
 
-        if (this.HasMore() && metaChars.Contains(this.Peek()))
+        if (this.HasMoreChars() && this.IsMetaChar(this.Peek()))
         {
             var metaCh = this.Next();
 
