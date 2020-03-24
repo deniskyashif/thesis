@@ -4,15 +4,13 @@ using System.Linq;
 
 public class RegExp
 {
-    static readonly ISet<char> allChars =
-        Enumerable.Range(char.MinValue, char.MaxValue)
-            .Select(Convert.ToChar)
-            .Where(c => !char.IsControl(c))
-            .ToHashSet();
+    static readonly ISet<char> allChars = Enumerable.Range(char.MinValue, char.MaxValue)
+        .Select(Convert.ToChar)
+        .Where(c => !char.IsControl(c))
+        .ToHashSet();
     static readonly ISet<char> metaChars = new HashSet<char> { '?', '*', '+' };
     static readonly Fsa allCharsFsa = FsaBuilder.FromSymbolSet(allChars);
 
-    string originalPattern;
     string pattern;
     int pos = 0;
 
@@ -86,6 +84,30 @@ public class RegExp
             };
         }
 
+        if (this.HasMoreChars() && this.Peek() == '{')
+        {
+            this.Eat('{');
+
+            var (min, max) = this.CharCount();
+            var fsa = FsaBuilder.FromEpsilon();
+            var optionalAtom = atom.Optional();
+
+            for (var i = 0; i < min; i++)
+                fsa = fsa.Concat(atom);
+
+            if (max == -1)
+                fsa = fsa.Concat(atom.Star());
+            else
+            {
+                for (var i = min; i < max; i++)
+                    fsa = fsa.Concat(optionalAtom);
+            }
+
+            this.Eat('}');
+
+            return fsa;
+        }
+
         return atom;
     }
 
@@ -148,6 +170,26 @@ public class RegExp
         return fsa;
     }
 
+    (int Min, int Max) CharCount()
+    {
+        var min = int.Parse(this.Integer());
+
+        if (this.Peek() == ',')
+            this.Eat(',');
+        
+        if (this.Peek() != '}')
+        {
+            var max = int.Parse(this.Integer());
+
+            if (min > max)
+                throw new ArgumentException($"Invalid count [{min}, {max}].");
+
+            return (min, max);
+        }
+
+        return (min, -1);
+    }
+
     Fsa Char()
     {
         if (this.Peek() == '\\')
@@ -169,5 +211,25 @@ public class RegExp
 
             return FsaBuilder.FromWord(ch.ToString());
         }
+    }
+
+    string Integer()
+    {
+        var digit = this.Digit();
+
+        if (this.Peek() != ',' && this.Peek() != '}')
+            return digit + this.Integer();
+
+        return digit.ToString();
+    }
+
+    char Digit()
+    {
+        var digit = this.Next();
+
+        if (!char.IsDigit(digit))
+            throw new ArgumentException($"Invalid digit '{digit}'.");
+
+        return digit;
     }
 }

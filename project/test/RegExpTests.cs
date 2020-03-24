@@ -173,4 +173,27 @@ public class RegExpTests
         Assert.True(re.Match("_"));
         Assert.False(re.Match("_a"));
     }
+
+    [Fact]
+    public void FromPatternShouldMatchCorrectly14()
+    {
+        var re = new RegExp("a{0,2}b");
+
+        Assert.True(re.Match("b"));
+        Assert.True(re.Match("ab"));
+        Assert.True(re.Match("aab"));
+        Assert.False(re.Match("aaab"));
+        Assert.False(re.Match("abb"));
+    }
+
+    [Fact]
+    public void FromPatternShouldMatchCorrectly15()
+    {
+        var re = new RegExp("a{0,2},[a-z]{2,11},_{2,}");
+
+        Assert.True(re.Match("a,bz,__"));
+        Assert.True(re.Match(",bzadwqve,____"));
+        Assert.False(re.Match("aaa,ppp,__"));
+        Assert.False(re.Match("a,www,_"));
+    }
 }
