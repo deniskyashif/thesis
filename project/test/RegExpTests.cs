@@ -129,4 +129,25 @@ public class RegExpTests
         Assert.True(re.Match("πюююююю_¡˚*"));
         Assert.False(re.Match("π_¡˚*"));
     }
+
+    [Fact]
+    public void FromPatternShouldMatchCorrectly10()
+    {
+        var re = new RegExp("a.*\\.");
+
+        Assert.True(re.Match("aю_¡˚*."));
+        Assert.True(re.Match("abab_dsdqdwqd."));
+        Assert.True(re.Match("a."));
+        Assert.False(re.Match("baa."));
+    }
+
+    [Fact]
+    public void FromPatternShouldMatchCorrectly11()
+    {
+        var re = new RegExp(".+@.+\\.(com|net|org)");
+
+        Assert.True(re.Match("john@yahoo.com"));
+        Assert.True(re.Match("abab_dsdq&&dd@gmail.org"));
+        Assert.True(re.Match("++@()().net"));
+    }
 }

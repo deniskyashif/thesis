@@ -6,7 +6,8 @@ public class RegExp
 {
     static readonly ISet<char> allChars = 
         Enumerable.Range(char.MinValue, char.MaxValue)
-            .Select(c => (char)c)
+            .Select(Convert.ToChar)
+            .Where(c => !char.IsControl(c))
             .ToHashSet();
     static readonly ISet<char> metaChars = new HashSet<char> { '?', '*', '+' };
     static readonly Fsa allCharsFsa = FsaBuilder.FromSymbolSet(allChars);
@@ -90,6 +91,12 @@ public class RegExp
 
     Fsa Atom()
     {
+        if (this.Peek() == '.')
+        {
+            this.Eat('.');
+            return allCharsFsa;
+        }
+
         if (this.Peek() == '(')
         {
             this.Eat('(');
