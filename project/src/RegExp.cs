@@ -4,7 +4,7 @@ using System.Linq;
 
 public class RegExp
 {
-    static readonly ISet<char> allChars = 
+    static readonly ISet<char> allChars =
         Enumerable.Range(char.MinValue, char.MaxValue)
             .Select(Convert.ToChar)
             .Where(c => !char.IsControl(c))
@@ -106,7 +106,46 @@ public class RegExp
             return exp;
         }
 
+        if (this.Peek() == '[')
+        {
+            this.Eat('[');
+            var @class = this.CharClass();
+            this.Eat(']');
+
+            return @class;
+        }
+
         return this.Char();
+    }
+
+    Fsa CharClass()
+    {
+        var range = this.CharRange();
+
+        if (this.HasMoreChars() && this.Peek() != ']')
+            return range.Union(this.CharClass());
+
+        return range;
+    }
+
+    Fsa CharRange()
+    {
+        var from = this.Next();
+        var fsa = FsaBuilder.FromWord(from.ToString());
+
+        if (this.Peek() == '-')
+        {
+            this.Eat('-');
+            var to = this.Next();
+
+            if (from > to)
+                throw new ArgumentException($"Invalid character range '{from}'-'{to}'.");
+
+            for (var i = from + 1; i <= to; i++)
+                fsa = fsa.Union(FsaBuilder.FromWord(((char)i).ToString()));
+        }
+
+        return fsa;
     }
 
     Fsa Char()

@@ -150,4 +150,27 @@ public class RegExpTests
         Assert.True(re.Match("abab_dsdq&&dd@gmail.org"));
         Assert.True(re.Match("++@()().net"));
     }
+
+    [Fact]
+    public void FromPatternShouldMatchCorrectly12()
+    {
+        var re = new RegExp("[1-9][0-9]*\\.[0-9]+");
+
+        Assert.True(re.Match("1.0"));
+        Assert.True(re.Match("12300.0"));
+        Assert.True(re.Match("99.999"));
+        Assert.False(re.Match("01.1"));
+    }
+
+    [Fact]
+    public void FromPatternShouldMatchCorrectly13()
+    {
+        var re = new RegExp("[a-z<;A-Z0-9,#]+|_");
+
+        Assert.True(re.Match("1a<<<AccAER,ER34#"));
+        Assert.True(re.Match("a"));
+        Assert.True(re.Match("B;;;;;BBBBB99"));
+        Assert.True(re.Match("_"));
+        Assert.False(re.Match("_a"));
+    }
 }
