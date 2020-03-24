@@ -1,28 +1,16 @@
 /*
     On the fly compilation of a regular expression to a 
-    finite-state automaton using the recursive descent parsing method. 
+    finite-state automaton using the "recursive descent" parsing method. 
     It implements the following grammar:
 
-    Exp -> Term 
-        | Term '|' Exp
-    Term -> Factor 
-        | Factor Term
-    Factor -> Atom 
-        | Atom MetaChar
-        | Atom '{' CharCount '}'
-    Atom -> Char 
-        | '.'
-        | '(' Exp ')' 
-        | '[' CharClass ']'
-    CharClass -> CharRange
-        | CharRange CharClass
-    CharRange -> Char
-        | Char '-' Char
-    CharCount -> Integer
-        | Integer ','
-        | Integer ',' Integer
-    Integer -> Digit
-        | Digit Integer
+    Exp -> Term | Term '|' Exp
+    Term -> Factor | Factor Term
+    Factor -> Atom | Atom MetaChar | Atom '{' CharSet '}'
+    Atom -> Char | '.' | '(' Exp ')' | '[' CharSet ']'
+    CharSet -> CharSetItem | CharSetItem CharSet
+    CharSetItem -> Char | Char '-' Char
+    CharCount -> Integer | Integer ',' | Integer ',' Integer
+    Integer -> Digit | Digit Integer
     Char -> AnyCharExceptMeta | '\' AnyChar
     
     AnyChar -> allChars
@@ -117,9 +105,8 @@ public class RegExp
 
         if (this.HasMoreChars() && this.Peek() == '{')
         {
-            this.Eat('{');
-
             var (min, max) = this.CharCount();
+
             var fsa = FsaBuilder.FromEpsilon();
             var optionalAtom = atom.Optional();
 
@@ -133,8 +120,6 @@ public class RegExp
                 for (var i = min; i < max; i++)
                     fsa = fsa.Concat(optionalAtom);
             }
-
-            this.Eat('}');
 
             return fsa;
         }
@@ -162,27 +147,30 @@ public class RegExp
         if (this.Peek() == '[')
         {
             this.Eat('[');
-            var @class = this.CharClass();
+            var set = this.CharSet();
             this.Eat(']');
 
-            return @class;
+            return set;
         }
 
         return this.Char();
     }
 
-    Fsa CharClass()
+    Fsa CharSet()
     {
-        var range = this.CharRange();
+        var setItem = this.CharSetItem();
 
         if (this.HasMoreChars() && this.Peek() != ']')
-            return range.Union(this.CharClass());
+            return setItem.Union(this.CharSet());
 
-        return range;
+        return setItem;
     }
 
-    Fsa CharRange()
+    Fsa CharSetItem()
     {
+        if (this.Peek() == '\\')
+            this.Eat('\\');
+
         var from = this.Next();
         var fsa = FsaBuilder.FromWord(from.ToString());
 
@@ -199,26 +187,6 @@ public class RegExp
         }
 
         return fsa;
-    }
-
-    (int Min, int Max) CharCount()
-    {
-        var min = int.Parse(this.Integer());
-
-        if (this.Peek() == ',')
-            this.Eat(',');
-        
-        if (this.Peek() != '}')
-        {
-            var max = int.Parse(this.Integer());
-
-            if (min > max)
-                throw new ArgumentException($"Invalid count [{min}, {max}].");
-
-            return (min, max);
-        }
-
-        return (min, -1);
     }
 
     Fsa Char()
@@ -242,6 +210,27 @@ public class RegExp
 
             return FsaBuilder.FromWord(ch.ToString());
         }
+    }
+
+    (int Min, int Max) CharCount()
+    {
+        this.Eat('{');
+        var min = int.Parse(this.Integer());
+        var max = -1;
+
+        if (this.Peek() == ',')
+            this.Eat(',');
+
+        if (this.Peek() != '}')
+        {
+            max = int.Parse(this.Integer());
+
+            if (min > max)
+                throw new ArgumentException($"Invalid count [{min}, {max}].");
+        }
+        this.Eat('}');
+
+        return (min, max);
     }
 
     string Integer()

@@ -279,27 +279,6 @@ public class FsaTests
     }
 
     [Fact]
-    public void DfaRecognitionPathTest()
-    {
-        // a|bc+
-        var states = new[] { 0, 1, 2, 3 };
-        var initial = 0;
-        var final = new[] { 1, 3 };
-        var transitions = new Dictionary<(int, char), int>()
-        {
-            { (0, 'a'), 1 },
-            { (0, 'b'), 2 },
-            { (2, 'c'), 3 },
-            { (3, 'c'), 3 }
-        };
-        var dfsa = new Dfsa(states, initial, final, transitions);
-
-        Assert.Equal(new[] { 0, 1 }, dfsa.RecognitionPathLToR("a").Path);
-        Assert.Equal(new[] { 0, 2, 3, 3 }, dfsa.RecognitionPathLToR("bcc").Path);
-        Assert.Equal(new[] { 0, 2, 3, 3, 3, 3 }, dfsa.RecognitionPathLToR("bcccc").Path);
-    }
-
-    [Fact]
     public void TrimDfsaTest()
     {
         // a|b+

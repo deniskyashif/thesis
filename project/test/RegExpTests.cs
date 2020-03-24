@@ -165,11 +165,11 @@ public class RegExpTests
     [Fact]
     public void FromPatternShouldMatchCorrectly13()
     {
-        var re = new RegExp("[a-z<;A-Z0-9,#]+|_");
+        var re = new RegExp("[a-z<;A-Z0-9,#\\-]+|_");
 
-        Assert.True(re.Match("1a<<<AccAER,ER34#"));
+        Assert.True(re.Match("1a<<<AccAER,ER-34#"));
         Assert.True(re.Match("a"));
-        Assert.True(re.Match("B;;;;;BBBBB99"));
+        Assert.True(re.Match("B;;--;;;BBBBB99"));
         Assert.True(re.Match("_"));
         Assert.False(re.Match("_a"));
     }
@@ -195,5 +195,25 @@ public class RegExpTests
         Assert.True(re.Match(",bzadwqve,____"));
         Assert.False(re.Match("aaa,ppp,__"));
         Assert.False(re.Match("a,www,_"));
+    }
+
+    [Fact]
+    public void FromPatternShouldMatchCorrectly16()
+    {
+        var re = new RegExp("[----]");
+
+        Assert.True(re.Match("-"));
+        Assert.False(re.Match(string.Empty));
+    }
+
+    [Fact(Skip="Fix character range parsing.")]
+    public void FromPatternShouldMatchCorrectly17()
+    {
+        var re = new RegExp("[a-zA-]+");
+
+        Assert.True(re.Match("-"));
+        Assert.True(re.Match("-aAa-"));
+        Assert.True(re.Match("--"));
+        Assert.False(re.Match(string.Empty));
     }
 }
