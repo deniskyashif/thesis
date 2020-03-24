@@ -1,3 +1,34 @@
+/*
+    On the fly compilation of a regular expression to a 
+    finite-state automaton using the recursive descent parsing method. 
+    It implements the following grammar:
+
+    Exp -> Term 
+        | Term '|' Exp
+    Term -> Factor 
+        | Factor Term
+    Factor -> Atom 
+        | Atom MetaChar
+        | Atom '{' CharCount '}'
+    Atom -> Char 
+        | '.'
+        | '(' Exp ')' 
+        | '[' CharClass ']'
+    CharClass -> CharRange
+        | CharRange CharClass
+    CharRange -> Char
+        | Char '-' Char
+    CharCount -> Integer
+        | Integer ','
+        | Integer ',' Integer
+    Integer -> Digit
+        | Digit Integer
+    Char -> AnyCharExceptMeta | '\' AnyChar
+    
+    AnyChar -> allChars
+    MetaChar -> '?' | '*' | '+'
+    Digit -> '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+*/
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -217,7 +248,7 @@ public class RegExp
     {
         var digit = this.Digit();
 
-        if (this.Peek() != ',' && this.Peek() != '}')
+        if (char.IsDigit(this.Peek()))
             return digit + this.Integer();
 
         return digit.ToString();
