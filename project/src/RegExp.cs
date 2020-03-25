@@ -6,7 +6,7 @@
     Exp -> Term | Term '|' Exp
     Term -> Factor | Factor Term
     Factor -> Atom | Atom MetaChar | Atom '{' CharSet '}'
-    Atom -> Char | '.' | '(' Exp ')' | '[' CharSet ']'
+    Atom -> Char | '.' | '(' Exp ')' | '[' CharSet ']' | '[' '^' CharSet ']'
     CharSet -> CharSetItem | CharSetItem CharSet
     CharSetItem -> Char | Char '-' Char
     CharCount -> Integer | Integer ',' | Integer ',' Integer
@@ -23,7 +23,7 @@ using System.Linq;
 
 public class RegExp
 {
-    static readonly ISet<char> allChars = Enumerable.Range(char.MinValue, 256)
+    static readonly ISet<char> allChars = Enumerable.Range(char.MinValue, 127)
         .Select(Convert.ToChar)
         .Where(c => !char.IsControl(c))
         .ToHashSet();
@@ -147,7 +147,15 @@ public class RegExp
         if (this.Peek() == '[')
         {
             this.Eat('[');
-            var set = this.CharSet();
+            Fsa set;
+
+            if (this.Peek() == '^')
+            {
+                this.Eat('^');
+                set = allCharsFsa.Difference(this.CharSet());
+            }
+            else set = this.CharSet();
+
             this.Eat(']');
 
             return set;

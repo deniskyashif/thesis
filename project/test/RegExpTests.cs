@@ -216,4 +216,21 @@ public class RegExpTests
         Assert.True(re.Match("--"));
         Assert.False(re.Match(string.Empty));
     }
+
+    [Fact]
+    public void FromPatternShouldMatchCorrectly18()
+    {
+        var re = new RegExp("[^abc]");
+        Assert.True(re.Match("d"));
+        Assert.True(re.Match("e"));
+        Assert.False(re.Match("a"));
+        Assert.False(re.Match("b"));
+        Assert.False(re.Match("c"));
+
+        var re1 = new RegExp("[^\"\\\\]");
+        Assert.True(re1.Match("a"));
+        Assert.True(re1.Match("e"));
+        Assert.False(re1.Match("\\\\"));
+        Assert.False(re1.Match("\""));
+    }
 }
