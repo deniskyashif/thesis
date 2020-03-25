@@ -1,5 +1,6 @@
 /*
-    Operations on finite-state automata.
+    Operations on finite-state automata i.e. 
+    Regular Language Arithmetic.
 */
 using System;
 using System.Collections.Generic;

@@ -23,7 +23,7 @@ using System.Linq;
 
 public class RegExp
 {
-    static readonly ISet<char> allChars = Enumerable.Range(char.MinValue, char.MaxValue)
+    static readonly ISet<char> allChars = Enumerable.Range(char.MinValue, 256)
         .Select(Convert.ToChar)
         .Where(c => !char.IsControl(c))
         .ToHashSet();

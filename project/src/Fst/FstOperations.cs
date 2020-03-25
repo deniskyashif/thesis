@@ -499,7 +499,20 @@ public static class FstOperations
                         .Where(p => p.To == fstState);
 
                     foreach (var (toState, word) in destinationStates)
-                        bmOutput.Add((k, symbol, fromRIndex), word);
+                    {
+                        var pair = (Key: (k, symbol, fromRIndex), Val: word);
+
+                        if (bmOutput.ContainsKey(pair.Key))
+                        {
+                            if (bmOutput[pair.Key] != pair.Val)
+                                throw new InvalidOperationException(
+                                    $"Cannot have different values for the same key: '{bmOutput[pair.Key]}', '{pair.Val}'");
+                            continue;
+                        }
+
+                        bmOutput.Add(pair.Key, pair.Val);
+                    }
+                        
                 }
 
                 var nextLState = (targetSState, targetSelector);

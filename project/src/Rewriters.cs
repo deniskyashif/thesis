@@ -4,9 +4,9 @@ using System.Linq;
 
 public static class Rewriters
 {
-    const char cb = '†'; // marks the begining of a rewrite occurrence
-    const char lb = '≪'; // marks the left boundary (start) of a rewrite occurrence
-    const char rb = '≫'; // marks the right boundary (end) of a rewrite occurrence
+    const char cb = '\0'; // marks the begining of a rewrite occurrence
+    const char lb = '\u0002'; // marks the left boundary (start) of a rewrite occurrence
+    const char rb = '\u0003'; // marks the right boundary (end) of a rewrite occurrence
     static readonly char[] boundaryMarkers = new char[] { cb, lb, rb };
 
     // Convert to an optional rewrite transducer
