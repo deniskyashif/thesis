@@ -1,6 +1,6 @@
 using System.Linq;
 
-public static class RewriteTokenizers
+public static class RewriteLexers
 {
     public static Bimachine CreateForEnglish()
     {

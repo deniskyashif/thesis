@@ -1,4 +1,4 @@
-public class Lexeme
+public class Token
 {
     public int Index { get; set; }
 

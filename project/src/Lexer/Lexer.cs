@@ -16,9 +16,9 @@ public class Lexer
         this.bm = this.InitBimachine();
     }
 
-    public IEnumerable<Lexeme> GetNextToken(string input)
+    public IEnumerable<Token> GetNextToken(string input)
     {
-        var rPath = this.bm.Right.RecPathRightToLeft(input);
+        var rPath = this.bm.Right.RecognitionPathRToL(input);
 
         if (rPath.Count != input.Length + 1)
             throw new ArgumentException($"Unrecognized input. {input[input.Length - rPath.Count]}");
@@ -51,7 +51,7 @@ public class Lexer
                 // keep only the token text
                 token.Remove(0, type.Length + 1);
 
-                yield return new Lexeme
+                yield return new Token
                 {
                     Index = tokenIndex,
                     Position = (tokenStartPos, i),
@@ -77,7 +77,6 @@ public class Lexer
             .Select(ToTokenFst)
             .Aggregate((u, f) => u.Union(f));
 
-        // TODO: Possible bug with multuletter transitions
         var alphabet = tokenFst.Transitions
             .Where(t => !string.IsNullOrEmpty(t.In))
             .Select(t => t.In.Single())
@@ -91,7 +90,10 @@ public class Lexer
 
     Fst ToTokenFst(Rule rule)
     {
-        var ruleFsa = new RegExp(rule.Pattern).Automaton;
+        var ruleFsa = new RegExp(rule.Pattern).Automaton
+            .Determinize()
+            .Minimal()
+            .ToFsa();
         var ruleFst = FstBuilder.FromWordPair(string.Empty, $"{rule.Name}{StartOfToken}")
             .Concat(ruleFsa.Identity())
             .Concat(FstBuilder.FromWordPair(string.Empty, $"{EndOfToken}"));

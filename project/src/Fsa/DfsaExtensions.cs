@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 public static class DfsaExtensions
 {
-    public static IList<int> RecPathRightToLeft(this Dfsa automaton, string word)
+    public static IList<int> RecognitionPathRToL(this Dfsa automaton, string word)
     {
         var current = automaton.Initial;
         var path = new List<int> { current };

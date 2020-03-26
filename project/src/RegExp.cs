@@ -23,12 +23,12 @@ using System.Linq;
 
 public class RegExp
 {
-    static readonly ISet<char> allChars = Enumerable.Range(char.MinValue, 127)
+    static readonly ISet<char> alphabet = Enumerable.Range(char.MinValue, 2048)
         .Select(Convert.ToChar)
         .Where(c => !char.IsControl(c))
         .ToHashSet();
     static readonly ISet<char> metaChars = new HashSet<char> { '?', '*', '+' };
-    static readonly Fsa allCharsFsa = FsaBuilder.FromSymbolSet(allChars);
+    static readonly Fsa alphabetFsa = FsaBuilder.FromSymbolSet(alphabet);
 
     string pattern;
     int pos = 0;
@@ -131,7 +131,7 @@ public class RegExp
         if (this.Peek() == '.')
         {
             this.Eat('.');
-            return allCharsFsa;
+            return alphabetFsa;
         }
 
         if (this.Peek() == '(')
@@ -151,7 +151,7 @@ public class RegExp
             if (this.Peek() == '^')
             {
                 this.Eat('^');
-                set = allCharsFsa.Difference(this.CharSet());
+                set = alphabetFsa.Difference(this.CharSet());
             }
             else set = this.CharSet();
 
@@ -202,7 +202,7 @@ public class RegExp
             this.Eat('\\');
             var ch = this.Next();
 
-            if (!allChars.Contains(ch))
+            if (!alphabet.Contains(ch))
                 throw new ArgumentException($"Invalid character {ch}");
 
             return FsaBuilder.FromWord(ch.ToString());

@@ -491,7 +491,6 @@ public static class FsaOperations
             states.Select(s => eqRel[s]),
             eqRel[automaton.Initial],
             automaton.Final.Select(s => eqRel[s]),
-            minTransitions)
-            .Trim();
+            minTransitions).Trim();
     }
 }

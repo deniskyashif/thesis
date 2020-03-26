@@ -7,7 +7,7 @@ public static class BimachineExtensions
 {
     public static string Process(this Bimachine bm, string input)
     {
-        var rPath = bm.Right.RecPathRightToLeft(input);
+        var rPath = bm.Right.RecognitionPathRToL(input);
 
         if (rPath.Count != input.Length + 1)
             throw new ArgumentException($"Unrecognized input. {input[input.Length - rPath.Count]}");

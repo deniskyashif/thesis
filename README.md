@@ -21,10 +21,11 @@
 ### Lexical Analyzers
 
 - Arithmetic expression tokenizer
+- JSON tokenizer
 - Regular expression tokenizer
 - Tokenizer for the English language
 
-[\[Implementations\]](https://github.com/deniskyashif/thesis/blob/master/project/src/Tokenizers.cs) [\[Tests\]](https://github.com/deniskyashif/thesis/blob/master/project/test/TokenizerTests.cs)
+[\[Tests\]](https://github.com/deniskyashif/thesis/blob/master/project/test/LexerTests.cs)
 
 ### Misc
 
