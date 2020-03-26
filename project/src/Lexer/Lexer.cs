@@ -10,7 +10,7 @@ public class Lexer
     private readonly ICollection<Rule> grammar;
     private readonly Bimachine bm;
 
-    public Lexer(ICollection<Rule> grammar)
+    public Lexer(IList<Rule> grammar)
     {
         this.grammar = grammar;
         this.bm = this.InitBimachine();
@@ -18,10 +18,10 @@ public class Lexer
 
     public IEnumerable<Lexeme> GetNextToken(string input)
     {
-        var (rSuccess, rPath) = this.bm.Right.RecPathRightToLeft(input);
+        var rPath = this.bm.Right.RecPathRightToLeft(input);
 
-        if (!rSuccess)
-            throw new ArgumentException($"Unrecognized input. {input[rPath.Count - 1]}");
+        if (rPath.Count != input.Length + 1)
+            throw new ArgumentException($"Unrecognized input. {input[input.Length - rPath.Count]}");
 
         var leftState = bm.Left.Initial;
         var token = new StringBuilder();
@@ -83,8 +83,7 @@ public class Lexer
             .Select(t => t.In.Single())
             .ToHashSet();
 
-        var min = tokenFst.PseudoMinimal();
-        var lml = min.ToLmlRewriter(alphabet);
+        var lml = tokenFst.ToLmlRewriter(alphabet);
         var bm = lml.ToBimachine(alphabet);
 
         return bm;

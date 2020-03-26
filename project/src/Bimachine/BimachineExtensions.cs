@@ -7,10 +7,10 @@ public static class BimachineExtensions
 {
     public static string Process(this Bimachine bm, string input)
     {
-        var (rSuccess, rPath) = bm.Right.RecPathRightToLeft(input);
+        var rPath = bm.Right.RecPathRightToLeft(input);
 
-        if (!rSuccess)
-            throw new ArgumentException($"Unrecognized input. {input[rPath.Count - 1]}");
+        if (rPath.Count != input.Length + 1)
+            throw new ArgumentException($"Unrecognized input. {input[input.Length - rPath.Count]}");
 
         var output = new StringBuilder();
         var leftState = bm.Left.Initial;
@@ -35,7 +35,7 @@ public static class BimachineExtensions
         return output.ToString();
     }
 
-    static void Export(this Bimachine bm, string path)
+    static void ExportToFile(this Bimachine bm, string path)
     {
         var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
         var formatter = new BinaryFormatter();
@@ -43,7 +43,7 @@ public static class BimachineExtensions
         stream.Close();
     }
 
-    static Bimachine Load(string path)
+    static Bimachine LoadFromFile(string path)
     {
         var stream = new FileStream(path, FileMode.Open, FileAccess.Read);
         var formatter = new BinaryFormatter();  

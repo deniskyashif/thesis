@@ -39,7 +39,8 @@ public class TokenizerTests
         };
 
         Assert.True(TokensEqual(expectedTokens2, tokens2));
-        Assert.Throws<ArgumentException>(() => lexer.GetNextToken("123 + x").ToList());
+        Assert.Throws<ArgumentException>(() => lexer.GetNextToken("123+x").ToList());
+        Assert.Throws<ArgumentException>(() => lexer.GetNextToken("_").ToList());
     }
 
     [Fact]

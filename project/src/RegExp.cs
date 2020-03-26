@@ -12,7 +12,7 @@
     CharCount -> Integer | Integer ',' | Integer ',' Integer
     Integer -> Digit | Digit Integer
     Char -> AnyCharExceptMeta | '\' AnyChar
-    
+
     AnyChar -> allChars
     MetaChar -> '?' | '*' | '+'
     Digit -> '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
@@ -106,7 +106,6 @@ public class RegExp
         if (this.HasMoreChars() && this.Peek() == '{')
         {
             var (min, max) = this.CharCount();
-
             var fsa = FsaBuilder.FromEpsilon();
             var optionalAtom = atom.Optional();
 
@@ -167,7 +166,6 @@ public class RegExp
     Fsa CharSet()
     {
         var setItem = this.CharSetItem();
-
         if (this.HasMoreChars() && this.Peek() != ']')
             return setItem.Union(this.CharSet());
 
@@ -212,7 +210,6 @@ public class RegExp
         else
         {
             var ch = this.Next();
-
             if (metaChars.Contains(ch))
                 throw new ArgumentException($"Unescaped meta character {ch}");
 
@@ -244,7 +241,6 @@ public class RegExp
     string Integer()
     {
         var digit = this.Digit();
-
         if (char.IsDigit(this.Peek()))
             return digit + this.Integer();
 
@@ -254,7 +250,6 @@ public class RegExp
     char Digit()
     {
         var digit = this.Next();
-
         if (!char.IsDigit(digit))
             throw new ArgumentException($"Invalid digit '{digit}'.");
 

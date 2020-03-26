@@ -372,13 +372,10 @@ public static class FstOperations
         return true;
     }
 
-    static bool AreLeftStatesEqual(
+    static bool AreBmLeftStatesEqual(
         (ISet<int> SState, IDictionary<int, int> Selector) ls1,
-        (ISet<int> SState, IDictionary<int, int> Selector) ls2)
-    {
-        return ls1.SState.SetEquals(ls2.SState)
-            && AreSelectorsEqual(ls1.Selector, ls2.Selector);
-    }
+        (ISet<int> SState, IDictionary<int, int> Selector) ls2) => 
+        ls1.SState.SetEquals(ls2.SState) && AreSelectorsEqual(ls1.Selector, ls2.Selector);
 
     public static Bimachine ToBimachine(this Fst fst, ISet<char> alphabet)
     {
@@ -512,25 +509,25 @@ public static class FstOperations
 
                         bmOutput.Add(pair.Key, pair.Val);
                     }
-                        
                 }
 
                 var nextLState = (targetSState, targetSelector);
+
                 // Left Dfa's states
-                if (!leftStates.Any(ls => AreLeftStatesEqual(ls, nextLState)))
+                if (!leftStates.Any(ls => AreBmLeftStatesEqual(ls, nextLState)))
                     leftStates.Add((targetSState, targetSelector));
 
                 // Left Dfa's transitions
                 leftTransitions.Add(
                     (k, symbol),
-                    leftStates.FindIndex(ls => AreLeftStatesEqual(ls, nextLState)));
+                    leftStates.FindIndex(ls => AreBmLeftStatesEqual(ls, nextLState)));
             }
         }
 
         var leftStateIndices = Enumerable.Range(0, leftStates.Count);
-        var leftDfsa = new Dfsa(leftStateIndices, 0, leftStateIndices, leftTransitions);
+        var leftDfsa = new Dfsa(leftStateIndices, 0, Array.Empty<int>(), leftTransitions);
         var rightStateIndices = Enumerable.Range(0, rightSStates.Count);
-        var rightDfsa = new Dfsa(rightStateIndices, 0, rightStateIndices, rightTrans);
+        var rightDfsa = new Dfsa(rightStateIndices, 0, Array.Empty<int>(), rightTrans);
 
         return new Bimachine(leftDfsa, rightDfsa, bmOutput);
     }
