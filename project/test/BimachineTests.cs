@@ -13,7 +13,7 @@ public class BimachineTests
             new[] { 2 },
             new[] { (0, "a", "x", 1), (1, "b", "y", 2) });
 
-        var bm = fst.ToBimachine(new HashSet<char> { 'a', 'b' });
+        var bm = fst.ToBimachine(new HashSet<char> { 'a', 'b' }).PseudoMinimal();
 
         Assert.True(bm.Left.States.Count == 3 && bm.Right.States.Count == 3);
         Assert.True(bm.Left.Transitions.Count == 2 && bm.Right.Transitions.Count == 2);
@@ -34,7 +34,7 @@ public class BimachineTests
             new[] { 1, 3 },
             new[] { (0, "a", "x", 1), (0, "a", "yyyy", 2), (2, "b", "", 3) });
 
-        var bm = fst.ToBimachine(new HashSet<char> { 'a', 'b' });
+        var bm = fst.ToBimachine(new HashSet<char> { 'a', 'b' }).PseudoMinimal();
 
         Assert.Equal("x", bm.Process("a"));
         Assert.Equal("yyyy", bm.Process("ab"));
@@ -53,7 +53,7 @@ public class BimachineTests
                     .Star()
                     .Concat(FstBuilder.FromWordPair("b", "b")));
 
-        var bm = fst.ToBimachine(new HashSet<char> { 'a', 'b' });
+        var bm = fst.ToBimachine(new HashSet<char> { 'a', 'b' }).PseudoMinimal();
 
         Assert.Equal("b", bm.Process("aab"));
         Assert.Equal("aa", bm.Process("aa"));

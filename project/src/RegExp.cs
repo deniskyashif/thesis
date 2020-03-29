@@ -3,19 +3,33 @@
     finite-state automaton using the "recursive descent" parsing method. 
     It implements the following grammar:
 
-    Exp -> Term | Term '|' Exp
-    Term -> Factor | Factor Term
-    Factor -> Atom | Atom MetaChar | Atom '{' CharSet '}'
-    Atom -> Char | '.' | '(' Exp ')' | '[' CharSet ']' | '[' '^' CharSet ']'
-    CharSet -> CharSetItem | CharSetItem CharSet
-    CharSetItem -> Char | Char '-' Char
-    CharCount -> Integer | Integer ',' | Integer ',' Integer
-    Integer -> Digit | Digit Integer
-    Char -> AnyCharExceptMeta | '\' AnyChar
+    Exp: Term 
+        | Term '|' Exp
+    Term: Factor 
+        | Factor Term
+    Factor: Atom 
+        | Atom MetaChar 
+        | Atom '{' CharCount '}'
+    Atom: Char 
+        | '.' 
+        | '(' Exp ')' 
+        | '[' CharSet ']' 
+        | '[' '^' CharSet ']'
+    CharSet: CharSetItem 
+        | CharSetItem CharSet
+    CharSetItem: Char 
+        | Char '-' Char
+    CharCount: Integer 
+        | Integer ',' 
+        | Integer ',' Integer
+    Integer: Digit 
+        | Digit Integer
+    Char: AnyCharExceptMeta 
+        | '\' AnyChar
 
-    AnyChar -> allChars
-    MetaChar -> '?' | '*' | '+'
-    Digit -> '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+    AnyChar: alphabet
+    MetaChar: '?' | '*' | '+'
+    Digit: '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 */
 using System;
 using System.Collections.Generic;
@@ -23,7 +37,7 @@ using System.Linq;
 
 public class RegExp
 {
-    static readonly ISet<char> alphabet = Enumerable.Range(char.MinValue, 2048)
+    static readonly ISet<char> alphabet = Enumerable.Range(char.MinValue, 127)
         .Select(Convert.ToChar)
         .Where(c => !char.IsControl(c))
         .ToHashSet();
@@ -166,6 +180,7 @@ public class RegExp
     Fsa CharSet()
     {
         var setItem = this.CharSetItem();
+
         if (this.HasMoreChars() && this.Peek() != ']')
             return setItem.Union(this.CharSet());
 
@@ -241,6 +256,7 @@ public class RegExp
     string Integer()
     {
         var digit = this.Digit();
+
         if (char.IsDigit(this.Peek()))
             return digit + this.Integer();
 
@@ -250,6 +266,7 @@ public class RegExp
     char Digit()
     {
         var digit = this.Next();
+
         if (!char.IsDigit(digit))
             throw new ArgumentException($"Invalid digit '{digit}'.");
 

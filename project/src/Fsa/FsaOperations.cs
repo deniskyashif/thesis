@@ -441,6 +441,14 @@ public static class FsaOperations
             fst.Final,
             fst.Transitions.Select(t => (t.From, t.Label, t.Label, t.To)));
 
+    public static Fst Identity(this Dfsa fst) =>
+        new Fst(
+            fst.States,
+            new [] { fst.Initial },
+            fst.Final,
+            fst.Transitions.Select(kvp => 
+                (kvp.Key.From, kvp.Key.Label.ToString(), kvp.Key.Label.ToString(), kvp.Value)));
+
     public static Dfsa Minimal(this Dfsa automaton)
     {
         int EquivClassCount(Dictionary<int, int> eqRel) => eqRel.Values.Distinct().Count();
@@ -466,7 +474,7 @@ public static class FsaOperations
                         : -1;
                 kernelsPerSymbol.Add(RelationOperations.Kernel(states, eqClassSelector));
             }
-            
+
             var nextEqRel = kernelsPerSymbol.Count > 1 
                 ? RelationOperations.IntersectEqRel(states, kernelsPerSymbol[0], kernelsPerSymbol[1])
                 : kernelsPerSymbol[0];

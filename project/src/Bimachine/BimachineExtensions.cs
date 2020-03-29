@@ -5,6 +5,7 @@ using System.Text;
 
 public static class BimachineExtensions
 {
+    // Process an input string throught the bimachine to get the corresponding output string.
     public static string Process(this Bimachine bm, string input)
     {
         var rPath = bm.Right.RecognitionPathRToL(input);
@@ -35,7 +36,7 @@ public static class BimachineExtensions
         return output.ToString();
     }
 
-    static void ExportToFile(this Bimachine bm, string path)
+    public static void ExportToFile(this Bimachine bm, string path)
     {
         var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
         var formatter = new BinaryFormatter();
@@ -43,7 +44,7 @@ public static class BimachineExtensions
         stream.Close();
     }
 
-    static Bimachine LoadFromFile(string path)
+    public static Bimachine LoadFromFile(string path)
     {
         var stream = new FileStream(path, FileMode.Open, FileAccess.Read);
         var formatter = new BinaryFormatter();  

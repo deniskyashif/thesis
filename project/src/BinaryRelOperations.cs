@@ -37,7 +37,9 @@ public static class RelationOperations
         equivalence class selector function. Used for Dfsa & Fst minimization. */
     internal static Dictionary<int, int> Kernel(IEnumerable<int> states, Func<int, int> eqClassSelector)
     {
-        var eqClasses = states.Select(s => eqClassSelector(s)).Distinct().ToList();
+        var eqClasses = states.Select(s => eqClassSelector(s))
+            .Distinct()
+            .ToList();
 
         return states
             .Select(s => (State: s, Class: eqClasses.IndexOf(eqClassSelector(s))))

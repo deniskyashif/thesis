@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 
 public static class FsaBuilder
 {
@@ -29,7 +28,7 @@ public static class FsaBuilder
         var final = 1;
         var transitions = new List<(int, string, int)>();
 
-        foreach (var symbol in alphabet.Distinct())
+        foreach (var symbol in alphabet)
             transitions.Add((initial, symbol.ToString(), final));
 
         return new Fsa(

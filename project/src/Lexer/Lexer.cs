@@ -92,8 +92,8 @@ public class Lexer
     {
         var ruleFsa = new RegExp(rule.Pattern).Automaton
             .Determinize()
-            .Minimal()
-            .ToFsa();
+            .Minimal();
+
         var ruleFst = FstBuilder.FromWordPair(string.Empty, $"{rule.Name}{StartOfToken}")
             .Concat(ruleFsa.Identity())
             .Concat(FstBuilder.FromWordPair(string.Empty, $"{EndOfToken}"));
