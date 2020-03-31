@@ -6,7 +6,7 @@ using Xunit;
 public class TokenizerTests
 {
     [Fact]
-    public void ArithmeticExprTokenizerTest()
+    public void ArithmeticExprLexerTest()
     {
         var grammar = new[]
         {
@@ -94,7 +94,7 @@ public class TokenizerTests
     }
 
     [Fact]
-    public void RegExpTokenizerTest()
+    public void RegExpLexerTest()
     {
         var grammar = new[]
         {
@@ -129,7 +129,7 @@ public class TokenizerTests
     }
 
     [Fact]
-    public void EnglishTokenizerTest()
+    public void EnglishRewriteLexerTest()
     {
         var t = RewriteLexers.CreateForEnglish();
 

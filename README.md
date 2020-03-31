@@ -1,8 +1,49 @@
-# Lexical Analysis using Bimachines
+# Lexical Analysis using a Bimachine
 
-### Regular Expression Parser
+## Lexer Generator API 
 
-Supported syntax
+[\[Implementation\]](https://github.com/deniskyashif/thesis/blob/master/project/src/Lexer/Lexer.cs)
+
+### Usage
+
+```cs
+var lexer = new Lexer(new[]
+{
+    new Rule("[0-9]+\\.?[0-9]*", "NUM"),
+    new Rule("[+*/-]", "OP"),
+    new Rule("=", "EQ"),
+    new Rule("[ \t\r\n]", "WS")
+});
+
+foreach (var token in lexer.GetNextToken("3.14+1.86=5"))
+    Console.WriteLine(token);
+```
+
+```sh
+3.14+1.86=5
+[@0,0:3='3.14',<NUM>]
+[@1,4:4='+',<OP>]
+[@2,5:8='1.86',<NUM>]
+[@3,9:9='=',<EQ>]
+[@4,10:10='5',<NUM>]
+```
+
+### Example Lexers 
+
+[\[Tests\]](https://github.com/deniskyashif/thesis/blob/master/project/test/LexerTests.cs)
+
+- Arithmetic expression
+- JSON
+- Regular expression
+- Tokenizer for the English language
+
+## Building Blocks
+
+### Regular Expression Parser 
+
+[\[Implementation\]](https://github.com/deniskyashif/thesis/blob/master/project/src/RegExp.cs) [\[Tests\]](https://github.com/deniskyashif/thesis/blob/master/project/test/RegExpTests.cs)
+
+#### Supported syntax
 
 - Concatenation `ab`
 - Union `a|b`
@@ -10,48 +51,37 @@ Supported syntax
 - One-or-more `a+`
 - Optional `a?`
 - Grouping `(a|b)*c`
-- Character ranges
+- Character sets
   - Positive `[a-z0-9,]`
-  - Negative `[^a-z0-9,]`
+  - Negative (excludes) `[^a-z0-9,]`
 - Count
   - `a{2}` - match exactly 2 'a's
   - `a{2,}` - match at least 2 'a's
   - `a{2,4}` - match between 2 and 4 'a's
 - Escaping `a\*` (match "a*"), `[a\-z]` (match 'a', '-' or 'z')
 
-[\[Implementation\]](https://github.com/deniskyashif/thesis/blob/master/project/src/RegExp.cs) [\[Tests\]](https://github.com/deniskyashif/thesis/blob/master/project/test/RegExpTests.cs)
-
 ### Finite-state device construction and operations
 
 - Finite-State Automata \[[NFA-Representation](https://github.com/deniskyashif/thesis/blob/master/project/src/Fsa/Fsa.cs)\] \[[DFA-Representation](https://github.com/deniskyashif/thesis/blob/master/project/src/Fsa/Dfsa.cs)\] \[[Constructions](https://github.com/deniskyashif/thesis/blob/master/project/src/Fsa/FsaBuilder.cs)\] \[[Operations](https://github.com/deniskyashif/thesis/blob/master/project/src/Fsa/FsaOperations.cs)\]
-- Finite-State Transducers \[[Representation](https://github.com/deniskyashif/thesis/blob/master/project/src/Fst/Fst.cs)\] \[[Construction](https://github.com/deniskyashif/thesis/blob/master/project/src/Fst/FstBuilder.cs)\] \[[Operations](https://github.com/deniskyashif/thesis/blob/master/project/src/Fst/FstOperations.cs)\]
-- Bimachines \[[Representation](https://github.com/deniskyashif/thesis/blob/master/project/src/Bimachine/Bimachine.cs)\] \[[Construction](https://github.com/deniskyashif/thesis/blob/598a69f5b1dccffd63f1935e6f14661c81d66ecb/project/src/Fst/FstOperations.cs#L351)\]
+- Finite-State Transducer \[[Representation](https://github.com/deniskyashif/thesis/blob/master/project/src/Fst/Fst.cs)\] \[[Construction](https://github.com/deniskyashif/thesis/blob/master/project/src/Fst/FstBuilder.cs)\] \[[Operations](https://github.com/deniskyashif/thesis/blob/master/project/src/Fst/FstOperations.cs)\]
+- Bimachine \[[Representation](https://github.com/deniskyashif/thesis/blob/master/project/src/Bimachine/Bimachine.cs)\] \[[Construction](https://github.com/deniskyashif/thesis/blob/598a69f5b1dccffd63f1935e6f14661c81d66ecb/project/src/Fst/FstOperations.cs#L351)\]
 
 ### Text Rewriters based on Regular Relations
+
+[\[Implementations\]](https://github.com/deniskyashif/thesis/blob/master/project/src/Rewriters.cs) [\[Tests\]](https://github.com/deniskyashif/thesis/blob/master/project/test/RewriterTests.cs)
 
 - Optional rewrite transducer
 - Obligatory rewrite transducer
 - Leftmost-longest match rewrite transducer
 
-[\[Implementations\]](https://github.com/deniskyashif/thesis/blob/master/project/src/Rewriters.cs) [\[Tests\]](https://github.com/deniskyashif/thesis/blob/master/project/test/RewriterTests.cs)
-
-### Bimachine-based Lexers
-
-- Arithmetic expression
-- JSON
-- Regular expression
-- Tokenizer for the English language
-
-[\[Lexer Generator\]](https://github.com/deniskyashif/thesis/blob/master/project/src/Lexer/Lexer.cs) [\[Tests\]](https://github.com/deniskyashif/thesis/blob/master/project/test/LexerTests.cs)
-
-### Misc
+## Misc
 
 - Trie (prefix tree) [implementation](https://github.com/deniskyashif/thesis/blob/master/project/src/Trie.cs)
 - [Direct construction](https://github.com/deniskyashif/thesis/blob/master/project/src/MinDfaAlgorithm.cs) of a minimal, deterministic, acyclic finite-state automaton from a set of strings
 
 Example usages of the APIs can be found in the [unit tests' project](https://github.com/deniskyashif/thesis/tree/master/project/test).
 
-### References
+## References
 
 - [Finite-State Techniques Automata, Transducers and Bimachines](https://www.cambridge.org/core/books/finitestate-techniques/E21E748468F0310DA12A2CFAEB989185)
 - [Regular Models of Phonological Rule
