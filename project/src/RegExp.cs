@@ -121,7 +121,6 @@ public class RegExp
         {
             var (min, max) = this.CharCount();
             var fsa = FsaBuilder.FromEpsilon();
-            var optionalAtom = atom.Optional();
 
             for (var i = 0; i < min; i++)
                 fsa = fsa.Concat(atom);
@@ -130,6 +129,8 @@ public class RegExp
                 fsa = fsa.Concat(atom.Star());
             else
             {
+                var optionalAtom = atom.Optional();
+
                 for (var i = min; i < max; i++)
                     fsa = fsa.Concat(optionalAtom);
             }
@@ -193,21 +194,27 @@ public class RegExp
             this.Eat('\\');
 
         var from = this.Next();
-        var fsa = FsaBuilder.FromWord(from.ToString());
+        var symbols = new List<char> { from };
 
         if (this.Peek() == '-')
         {
             this.Eat('-');
-            var to = this.Next();
 
-            if (from > to)
-                throw new ArgumentException($"Invalid character range '{from}'-'{to}'.");
+            // if a set ends with a '-' then treat it as a character
+            if (this.Peek() == ']')
+                symbols.Add('-');
+            else
+            {
+                var to = this.Next();
+                if (from > to)
+                    throw new ArgumentException($"Invalid character range '{from}'-'{to}'.");
 
-            for (var i = from + 1; i <= to; i++)
-                fsa = fsa.Union(FsaBuilder.FromWord(((char)i).ToString()));
+                for (var i = from + 1; i <= to; i++)
+                    symbols.Add(((char)i));
+            }
         }
 
-        return fsa;
+        return FsaBuilder.FromSymbolSet(symbols);
     }
 
     Fsa Char()
@@ -225,6 +232,7 @@ public class RegExp
         else
         {
             var ch = this.Next();
+
             if (metaChars.Contains(ch))
                 throw new ArgumentException($"Unescaped meta character {ch}");
 
@@ -236,11 +244,13 @@ public class RegExp
     {
         this.Eat('{');
         var min = int.Parse(this.Integer());
-        var max = -1;
+        var max = min; // exact match count
 
         if (this.Peek() == ',')
+        {
             this.Eat(',');
-
+            max = -1; // no upper bound
+        }
         if (this.Peek() != '}')
         {
             max = int.Parse(this.Integer());

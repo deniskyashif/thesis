@@ -1,14 +1,31 @@
 # Lexical Analysis using Bimachines
 
-### Finite-state device constructions and operations
+### Regular Expression Parser
+
+Supported syntax
+
+- Concatenation `ab`
+- Union `a|b`
+- Zero-or-more `a*`
+- One-or-more `a+`
+- Optional `a?`
+- Grouping `(a|b)*c`
+- Character ranges
+  - Positive `[a-z0-9,]`
+  - Negative `[^a-z0-9,]`
+- Count
+  - `a{2}` - match exactly 2 'a's
+  - `a{2,}` - match at least 2 'a's
+  - `a{2,4}` - match between 2 and 4 'a's
+- Escaping `a\*` (match "a*"), `[a\-z]` (match 'a', '-' or 'z')
+
+[\[Implementation\]](https://github.com/deniskyashif/thesis/blob/master/project/src/RegExp.cs) [\[Tests\]](https://github.com/deniskyashif/thesis/blob/master/project/test/RegExpTests.cs)
+
+### Finite-state device construction and operations
 
 - Finite-State Automata \[[NFA-Representation](https://github.com/deniskyashif/thesis/blob/master/project/src/Fsa/Fsa.cs)\] \[[DFA-Representation](https://github.com/deniskyashif/thesis/blob/master/project/src/Fsa/Dfsa.cs)\] \[[Constructions](https://github.com/deniskyashif/thesis/blob/master/project/src/Fsa/FsaBuilder.cs)\] \[[Operations](https://github.com/deniskyashif/thesis/blob/master/project/src/Fsa/FsaOperations.cs)\]
 - Finite-State Transducers \[[Representation](https://github.com/deniskyashif/thesis/blob/master/project/src/Fst/Fst.cs)\] \[[Construction](https://github.com/deniskyashif/thesis/blob/master/project/src/Fst/FstBuilder.cs)\] \[[Operations](https://github.com/deniskyashif/thesis/blob/master/project/src/Fst/FstOperations.cs)\]
 - Bimachines \[[Representation](https://github.com/deniskyashif/thesis/blob/master/project/src/Bimachine/Bimachine.cs)\] \[[Construction](https://github.com/deniskyashif/thesis/blob/598a69f5b1dccffd63f1935e6f14661c81d66ecb/project/src/Fst/FstOperations.cs#L351)\]
-
-### Regular Expression Parser
-
-[\[Implementation\]](https://github.com/deniskyashif/thesis/blob/master/project/src/RegExp.cs) [\[Tests\]](https://github.com/deniskyashif/thesis/blob/master/project/test/RegExpTests.cs)
 
 ### Text Rewriters based on Regular Relations
 
@@ -18,14 +35,14 @@
 
 [\[Implementations\]](https://github.com/deniskyashif/thesis/blob/master/project/src/Rewriters.cs) [\[Tests\]](https://github.com/deniskyashif/thesis/blob/master/project/test/RewriterTests.cs)
 
-### Lexical Analyzers
+### Bimachine-based Lexers
 
-- Arithmetic expression tokenizer
-- JSON tokenizer
-- Regular expression tokenizer
+- Arithmetic expression
+- JSON
+- Regular expression
 - Tokenizer for the English language
 
-[\[Tests\]](https://github.com/deniskyashif/thesis/blob/master/project/test/LexerTests.cs)
+[\[Lexer Generator\]](https://github.com/deniskyashif/thesis/blob/master/project/src/Lexer/Lexer.cs) [\[Tests\]](https://github.com/deniskyashif/thesis/blob/master/project/test/LexerTests.cs)
 
 ### Misc
 

@@ -128,7 +128,7 @@ public class TokenizerTests
         Assert.Throws<ArgumentException>(() => lex.GetNextToken("a/b").ToList());
     }
 
-    [Fact(Skip = "Reenable after rewrite")]
+    [Fact]
     public void EnglishTokenizerTest()
     {
         var t = RewriteLexers.CreateForEnglish();

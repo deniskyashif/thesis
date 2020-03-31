@@ -193,6 +193,7 @@ public class RegExpTests
 
         Assert.True(re.Match("a,bz,__"));
         Assert.True(re.Match(",bzadwqve,____"));
+        Assert.False(re.Match("aaa,bz,__"));
         Assert.False(re.Match("aaa,ppp,__"));
         Assert.False(re.Match("a,www,_"));
     }
@@ -200,14 +201,37 @@ public class RegExpTests
     [Fact]
     public void FromPatternShouldMatchCorrectly16()
     {
+        var re = new RegExp("a{2,}");
+        Assert.True(re.Match("aa"));
+        Assert.True(re.Match("aaa"));
+        Assert.True(re.Match("aaaaaa"));
+        Assert.False(re.Match("a"));
+
+        var re1 = new RegExp("a{2}");
+        Assert.True(re1.Match("aa"));
+        Assert.False(re1.Match("a"));
+        Assert.False(re1.Match("aaa"));
+        Assert.False(re1.Match("aaaa"));
+
+        var re2 = new RegExp("a{2,4}");
+        Assert.True(re2.Match("aa"));
+        Assert.True(re2.Match("aaa"));
+        Assert.True(re2.Match("aaaa"));
+        Assert.False(re2.Match("a"));
+        Assert.False(re2.Match("aaaaa"));
+    }
+
+    [Fact]
+    public void FromPatternShouldMatchCorrectly17()
+    {
         var re = new RegExp("[----]");
 
         Assert.True(re.Match("-"));
         Assert.False(re.Match(string.Empty));
     }
 
-    [Fact(Skip="Until the character range parsing is fixed.")]
-    public void FromPatternShouldMatchCorrectly17()
+    [Fact]
+    public void FromPatternShouldMatchCorrectly18()
     {
         var re = new RegExp("[a-zA-]+");
 
@@ -218,7 +242,7 @@ public class RegExpTests
     }
 
     [Fact]
-    public void FromPatternShouldMatchCorrectly18()
+    public void FromPatternShouldMatchCorrectly19()
     {
         var re = new RegExp("[^abc]");
         Assert.True(re.Match("d"));
@@ -232,5 +256,42 @@ public class RegExpTests
         Assert.True(re1.Match("e"));
         Assert.False(re1.Match("\\\\"));
         Assert.False(re1.Match("\""));
+    }
+
+    [Fact]
+    public void FromPatternShouldMatchCorrectly20()
+    {
+        var re = new RegExp("[^0-9?\\-^a-z]+");
+
+        Assert.True(re.Match(" "));
+        Assert.True(re.Match("AB()C"));
+        Assert.False(re.Match("-"));
+        Assert.False(re.Match("923481567"));
+        Assert.False(re.Match("vstgko"));
+        Assert.False(re.Match("?"));
+        Assert.False(re.Match("^"));
+    }
+
+    [Fact]
+    public void FromPatternShouldMatchCorrectly21()
+    {
+        var re = new RegExp("[\\^0-9]+");
+
+        Assert.True(re.Match("^"));
+        Assert.True(re.Match("923481567"));
+        Assert.False(re.Match(" "));
+        Assert.False(re.Match("AB()C"));
+    }
+
+    [Fact]
+    public void FromPatternShouldMatchCorrectly22()
+    {
+        var re = new RegExp("[a\\-z]");
+
+        Assert.True(re.Match("a"));
+        Assert.True(re.Match("z"));
+        Assert.True(re.Match("-"));
+        Assert.False(re.Match("v"));
+        Assert.False(re.Match("c"));
     }
 }

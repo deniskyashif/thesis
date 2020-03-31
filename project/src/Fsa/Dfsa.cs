@@ -39,4 +39,9 @@ public class Dfsa
 
         return this.Final.Contains(curr);
     }
+
+    public string ToGraphViz()
+    {
+        throw new NotImplementedException();
+    }
 }

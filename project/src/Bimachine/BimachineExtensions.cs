@@ -35,20 +35,4 @@ public static class BimachineExtensions
 
         return output.ToString();
     }
-
-    public static void ExportToFile(this Bimachine bm, string path)
-    {
-        var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
-        var formatter = new BinaryFormatter();
-        formatter.Serialize(stream, bm);  
-        stream.Close();
-    }
-
-    public static Bimachine LoadFromFile(string path)
-    {
-        var stream = new FileStream(path, FileMode.Open, FileAccess.Read);
-        var formatter = new BinaryFormatter();  
-
-        return (Bimachine)formatter.Deserialize(stream);
-    }
 }

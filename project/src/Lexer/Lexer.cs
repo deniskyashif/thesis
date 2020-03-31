@@ -1,20 +1,19 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 
+[Serializable]
 public class Lexer
 {
     const char StartOfToken = '\u0002';
     const char EndOfToken = '\u0003';
-    private readonly ICollection<Rule> grammar;
-    private readonly Bimachine bm;
+    public readonly Bimachine bm;
 
-    public Lexer(IList<Rule> grammar)
-    {
-        this.grammar = grammar;
-        this.bm = this.InitBimachine();
-    }
+    public Lexer(IList<Rule> grammar) => 
+        this.bm = this.InitBimachine(grammar);
 
     public IEnumerable<Token> GetNextToken(string input)
     {
@@ -71,9 +70,9 @@ public class Lexer
         }
     }
 
-    Bimachine InitBimachine()
+    Bimachine InitBimachine(IList<Rule> grammar)
     {
-        var tokenFst = this.grammar
+        var tokenFst = grammar
             .Select(ToTokenFst)
             .Aggregate((u, f) => u.Union(f));
 
@@ -99,5 +98,21 @@ public class Lexer
             .Concat(FstBuilder.FromWordPair(string.Empty, $"{EndOfToken}"));
 
         return ruleFst;
+    }
+
+    public void ExportToFile(string path)
+    {
+        var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
+        var formatter = new BinaryFormatter();
+        formatter.Serialize(stream, this);  
+        stream.Close();
+    }
+
+    public static Lexer LoadFromFile(string path)
+    {
+        var stream = new FileStream(path, FileMode.Open, FileAccess.Read);
+        var formatter = new BinaryFormatter();  
+
+        return (Lexer)formatter.Deserialize(stream);
     }
 }
