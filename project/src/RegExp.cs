@@ -113,7 +113,7 @@ public class RegExp
                 '?' => atom.Optional(),
                 '*' => atom.Star(),
                 '+' => atom.Plus(),
-                _ => throw new ArgumentException($"Unhandled meta character '{metaCh}'.")
+                _ => throw new ArgumentException($"Unhandled meta character '{metaCh}' for {pattern} at pos {pos}.")
             };
         }
 
@@ -225,7 +225,7 @@ public class RegExp
             var ch = this.Next();
 
             if (!alphabet.Contains(ch))
-                throw new ArgumentException($"Invalid character {ch}");
+                throw new ArgumentException($"Invalid character {ch} for {pattern} at pos {pos}");
 
             return FsaBuilder.FromWord(ch.ToString());
         }
@@ -234,7 +234,7 @@ public class RegExp
             var ch = this.Next();
 
             if (metaChars.Contains(ch))
-                throw new ArgumentException($"Unescaped meta character {ch}");
+                throw new ArgumentException($"Unescaped meta character {ch} for {pattern} at pos {pos}");
 
             return FsaBuilder.FromWord(ch.ToString());
         }

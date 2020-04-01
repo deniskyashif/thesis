@@ -212,7 +212,7 @@ public static class FsaOperations
         var multiSymbolTransitions = automaton.Transitions.Where(t => t.Label.Length > 1);
 
         var newStates = automaton.States.ToList();
-        var newTransitions = automaton.Transitions.ToHashSet();
+        var newTransitions = automaton.Transitions.Except(multiSymbolTransitions).ToHashSet();
 
         foreach (var tr in multiSymbolTransitions)
         {
@@ -227,7 +227,6 @@ public static class FsaOperations
             var path = Enumerable.Range(0, stateSeq.Count - 1)
                     .Select(i => (stateSeq[i], tr.Label[i].ToString(), stateSeq[i + 1]));
 
-            newTransitions.Remove(tr);
             newTransitions.UnionWith(path);
         }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 public class TokenizerTests
@@ -14,7 +15,7 @@ public class TokenizerTests
             new Rule("[0-9]+\\.[0-9]+", "FLOAT"),
             new Rule("[+\\-*/]", "OP"),
         };
-        var lexer = new Lexer(grammar);
+        var lexer = Lexer.Create(grammar);
 
         var tokens1 = lexer.GetNextToken("1+1").ToList();
         var expectedTokens1 = new[]
@@ -66,7 +67,7 @@ public class TokenizerTests
             new Rule("true|false", "BOOLEAN"),
             new Rule("[ \t\n\r]+", "WS"),
         };
-        var lexer = new Lexer(grammar);
+        var lexer = Lexer.Create(grammar);
         
         var tokens = lexer.GetNextToken("{\"ab\":false,\"c\":-4.3,\"ww\":[{},\"\"]").ToList();
         var expectedTokens = new[]
@@ -103,7 +104,7 @@ public class TokenizerTests
             new Rule("\\)", "RPAREN"),
             new Rule("[|.*]", "OP"),
         };
-        var lex = new Lexer(grammar);
+        var lex = Lexer.Create(grammar);
 
         var tokens1 = lex.GetNextToken("a").ToList();
         var expectedTokens1 = new[]

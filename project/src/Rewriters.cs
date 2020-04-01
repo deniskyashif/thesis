@@ -29,7 +29,7 @@ public static class Rewriters
 
         return notInDomain.Concat(fst.Concat(notInDomain).Star()).Expand().Trim();
     }
-    
+
     // Convert to an obligatory leftmost-longest match rewrite transducer
     public static Fst ToLmlRewriter(this Fst rewriteRule, ISet<char> alphabet)
     {
@@ -48,7 +48,7 @@ public static class Rewriters
 
         // All words w where each prefix of w representing a string in "P" is followed by a suffix which is in "S"
         Fsa IfPThenS(Fsa p, Fsa s) => NotInLang(p.Concat(NotInLang(s)));
-        
+
         // All words for which each suffix from "S" is preceeded by a prefix from "P"
         Fsa IfSThenP(Fsa p, Fsa s) => NotInLang(NotInLang(p).Concat(s));
         Fsa PiffS(Fsa l, Fsa r) => IfPThenS(l, r).Intersect(IfSThenP(l, r));
@@ -67,8 +67,9 @@ public static class Rewriters
                         FsaBuilder.FromWord(cb.ToString()),
                         XIgnore(ruleDomain, allSymbols, new HashSet<char> { cb }))
                     .Identity());
+        Console.WriteLine("Constructed the initial match transducer.");
 
-        var leftToRight = // insert boundary markers ("lb", "rb") arount the leftmost rewrite occurrences
+        var leftmost = // insert boundary markers ("lb", "rb") arount the leftmost rewrite occurrences
             alphabetStarFsa.Identity() // preceeded by arbitrary text that is not matched by the rule
                 .Concat(
                     FstBuilder.FromWordPair(cb.ToString(), lb.ToString()), // replace intial match marker with the left boundary marker
@@ -78,23 +79,28 @@ public static class Rewriters
                 .Concat(alphabetStarFsa.Identity()) // succeeded by arbitrary text that is not matched by the rule
                 .Compose(
                     FstBuilder.FromWordPair(cb.ToString(), string.Empty).ToRewriter(allSymbols)); // delete the remaining initial match markers
+        Console.WriteLine("Constructed the leftmost match transducer.");
 
+        var intermediate = 
+            ContainsLang(FsaBuilder.FromWord(lb.ToString())
+                .Concat(IgnoreX(ruleDomain, allSymbols, new HashSet<char> { lb, rb })
+                    .Intersect(ContainsLang(FsaBuilder.FromWord(rb.ToString())))));
         var longestMatch = // amongst occurrences with the same starting point, preserve only the longest ones
-            NotInLang(
-                ContainsLang(
-                    FsaBuilder.FromWord(lb.ToString())
-                        .Concat(IgnoreX(ruleDomain, allSymbols, new HashSet<char> { lb, rb })
-                            .Intersect(ContainsLang(FsaBuilder.FromWord(rb.ToString()))))))
+            NotInLang(intermediate)
             .Identity();
+        Console.WriteLine("Constructed the longest match transducer.");
 
         var replacement = // replace the rewrite occurrence and delete the left and right markers
-                FstBuilder.FromWordPair(lb.ToString(), string.Empty) // delete the left boundary marker
-                    .Concat(
-                        rewriteRule, // perform the replacement
-                        FstBuilder.FromWordPair(rb.ToString(), string.Empty)) // delete the right boundary marker
-                    .ToRewriter(allSymbols);
+            FstBuilder.FromWordPair(lb.ToString(), string.Empty) // delete the left boundary marker
+                .Concat(
+                    rewriteRule, // perform the replacement
+                    FstBuilder.FromWordPair(rb.ToString(), string.Empty)) // delete the right boundary marker
+                .ToRewriter(allSymbols);
+        Console.WriteLine("Constructed the replacement transducer.");
 
-        return initialMatch.Compose(leftToRight, longestMatch, replacement);
+        Console.WriteLine("Composing the transducers");
+
+        return initialMatch.Compose(leftmost, longestMatch, replacement);
     }
 
     // Introduce symbols from a set S into an input string not containing symbols in S

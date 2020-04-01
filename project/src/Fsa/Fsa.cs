@@ -20,7 +20,7 @@ public class Fsa
         this.States = states.ToList();
         this.Initial = initial.ToHashSet();
         this.Final = final.ToHashSet();
-        this.Transitions = transitions.ToList();
+        this.Transitions = transitions.ToHashSet();
 
         this.epsilonClosureOf = new Lazy<IDictionary<int, IEnumerable<int>>>(
             () => this.PrecomputeEpsilonClosure());

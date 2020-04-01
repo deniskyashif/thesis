@@ -11,8 +11,8 @@ public class Lexer
     const char StartOfToken = '\u0002';
     const char EndOfToken = '\u0003';
 
-    public Lexer(IList<Rule> grammar) =>
-        this.Bimachine = this.InitBimachine(grammar);
+    private Lexer(Bimachine bm) =>
+        this.Bimachine = bm;
 
     public Bimachine Bimachine { get; private set; }
 
@@ -71,24 +71,28 @@ public class Lexer
         }
     }
 
-    Bimachine InitBimachine(IList<Rule> grammar)
+    public static Lexer Create(IList<Rule> grammar)
     {
+        Console.WriteLine("Constructing the token transducers.");
+
         var tokenFst = grammar
             .Select(ToTokenFst)
             .Aggregate((u, f) => u.Union(f));
-
         var alphabet = tokenFst.Transitions
             .Where(t => !string.IsNullOrEmpty(t.In))
             .Select(t => t.In.Single())
             .ToHashSet();
 
+        Console.WriteLine("Constructing the combined LML token transducer.");
         var lml = tokenFst.ToLmlRewriter(alphabet);
+
+        Console.WriteLine("Constructing the bimachine.");
         var bm = lml.ToBimachine(alphabet);
 
-        return bm;
+        return new Lexer(bm);
     }
 
-    Fst ToTokenFst(Rule rule)
+    static Fst ToTokenFst(Rule rule)
     {
         var ruleFsa = new RegExp(rule.Pattern).Automaton
             .Determinize()
