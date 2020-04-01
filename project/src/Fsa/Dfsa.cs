@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 [Serializable]
 public class Dfsa
@@ -11,7 +12,7 @@ public class Dfsa
         IEnumerable<int> finalStates,
         IReadOnlyDictionary<(int, char), int> transitions)
     {
-        this.States = states.ToHashSet();
+        this.States = states.ToList();
         this.Initial = initialState;
         this.Final = finalStates.ToHashSet();
         this.Transitions = transitions;
@@ -40,8 +41,19 @@ public class Dfsa
         return this.Final.Contains(curr);
     }
 
-    public string ToGraphViz()
+    public string ToGraphViz(string rankDir = "LR")
     {
-        throw new NotImplementedException();
+        var sb = new StringBuilder($"digraph {{ rankdir={rankDir}; size=\"8,5\" ");
+
+        sb.Append("node [shape=circle] ");
+        sb.Append("-1 [label= \"\", shape=none,height=.0,width=.0];");
+        sb.Append($"-1 -> {this.Initial};");
+
+        foreach (var tr in this.Transitions)
+            sb.Append($"{tr.Key.From} -> {tr.Value} [label=\"{tr.Key.Label}\"] ");
+
+        sb.Append($"{string.Join(",", this.Final)} [shape = doublecircle]");
+
+        return sb.Append("}").ToString();
     }
 }

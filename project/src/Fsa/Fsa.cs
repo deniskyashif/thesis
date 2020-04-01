@@ -4,11 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 public class Fsa
 {
-    private readonly Lazy<IDictionary<int, HashSet<int>>> epsilonClosureOf;
-    private readonly Lazy<IDictionary<(int, string), HashSet<int>>> transPerStateAndLabel;
+    private readonly Lazy<IDictionary<int, IEnumerable<int>>> epsilonClosureOf;
+    private readonly Lazy<IDictionary<(int, string), IEnumerable<int>>> transPerStateAndLabel;
 
     public Fsa(
         IEnumerable<int> states,
@@ -16,18 +17,18 @@ public class Fsa
         IEnumerable<int> final,
         IEnumerable<(int, string, int)> transitions)
     {
-        this.States = states.ToHashSet();
+        this.States = states.ToList();
         this.Initial = initial.ToHashSet();
         this.Final = final.ToHashSet();
-        this.Transitions = transitions.ToHashSet();
+        this.Transitions = transitions.ToList();
 
-        this.epsilonClosureOf = new Lazy<IDictionary<int, HashSet<int>>>(
+        this.epsilonClosureOf = new Lazy<IDictionary<int, IEnumerable<int>>>(
             () => this.PrecomputeEpsilonClosure());
 
-        this.transPerStateAndLabel = new Lazy<IDictionary<(int, string), HashSet<int>>>(
+        this.transPerStateAndLabel = new Lazy<IDictionary<(int, string), IEnumerable<int>>>(
             () => this.Transitions
                 .GroupBy(t => (t.From, t.Label), t => t.To)
-                .ToDictionary(g => g.Key, g => g.ToHashSet()));
+                .ToDictionary(g => g.Key, g => g.AsEnumerable()));
     }
 
     public IReadOnlyCollection<int> States { get; private set; }
@@ -75,7 +76,7 @@ public class Fsa
         return Array.Empty<int>();
     }
 
-    IDictionary<int, HashSet<int>> PrecomputeEpsilonClosure() => 
+    IDictionary<int, IEnumerable<int>> PrecomputeEpsilonClosure() => 
         this.Transitions
             .Where(t => string.IsNullOrEmpty(t.Label))
             .Select(t => (t.From, t.To))
@@ -83,5 +84,26 @@ public class Fsa
             .TransitiveClosure()
             .Union(this.States.Select(s => (From: s, To: s)))
             .GroupBy(p => p.Item1, p => p.Item2)
-            .ToDictionary(g => g.Key, g => g.ToHashSet());
+            .ToDictionary(g => g.Key, g => g.AsEnumerable());
+    
+    public string ToGraphViz()
+    {
+        var sb = new StringBuilder("digraph { rankdir=LR; size=\"8,5\" ");
+
+        sb.Append("node [shape=circle] ");
+        sb.Append("-1 [label= \"\", shape=none,height=.0,width=.0];");
+
+        foreach (var i in this.Initial)
+            sb.Append($"-1 -> {i};");
+
+        foreach (var tr in this.Transitions)
+        {
+            var label = string.IsNullOrEmpty(tr.Label) ? "ε" : tr.Label;
+            sb.Append($"{tr.From} -> {tr.To} [label=\"{label}\"]; ");
+        }
+
+        sb.Append($"{string.Join(",", this.Final)} [shape = doublecircle]");
+
+        return sb.Append("}").ToString();
+    }
 }

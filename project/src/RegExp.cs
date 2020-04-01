@@ -1,6 +1,6 @@
 /*
     On the fly compilation of a regular expression to a 
-    finite-state automaton using the "recursive descent" parsing method. 
+    finite-state automaton using the "recursive descent" parsing technique. 
     It implements the following grammar:
 
     Exp: Term 

@@ -10,19 +10,20 @@ public class Lexer
 {
     const char StartOfToken = '\u0002';
     const char EndOfToken = '\u0003';
-    public readonly Bimachine bm;
 
-    public Lexer(IList<Rule> grammar) => 
-        this.bm = this.InitBimachine(grammar);
+    public Lexer(IList<Rule> grammar) =>
+        this.Bimachine = this.InitBimachine(grammar);
+
+    public Bimachine Bimachine { get; private set; }
 
     public IEnumerable<Token> GetNextToken(string input)
     {
-        var rPath = this.bm.Right.RecognitionPathRToL(input);
+        var rPath = this.Bimachine.Right.RecognitionPathRToL(input);
 
         if (rPath.Count != input.Length + 1)
             throw new ArgumentException($"Unrecognized input. {input[input.Length - rPath.Count]}");
 
-        var leftState = bm.Left.Initial;
+        var leftState = Bimachine.Left.Initial;
         var token = new StringBuilder();
         var tokenIndex = 0;
         var tokenStartPos = 0;
@@ -33,10 +34,10 @@ public class Lexer
             var rightIndex = rPath.Count - 2 - i;
             var triple = (leftState, ch, rPath[rightIndex]);
 
-            if (!bm.Output.ContainsKey(triple))
+            if (!Bimachine.Output.ContainsKey(triple))
                 throw new ArgumentException($"Unrecognized input. {ch}");
 
-            var outStr = bm.Output[triple];
+            var outStr = Bimachine.Output[triple];
             token.Append(outStr);
 
             if (token[token.Length - 1] == EndOfToken)
@@ -63,10 +64,10 @@ public class Lexer
                 tokenStartPos = i + 1;
             }
 
-            if (!bm.Left.Transitions.ContainsKey((leftState, ch)))
+            if (!Bimachine.Left.Transitions.ContainsKey((leftState, ch)))
                 throw new ArgumentException($"Unrecognized input. {ch}");
 
-            leftState = bm.Left.Transitions[(leftState, ch)];
+            leftState = Bimachine.Left.Transitions[(leftState, ch)];
         }
     }
 
@@ -104,14 +105,14 @@ public class Lexer
     {
         var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
         var formatter = new BinaryFormatter();
-        formatter.Serialize(stream, this);  
+        formatter.Serialize(stream, this);
         stream.Close();
     }
 
     public static Lexer LoadFromFile(string path)
     {
         var stream = new FileStream(path, FileMode.Open, FileAccess.Read);
-        var formatter = new BinaryFormatter();  
+        var formatter = new BinaryFormatter();
 
         return (Lexer)formatter.Deserialize(stream);
     }

@@ -481,7 +481,7 @@ public static class FsaOperations
 
             for (int i = 2; i < kernelsPerSymbol.Count; i++)
                 nextEqRel = RelationOperations.IntersectEqRel(states, nextEqRel, kernelsPerSymbol[i]);
-            
+
             prevEqClassCount = EquivClassCount(eqRel);
             eqRel = RelationOperations.IntersectEqRel(states, eqRel, nextEqRel);
         }

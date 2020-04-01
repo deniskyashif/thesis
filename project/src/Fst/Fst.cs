@@ -5,6 +5,7 @@ using System.Collections.Immutable;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using System.Text;
 
 public class Fst
 {
@@ -14,7 +15,7 @@ public class Fst
         IEnumerable<int> final,
         IEnumerable<(int, string, string, int)> transitions)
     {
-        this.States = states.ToHashSet();
+        this.States = states.ToList();
         this.Initial = initial.ToHashSet();
         this.Final = final.ToHashSet();
         this.Transitions = transitions.ToList();
@@ -71,4 +72,14 @@ public class Fst
         this.Transitions
             .Where(tr => (state, input) == (tr.From, tr.In))
             .Select(tr => (tr.Out, tr.To));
+    
+    public string ToGraphViz()
+    {
+        var sb = new StringBuilder("digraph G { rankdir=LR; ");
+
+        foreach (var tr in this.Transitions)
+            sb.Append($"{tr.From} -> {tr.To} [label=\"{tr.In}/{tr.Out}\"]");
+
+        return sb.Append("}").ToString();
+    }
 }

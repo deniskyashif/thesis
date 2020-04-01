@@ -1,6 +1,6 @@
 # Lexical Analysis using a Bimachine
 
-## Lexer Generator API 
+## Lexer Generator API
 
 [\[Implementation\]](https://github.com/deniskyashif/thesis/blob/master/project/src/Lexer/Lexer.cs)
 

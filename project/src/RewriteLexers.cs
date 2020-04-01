@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 
 public static class RewriteLexers
@@ -24,12 +25,12 @@ public static class RewriteLexers
             .Star();
 
         var multiWordExprList = new[] { "AT LEAST", "IN SPITE OF", "HEAD OVER HEELS" };
-        var multiWordExpr = 
+        var multiWordExpr =
             multiWordExprList
                 .Select(exp => FsaBuilder.FromWord(exp))
                 .Aggregate((aggr, fsa) => aggr.Union(fsa));
 
-        var token = 
+        var token =
             FsaBuilder.FromSymbolSet(letters)
             .Plus()
             .Union(
@@ -37,22 +38,22 @@ public static class RewriteLexers
                 riseCase.Compose(multiWordExpr.Identity()).Domain(),
                 FsaBuilder.FromSymbolSet(alphabet.Except(whitespaces)));
 
-        var insertLeadingNewLine = 
+        var insertLeadingNewLine =
             FstBuilder.FromWordPair(string.Empty, "\n")
                 .Concat(FsaBuilder.FromSymbolSet(alphabet).Star().Identity());
 
-        var clearSpaces = 
+        var clearSpaces =
                 FsaBuilder.FromSymbolSet(whitespaces)
                 .Plus()
                 .Product(FsaBuilder.FromWord(" "))
                 .ToLmlRewriter(alphabet);
 
-        var markTokens = 
+        var markTokens =
             token.Identity()
                 .Concat(FstBuilder.FromWordPair(string.Empty, "\n"))
                 .ToLmlRewriter(alphabet);
 
-        var clearLeadingSpace = 
+        var clearLeadingSpace =
             insertLeadingNewLine.Compose(
                 FstBuilder.FromWordPair("\n ", "\n").ToRewriter(alphabet),
                 insertLeadingNewLine.Inverse());
