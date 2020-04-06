@@ -18,12 +18,12 @@ public class Lexer
 
     public IEnumerable<Token> GetNextToken(string input)
     {
-        var rPath = this.Bimachine.Right.RecognitionPathRToL(input);
+        var rPath = this.Bimachine.Reverse.RecognitionPathRToL(input);
 
         if (rPath.Count != input.Length + 1)
             throw new ArgumentException($"Unrecognized input. {input[input.Length - rPath.Count]}");
 
-        var leftState = Bimachine.Left.Initial;
+        var leftState = this.Bimachine.Forward.Initial;
         var token = new StringBuilder();
         var tokenIndex = 0;
         var tokenStartPos = 0;
@@ -64,16 +64,16 @@ public class Lexer
                 tokenStartPos = i + 1;
             }
 
-            if (!Bimachine.Left.Transitions.ContainsKey((leftState, ch)))
+            if (!this.Bimachine.Forward.Transitions.ContainsKey((leftState, ch)))
                 throw new ArgumentException($"Unrecognized input. {ch}");
 
-            leftState = Bimachine.Left.Transitions[(leftState, ch)];
+            leftState = this.Bimachine.Forward.Transitions[(leftState, ch)];
         }
     }
 
     public static Lexer Create(IList<Rule> grammar)
     {
-        Console.WriteLine("Constructing the token transducers.");
+        // Console.WriteLine("Constructing the token transducers.");
 
         var tokenFst = grammar
             .Select(ToTokenFst)
@@ -83,10 +83,10 @@ public class Lexer
             .Select(t => t.In.Single())
             .ToHashSet();
 
-        Console.WriteLine("Constructing the combined LML token transducer.");
+        // Console.WriteLine("Constructing the combined LML token transducer.");
         var lml = tokenFst.ToLmlRewriter(alphabet);
 
-        Console.WriteLine("Constructing the bimachine.");
+        // Console.WriteLine("Constructing the bimachine.");
         var bm = lml.ToBimachine(alphabet);
 
         return new Lexer(bm);

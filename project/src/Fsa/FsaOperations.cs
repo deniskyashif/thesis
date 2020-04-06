@@ -1,6 +1,5 @@
 /*
-    Operations on finite-state automata i.e. 
-    Regular Language Arithmetic.
+    Operations on finite-state automata i.e. regular language algebra.
 */
 using System;
 using System.Collections.Generic;
@@ -311,9 +310,9 @@ public static class FsaOperations
                 foreach (var tr2 in p2Trans)
                     productTrans.Add((tr1.Label, tr2.Label, tr1.To, tr2.To));
 
-            foreach (var state in productTrans.Select(t => (t.Item3, t.Item4)))
-                if (!productStates.Contains(state))
-                    productStates.Add(state);
+            foreach (var (_, _, s1, s2) in productTrans)
+                if (!productStates.Contains((s1, s2)))
+                    productStates.Add((s1, s2));
 
             foreach (var tr in productTrans)
                 transitions.Add((n, tr.Item1, tr.Item2, productStates.IndexOf((tr.Item3, tr.Item4))));
@@ -394,7 +393,7 @@ public static class FsaOperations
         first = first.Minimal();
         second = second.Minimal();
 
-        // The second automaton's transition function needs to be total
+        // The second automaton's transitio n function needs to be total
         var combinedAlphabet = first.Transitions.Select(t => t.Key.Label)
             .Concat(second.Transitions.Select(t => t.Key.Label))
             .Distinct();

@@ -15,8 +15,8 @@ public class BimachineTests
 
         var bm = fst.ToBimachine(new HashSet<char> { 'a', 'b' }).PseudoMinimal();
 
-        Assert.True(bm.Left.States.Count == 3 && bm.Right.States.Count == 3);
-        Assert.True(bm.Left.Transitions.Count == 2 && bm.Right.Transitions.Count == 2);
+        Assert.True(bm.Forward.States.Count == 3 && bm.Reverse.States.Count == 3);
+        Assert.True(bm.Forward.Transitions.Count == 2 && bm.Reverse.Transitions.Count == 2);
         Assert.Equal(2, bm.Output.Count);
 
         Assert.Equal("xy", bm.Process("ab"));

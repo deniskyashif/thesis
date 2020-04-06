@@ -1,5 +1,5 @@
 /*  
-    Operations on finite-state transducers
+    Operations on finite-state transducers i.e. regular relation algebra.
 */
 using System;
 using System.Collections.Generic;

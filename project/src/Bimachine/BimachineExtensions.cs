@@ -8,13 +8,13 @@ public static class BimachineExtensions
     // Process an input string throught the bimachine to get the corresponding output string.
     public static string Process(this Bimachine bm, string input)
     {
-        var rPath = bm.Right.RecognitionPathRToL(input);
+        var rPath = bm.Reverse.RecognitionPathRToL(input);
 
         if (rPath.Count != input.Length + 1)
             throw new ArgumentException($"Unrecognized input. {input[input.Length - rPath.Count]}");
 
         var output = new StringBuilder();
-        var leftState = bm.Left.Initial;
+        var leftState = bm.Forward.Initial;
 
         for (int i = 0; i < input.Length; i++)
         {
@@ -27,10 +27,10 @@ public static class BimachineExtensions
 
             output.Append(bm.Output[triple]);
 
-            if (!bm.Left.Transitions.ContainsKey((leftState, ch)))
+            if (!bm.Forward.Transitions.ContainsKey((leftState, ch)))
                 throw new ArgumentException($"Unrecognized input. {ch}");
 
-            leftState = bm.Left.Transitions[(leftState, ch)];
+            leftState = bm.Forward.Transitions[(leftState, ch)];
         }
 
         return output.ToString();

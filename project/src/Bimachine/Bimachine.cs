@@ -8,18 +8,18 @@ using System.Collections.Generic;
 public class Bimachine
 {
     public Bimachine(
-        Dfsa left,
-        Dfsa right,
+        Dfsa forward,
+        Dfsa reverse,
         IReadOnlyDictionary<(int Lstate, char Symbol, int Rstate), string> output)
     {
-        this.Left = left;
-        this.Right = right;
+        this.Forward = forward;
+        this.Reverse = reverse;
         this.Output = output;
     }
 
-    public Dfsa Left { get; private set; }
+    public Dfsa Forward { get; private set; }
 
-    public Dfsa Right { get; private set; }
+    public Dfsa Reverse { get; private set; }
 
     public IReadOnlyDictionary<(int Lstate, char Symbol, int Rstate), string> Output { get; private set; }
 }

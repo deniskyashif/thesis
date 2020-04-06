@@ -67,7 +67,8 @@ public static class Rewriters
                         FsaBuilder.FromWord(cb.ToString()),
                         XIgnore(ruleDomain, allSymbols, new HashSet<char> { cb }))
                     .Identity());
-        Console.WriteLine("Constructed the initial match transducer.");
+
+        // Console.WriteLine("Constructed the initial match transducer.");
 
         var leftmost = // insert boundary markers ("lb", "rb") arount the leftmost rewrite occurrences
             alphabetStarFsa.Identity() // preceeded by arbitrary text that is not matched by the rule
@@ -79,7 +80,8 @@ public static class Rewriters
                 .Concat(alphabetStarFsa.Identity()) // succeeded by arbitrary text that is not matched by the rule
                 .Compose(
                     FstBuilder.FromWordPair(cb.ToString(), string.Empty).ToRewriter(allSymbols)); // delete the remaining initial match markers
-        Console.WriteLine("Constructed the leftmost match transducer.");
+
+        // Console.WriteLine("Constructed the leftmost match transducer.");
 
         var intermediate = 
             ContainsLang(FsaBuilder.FromWord(lb.ToString())
@@ -88,7 +90,8 @@ public static class Rewriters
         var longestMatch = // amongst occurrences with the same starting point, preserve only the longest ones
             NotInLang(intermediate)
             .Identity();
-        Console.WriteLine("Constructed the longest match transducer.");
+
+        // Console.WriteLine("Constructed the longest match transducer.");
 
         var replacement = // replace the rewrite occurrence and delete the left and right markers
             FstBuilder.FromWordPair(lb.ToString(), string.Empty) // delete the left boundary marker
@@ -96,9 +99,9 @@ public static class Rewriters
                     rewriteRule, // perform the replacement
                     FstBuilder.FromWordPair(rb.ToString(), string.Empty)) // delete the right boundary marker
                 .ToRewriter(allSymbols);
-        Console.WriteLine("Constructed the replacement transducer.");
 
-        Console.WriteLine("Composing the transducers");
+        // Console.WriteLine("Constructed the replacement transducer.");
+        // Console.WriteLine("Composing the transducers");
 
         return initialMatch.Compose(leftmost, longestMatch, replacement);
     }

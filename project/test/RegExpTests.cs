@@ -294,4 +294,17 @@ public class RegExpTests
         Assert.False(re.Match("v"));
         Assert.False(re.Match("c"));
     }
+
+    [Fact]
+    public void FromPatternShouldMatchCorrectly23()
+    {
+        var re = new RegExp("[01]*1[01]{5}");
+        var fsm = re.Automaton.Determinize().Minimal();
+
+        Assert.True(fsm.Recognize("100000"));
+        Assert.True(fsm.Recognize("111001"));
+        Assert.True(fsm.Recognize("010101111001"));
+        Assert.True(fsm.Recognize("000101110"));
+        Assert.False(fsm.Recognize("000000"));
+    }
 }
