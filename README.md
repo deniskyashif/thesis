@@ -6,17 +6,35 @@
 
 ### Usage
 
+Generate a lexer by providing a set of lexical rules.
+
 ```cs
-var lexer = new Lexer(new[]
+var lexer = Lexer.Create(new[]
 {
     new Rule("[0-9]+\\.?[0-9]*", "NUM"),
     new Rule("[+*/-]", "OP"),
     new Rule("=", "EQ"),
     new Rule("[ \t\r\n]", "WS")
 });
-lexer.Input = new InputStream("3.14+1.86=5");
+```
 
-foreach (var token in lexer.GetNextToken())
+Set the input either as a string
+
+```cs
+lexer.Input = new InputStream("3.14+1.86=5");
+```
+
+or as a stream.
+
+```cs
+using var reader = new StreamReader("path/to/file.txt");
+lexer.Input = new InputStream(reader);
+```
+
+Perform the tokenization.
+
+```cs
+foreach (Token token in lexer.GetNextToken())
     Console.WriteLine(token);
 ```
 
@@ -27,6 +45,21 @@ foreach (var token in lexer.GetNextToken())
 [@2,5:8='1.86',<NUM>]
 [@3,9:9='=',<EQ>]
 [@4,10:10='5',<NUM>]
+```
+
+`Lexer.GetNextToken()` returns an iterator which yields a sequence of tokens one at a time. The `Token` type holds the following properties:
+
+```csharp
+public class Token
+{
+    public int Index { get; set; }
+    public (int Start, int End) Position { get; set; }
+    public string Text { get; set; }
+    public string Type { get; set; }
+
+    public override string ToString() =>
+        $"[@{Index},{Position.Start}:{Position.End}='{Text}',<{Type}>]";
+}
 ```
 
 ### Example Lexers

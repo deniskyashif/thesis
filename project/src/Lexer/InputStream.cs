@@ -25,7 +25,8 @@ public class InputStream
         len = data.Length;
     }
 
-    public InputStream(Stream source) : this(new StreamReader(source)) { }
+    public InputStream(Stream source) 
+        : this(new StreamReader(source)) { }
 
     public bool IsExhausted => !(0 <= this.pos && this.pos < this.len);
     public int Pos => this.pos;
