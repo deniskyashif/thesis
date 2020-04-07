@@ -387,6 +387,19 @@ public class FstTests
     }
 
     [Fact]
+    public void InfAmbiguousFstFromDfaToRealTimeTest()
+    {
+        var fst = new RegExp("a").Automaton
+            .Determinize()
+            .ToFsa()
+            .Product(new RegExp("b+").Automaton
+                .Determinize()
+                .ToFsa());
+        
+        Assert.Throws<ArgumentException>(() => fst.ToRealTime());
+    }
+
+    [Fact]
     public void PseudoDetermFstTest()
     {
         var fst = new Fst(

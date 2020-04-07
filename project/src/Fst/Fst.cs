@@ -75,10 +75,22 @@ public class Fst
     
     public string ToGraphViz()
     {
-        var sb = new StringBuilder("digraph G { rankdir=LR; ");
+        var sb = new StringBuilder("digraph G { rankdir=LR; size=\"8,5\" ");
+
+        sb.Append("node [shape=circle] ");
+        sb.Append("-1 [label= \"\", shape=none,height=.0,width=.0];");
+
+        foreach (var i in this.Initial)
+            sb.Append($"-1 -> {i};");
 
         foreach (var tr in this.Transitions)
-            sb.Append($"{tr.From} -> {tr.To} [label=\"{tr.In}/{tr.Out}\"]");
+        {
+            var @in = string.IsNullOrEmpty(tr.In) ? "ε" : tr.In;
+            var @out = string.IsNullOrEmpty(tr.Out) ? "ε" : tr.Out;
+            sb.Append($"{tr.From} -> {tr.To} [label=\"{@in}/{@out}\"]");
+        }
+
+        sb.Append($"{string.Join(",", this.Final)} [shape = doublecircle]");
 
         return sb.Append("}").ToString();
     }

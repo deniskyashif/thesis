@@ -343,6 +343,7 @@ public static class FstOperations
         {
             var current = transitiveClosure[n];
 
+            // Detected a loop.
             if (current.From == current.To && !string.IsNullOrEmpty(current.Out))
                 throw new ArgumentException("The transducer cannot be infinitely ambiguous.");
 

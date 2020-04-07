@@ -98,10 +98,9 @@ public class Lexer
 
     static Fst ToTokenFst(Rule rule)
     {
-        var ruleFsa = new RegExp(rule.Pattern).Automaton
-            .Determinize()
-            .Minimal();
+        var ruleFsa = new RegExp(rule.Pattern).Automaton;
 
+        // <ε,Type SoT> · Id(R) · <ε,EoT>
         var ruleFst = FstBuilder.FromWordPair(string.Empty, $"{rule.Name}{StartOfToken}")
             .Concat(ruleFsa.Identity())
             .Concat(FstBuilder.FromWordPair(string.Empty, $"{EndOfToken}"));

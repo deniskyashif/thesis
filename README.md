@@ -115,6 +115,35 @@ public class Token
 
 Example usages of the APIs can be found in the [unit tests' project](https://github.com/deniskyashif/thesis/tree/master/project/test).
 
+## GraphViz
+
+The finite state devices `Fsa`, `Dfsa` and `Fst` can be exported as [GraphViz](https://www.graphviz.org/).
+
+```cs
+var fst = new RegExp("a+").Automaton
+  .Product(new RegExp("b").Automaton)
+  .ToRealTime()
+  .Transducer
+  .PseudoMinimal();
+
+Console.WriteLine(fst.ToGraphViz());
+```
+
+```graphviz
+digraph G {
+    rankdir=LR; size="8,5"
+    node [shape=circle]
+    -1 [label= "", shape=none,height=.0,width=.0];
+    -1 -> 0;
+    0 -> 1 [label="a/b"]
+    0 -> 0 [label="a/ε"]
+    1 -> 1 [label="a/ε"]
+    1 [shape = doublecircle]
+}
+```
+
+<img src="fst.png" width="250" />
+
 ## References
 
 - [Finite-State Techniques Automata, Transducers and Bimachines](https://www.cambridge.org/core/books/finitestate-techniques/E21E748468F0310DA12A2CFAEB989185)
