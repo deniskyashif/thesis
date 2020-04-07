@@ -10,9 +10,13 @@ public class Lexer
 {
     const char StartOfToken = '\u0002';
     const char EndOfToken = '\u0003';
+    readonly IList<Rule> grammar;
 
-    private Lexer(Bimachine bm) =>
+    private Lexer(Bimachine bm, IList<Rule> grammar)
+    {
         this.Bm = bm;
+        this.grammar = grammar;
+    }
 
     public Bimachine Bm { get; private set; }
 
@@ -27,7 +31,7 @@ public class Lexer
 
         var leftState = this.Bm.Forward.Initial;
         var token = new StringBuilder();
-        var type = new StringBuilder();
+        var typeIndex = new StringBuilder();
         var tokenIndex = 0;
         var tokenStartPos = 0;
 
@@ -37,7 +41,7 @@ public class Lexer
             var rightIndex = rPath.Count - 2 - this.Input.Pos;
             var triple = (leftState, ch, rPath[rightIndex]);
 
-            if (!Bm.Output.ContainsKey(triple))
+            if (!this.Bm.Output.ContainsKey(triple))
                 throw new ArgumentException($"Unrecognized input. {ch}");
 
             var outStr = Bm.Output[triple];
@@ -48,21 +52,21 @@ public class Lexer
                 token.Remove(token.Length - 1, 1);
 
                 for (var k = 0; k < token.Length && token[k] != StartOfToken; k++)
-                    type.Append(token[k]);
+                    typeIndex.Append(token[k]);
 
                 // keep only the token text
-                token.Remove(0, type.Length + 1);
+                token.Remove(0, typeIndex.Length + 1);
 
                 yield return new Token
                 {
                     Index = tokenIndex,
                     Position = (tokenStartPos, this.Input.Pos),
                     Text = token.ToString(),
-                    Type = type.ToString()
+                    Type = this.grammar[int.Parse(typeIndex.ToString())].Name
                 };
 
                 token.Clear();
-                type.Clear();
+                typeIndex.Clear();
                 tokenIndex++;
                 tokenStartPos = this.Input.Pos + 1;
             }
@@ -76,36 +80,28 @@ public class Lexer
 
     public static Lexer Create(IList<Rule> grammar)
     {
-        // Console.WriteLine("Constructing the token transducers.");
+        var tokenFsts = new List<Fst>();
 
-        var tokenFst = grammar
-            .Select(ToTokenFst)
-            .Aggregate((u, f) => u.Union(f));
+        for (int index = 0; index < grammar.Count; index++)
+        {
+            var ruleFsa = new RegExp(grammar[index].Pattern).Automaton;
+            // <ε,Type SoT> · Id(R) · <ε,EoT>
+            var ruleFst = FstBuilder.FromWordPair(string.Empty, $"{index}{StartOfToken}")
+                .Concat(ruleFsa.Identity())
+                .Concat(FstBuilder.FromWordPair(string.Empty, $"{EndOfToken}"));
+            tokenFsts.Add(ruleFst);
+        }
 
-        var alphabet = tokenFst.Transitions
+        var combinedTokenFst = tokenFsts.Aggregate((u, f) => u.Union(f));
+        var alphabet = combinedTokenFst.Transitions
             .Where(t => !string.IsNullOrEmpty(t.In))
             .Select(t => t.In.Single())
             .ToHashSet();
 
-        // Console.WriteLine("Constructing the combined LML token transducer.");
-        var lml = tokenFst.ToLmlRewriter(alphabet);
-
-        // Console.WriteLine("Constructing the bimachine.");
+        var lml = combinedTokenFst.ToLmlRewriter(alphabet);
         var bm = lml.ToBimachine(alphabet);
 
-        return new Lexer(bm);
-    }
-
-    static Fst ToTokenFst(Rule rule)
-    {
-        var ruleFsa = new RegExp(rule.Pattern).Automaton;
-
-        // <ε,Type SoT> · Id(R) · <ε,EoT>
-        var ruleFst = FstBuilder.FromWordPair(string.Empty, $"{rule.Name}{StartOfToken}")
-            .Concat(ruleFsa.Identity())
-            .Concat(FstBuilder.FromWordPair(string.Empty, $"{EndOfToken}"));
-
-        return ruleFst;
+        return new Lexer(bm, grammar);
     }
 
     public void ExportToFile(string path)
