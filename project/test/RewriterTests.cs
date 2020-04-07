@@ -46,9 +46,11 @@ public class RewriterTests
     public void LmlRewriterTest()
     {
         var alphabet = new HashSet<char> {'a', 'b', 'c', 'd'};
+        // ab|bc -> d
         var rule1 = FstBuilder.FromWordPair("ab", "d")
             .Union(FstBuilder.FromWordPair("bc", "d"))
             .Expand();
+        // cd -> CD
         var rule2 = FstBuilder.FromWordPair("cd", "CD");
 
         var transducer = rule1.ToLmlRewriter(alphabet)

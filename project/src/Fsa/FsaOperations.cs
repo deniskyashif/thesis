@@ -248,7 +248,6 @@ public static class FsaOperations
             var symbolToStates = subsetStates[n] // take the last unexamined subset state
                 .Where(s => stateTransitionMap.ContainsKey(s)) // keep only the items with outgoing transitions
                 .SelectMany(s => stateTransitionMap[s]) // flatten into a set of (symbol, target) pairs
-                .Distinct()
                 .GroupBy(p => p.Label.Single(), p => p.To) // group them by symbol (fsa has only symbol transitions becase of "Expand")
                 .ToDictionary(g => g.Key, g => g.ToHashSet()); // convert to dictionary of type <symbol, set of states>
 
@@ -393,7 +392,7 @@ public static class FsaOperations
         first = first.Minimal();
         second = second.Minimal();
 
-        // The second automaton's transitio n function needs to be total
+        // The second automaton's transition function needs to be total
         var combinedAlphabet = first.Transitions.Select(t => t.Key.Label)
             .Concat(second.Transitions.Select(t => t.Key.Label))
             .Distinct();
@@ -421,8 +420,14 @@ public static class FsaOperations
         return new Dfsa(states, 0, final, product.Transitions).Trim();
     }
 
-    public static Fsa Difference(this Fsa first, Fsa second) =>
-        first.Determinize().Difference(second.Determinize()).ToFsa();
+    public static Fsa Difference(this Fsa first, Fsa second)
+    {
+        var firstDfsa = first.Determinize();
+        var secondDfsa = second.Determinize();
+
+        return firstDfsa.Difference(secondDfsa).ToFsa();
+    }
+        
 
     public static Fsa ToFsa(this Dfsa automaton) =>
         new Fsa(

@@ -14,8 +14,9 @@ var lexer = new Lexer(new[]
     new Rule("=", "EQ"),
     new Rule("[ \t\r\n]", "WS")
 });
+lexer.Input = new InputStream("3.14+1.86=5");
 
-foreach (var token in lexer.GetNextToken("3.14+1.86=5"))
+foreach (var token in lexer.GetNextToken())
     Console.WriteLine(token);
 ```
 
@@ -28,7 +29,7 @@ foreach (var token in lexer.GetNextToken("3.14+1.86=5"))
 [@4,10:10='5',<NUM>]
 ```
 
-### Example Lexers 
+### Example Lexers
 
 [\[Tests\]](https://github.com/deniskyashif/thesis/blob/master/project/test/LexerTests.cs)
 
@@ -39,7 +40,7 @@ foreach (var token in lexer.GetNextToken("3.14+1.86=5"))
 
 ## Building Blocks
 
-### Regular Expression Parser 
+### Regular Expression Parser
 
 [\[Implementation\]](https://github.com/deniskyashif/thesis/blob/master/project/src/RegExp.cs) [\[Tests\]](https://github.com/deniskyashif/thesis/blob/master/project/test/RegExpTests.cs)
 

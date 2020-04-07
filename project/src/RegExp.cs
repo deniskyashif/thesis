@@ -37,10 +37,11 @@ using System.Linq;
 
 public class RegExp
 {
-    static readonly ISet<char> alphabet = Enumerable.Range(char.MinValue, 127)
+    static readonly ISet<char> alphabet = Enumerable.Range(0, 255)
         .Select(Convert.ToChar)
         .Where(c => !char.IsControl(c))
         .ToHashSet();
+
     static readonly ISet<char> metaChars = new HashSet<char> { '?', '*', '+' };
     static readonly Fsa alphabetFsa = FsaBuilder.FromSymbolSet(alphabet);
 

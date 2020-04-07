@@ -360,6 +360,7 @@ public static class FstOperations
         return transitiveClosure;
     }
 
+    // Used when converting an Fst to a Bimachine
     static bool AreSelectorsEqual(IDictionary<int, int> sel1, IDictionary<int, int> sel2)
     {
         if (sel1.Count != sel2.Count)
@@ -372,6 +373,7 @@ public static class FstOperations
         return true;
     }
 
+    // Used when converting an Fst to a Bimachine
     static bool AreBmLeftStatesEqual(
         (ISet<int> SState, IDictionary<int, int> Selector) ls1,
         (ISet<int> SState, IDictionary<int, int> Selector) ls2) => 

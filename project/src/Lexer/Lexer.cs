@@ -12,38 +12,40 @@ public class Lexer
     const char EndOfToken = '\u0003';
 
     private Lexer(Bimachine bm) =>
-        this.Bimachine = bm;
+        this.Bm = bm;
 
-    public Bimachine Bimachine { get; private set; }
+    public Bimachine Bm { get; private set; }
 
-    public IEnumerable<Token> GetNextToken(string input)
+    public InputStream Input { get; set; }
+
+    public IEnumerable<Token> GetNextToken()
     {
-        var rPath = this.Bimachine.Reverse.RecognitionPathRToL(input);
+        var rPath = this.Bm.Reverse.RecognitionPathRToL(this.Input);
 
-        if (rPath.Count != input.Length + 1)
-            throw new ArgumentException($"Unrecognized input. {input[input.Length - rPath.Count]}");
+        if (rPath.Count != this.Input.Size + 1)
+            throw new ArgumentException($"Unrecognized input. {this.Input.CharAt(this.Input.Size - rPath.Count)}");
 
-        var leftState = this.Bimachine.Forward.Initial;
+        var leftState = this.Bm.Forward.Initial;
         var token = new StringBuilder();
+        var type = new StringBuilder();
         var tokenIndex = 0;
         var tokenStartPos = 0;
 
-        for (int i = 0; i < input.Length; i++)
+        for (this.Input.SetToStart(); !this.Input.IsExhausted; this.Input.MoveForward())
         {
-            var ch = input[i];
-            var rightIndex = rPath.Count - 2 - i;
+            var ch = this.Input.Peek();
+            var rightIndex = rPath.Count - 2 - this.Input.Pos;
             var triple = (leftState, ch, rPath[rightIndex]);
 
-            if (!Bimachine.Output.ContainsKey(triple))
+            if (!Bm.Output.ContainsKey(triple))
                 throw new ArgumentException($"Unrecognized input. {ch}");
 
-            var outStr = Bimachine.Output[triple];
+            var outStr = Bm.Output[triple];
             token.Append(outStr);
 
             if (token[token.Length - 1] == EndOfToken)
             {
                 token.Remove(token.Length - 1, 1);
-                var type = new StringBuilder();
 
                 for (var k = 0; k < token.Length && token[k] != StartOfToken; k++)
                     type.Append(token[k]);
@@ -54,20 +56,21 @@ public class Lexer
                 yield return new Token
                 {
                     Index = tokenIndex,
-                    Position = (tokenStartPos, i),
+                    Position = (tokenStartPos, this.Input.Pos),
                     Text = token.ToString(),
                     Type = type.ToString()
                 };
 
                 token.Clear();
+                type.Clear();
                 tokenIndex++;
-                tokenStartPos = i + 1;
+                tokenStartPos = this.Input.Pos + 1;
             }
 
-            if (!this.Bimachine.Forward.Transitions.ContainsKey((leftState, ch)))
+            if (!this.Bm.Forward.Transitions.ContainsKey((leftState, ch)))
                 throw new ArgumentException($"Unrecognized input. {ch}");
 
-            leftState = this.Bimachine.Forward.Transitions[(leftState, ch)];
+            leftState = this.Bm.Forward.Transitions[(leftState, ch)];
         }
     }
 
@@ -78,6 +81,7 @@ public class Lexer
         var tokenFst = grammar
             .Select(ToTokenFst)
             .Aggregate((u, f) => u.Union(f));
+
         var alphabet = tokenFst.Transitions
             .Where(t => !string.IsNullOrEmpty(t.In))
             .Select(t => t.In.Single())

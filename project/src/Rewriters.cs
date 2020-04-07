@@ -70,7 +70,7 @@ public static class Rewriters
 
         // Console.WriteLine("Constructed the initial match transducer.");
 
-        var leftmost = // insert boundary markers ("lb", "rb") arount the leftmost rewrite occurrences
+        var leftmost = // insert boundary markers ("lb", "rb") around the leftmost rewrite occurrences
             alphabetStarFsa.Identity() // preceeded by arbitrary text that is not matched by the rule
                 .Concat(
                     FstBuilder.FromWordPair(cb.ToString(), lb.ToString()), // replace intial match marker with the left boundary marker
@@ -87,9 +87,8 @@ public static class Rewriters
             ContainsLang(FsaBuilder.FromWord(lb.ToString())
                 .Concat(IgnoreX(ruleDomain, allSymbols, new HashSet<char> { lb, rb })
                     .Intersect(ContainsLang(FsaBuilder.FromWord(rb.ToString())))));
-        var longestMatch = // amongst occurrences with the same starting point, preserve only the longest ones
-            NotInLang(intermediate)
-            .Identity();
+        // amongst occurrences with the same starting point, preserve only the longest ones
+        var longestMatch = NotInLang(intermediate).Identity();
 
         // Console.WriteLine("Constructed the longest match transducer.");
 

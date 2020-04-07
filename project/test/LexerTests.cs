@@ -16,8 +16,8 @@ public class TokenizerTests
             new Rule("[+\\-*/]", "OP"),
         };
         var lexer = Lexer.Create(grammar);
-
-        var tokens1 = lexer.GetNextToken("1+1").ToList();
+        lexer.Input = new InputStream("1+1");
+        var tokens1 = lexer.GetNextToken().ToList();
         var expectedTokens1 = new[]
         {
             new Token { Type = "INT", Text = "1", Index = 0, Position = (0, 0)},
@@ -27,7 +27,8 @@ public class TokenizerTests
 
         Assert.True(TokensEqual(expectedTokens1, tokens1));
 
-        var tokens2 = lexer.GetNextToken("10/1-3*0.1193").ToList();
+        lexer.Input = new InputStream("10/1-3*0.1193");
+        var tokens2 = lexer.GetNextToken().ToList();
         var expectedTokens2 = new[]
         {
             new Token { Type = "INT", Text = "10", Index = 0, Position = (0, 1)},
@@ -40,8 +41,16 @@ public class TokenizerTests
         };
 
         Assert.True(TokensEqual(expectedTokens2, tokens2));
-        Assert.Throws<ArgumentException>(() => lexer.GetNextToken("123+x").ToList());
-        Assert.Throws<ArgumentException>(() => lexer.GetNextToken("_").ToList());
+        Assert.Throws<ArgumentException>(() => 
+        {
+            lexer.Input = new InputStream("123+x");
+            lexer.GetNextToken().ToList();
+        });
+        Assert.Throws<ArgumentException>(() => 
+        {
+            lexer.Input = new InputStream("_");
+            lexer.GetNextToken().ToList();
+        });
     }
 
     [Fact]
@@ -68,8 +77,9 @@ public class TokenizerTests
             new Rule("[ \t\n\r]+", "WS"),
         };
         var lexer = Lexer.Create(grammar);
-        
-        var tokens = lexer.GetNextToken("{\"ab\":false,\"c\":-4.3,\"ww\":[{},\"\"]").ToList();
+        lexer.Input = new InputStream("{\"ab\":false,\"c\":-4.3,\"ww\":[{},\"\"]");
+
+        var tokens = lexer.GetNextToken().ToList();
         var expectedTokens = new[]
         {
             new Token { Type = "OBJ_START", Text = "{", Index = 0, Position = (0, 0)},
@@ -104,9 +114,9 @@ public class TokenizerTests
             new Rule("\\)", "RPAREN"),
             new Rule("[|.*]", "OP"),
         };
-        var lex = Lexer.Create(grammar);
-
-        var tokens1 = lex.GetNextToken("a").ToList();
+        var lexer = Lexer.Create(grammar);
+        lexer.Input = new InputStream("a");
+        var tokens1 = lexer.GetNextToken().ToList();
         var expectedTokens1 = new[]
         {
             new Token { Type = "SYMBOL", Text = "a", Index = 0, Position = (0, 0)},
@@ -114,7 +124,8 @@ public class TokenizerTests
 
         Assert.True(TokensEqual(expectedTokens1, tokens1));
 
-        var tokens2 = lex.GetNextToken("(a|1)*").ToList();
+        lexer.Input = new InputStream("(a|1)*");
+        var tokens2 = lexer.GetNextToken().ToList();
         var expectedTokens2 = new[]
         {
             new Token { Type = "LPAREN", Text = "(", Index = 0, Position = (0, 0)},
@@ -126,7 +137,8 @@ public class TokenizerTests
         };
 
         Assert.True(TokensEqual(expectedTokens2, tokens2));
-        Assert.Throws<ArgumentException>(() => lex.GetNextToken("a/b").ToList());
+        lexer.Input = new InputStream("a/b");
+        Assert.Throws<ArgumentException>(() => lexer.GetNextToken().ToList());
     }
 
     [Fact]
