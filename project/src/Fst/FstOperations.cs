@@ -241,8 +241,7 @@ public static class FstOperations
         for (int n = 0; n < prodStates.Count; n++)
         {
             var curr = prodStates[n];
-            var compositeTransitions =
-                new HashSet<((string In, string Out) Label, (int, int) To)>();
+            var compositeTransitions = new HashSet<((string In, string Out) Label, (int, int) To)>();
 
             foreach (var tr1 in firstTransPerState[curr.Item1])
                 foreach (var tr2 in secondTransPerState[curr.Item2])
@@ -575,7 +574,8 @@ public static class FstOperations
 
     public static Fst PseudoMinimal(this Fst fst)
     {
-        int EquivClassCount(Dictionary<int, int> eqRel) => eqRel.Values.Distinct().Count();
+        int EquivClassCount(Dictionary<int, int> eqRel) => 
+            eqRel.Values.Distinct().Count();
 
         fst = fst.PseudoDeterminize();
         var alphabet = fst.Transitions.Select(t => (t.In, t.Out)).Distinct();
@@ -622,7 +622,6 @@ public static class FstOperations
             fst.States.Select(s => eqRel[s]),
             fst.Initial.Select(s => eqRel[s]),
             fst.Final.Select(s => eqRel[s]),
-            minTransitions)
-            .Trim();
+            minTransitions).Trim();
     }
 }

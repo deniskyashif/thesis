@@ -43,7 +43,7 @@ public class RegExp
         .ToHashSet();
 
     static readonly ISet<char> metaChars = new HashSet<char> { '?', '*', '+' };
-    static readonly Fsa alphabetFsa = FsaBuilder.FromSymbolSet(alphabet);
+    static readonly Fsa alphabetFsa = FsaBuilder.FromSymbolSet(alphabet).Determinize().Minimal().ToFsa();
 
     string pattern;
     int pos = 0;

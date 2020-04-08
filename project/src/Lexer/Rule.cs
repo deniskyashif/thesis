@@ -1,5 +1,6 @@
 using System;
 
+[Serializable]
 public class Rule
 {
     public Rule(string pattern, string name)

@@ -31,7 +31,7 @@ public static class Rewriters
     }
 
     // Convert to an obligatory leftmost-longest match rewrite transducer
-    public static Fst ToLmlRewriter(this Fst rewriteRule, ISet<char> alphabet)
+    public static Fst ToLmlRewriter(this Fst rewriteFst, ISet<char> alphabet)
     {
         if (alphabet.Intersect(boundaryMarkers).Any())
             throw new ArgumentException("The alphabet contains invalid symbols.");
@@ -57,7 +57,7 @@ public static class Rewriters
            if and only if it is followed by a string with a prefix in "R" */
         Fsa LiffR(Fsa lang, Fsa l, Fsa r) => PiffS(lang.Concat(l), r.Concat(lang));
 
-        var ruleDomain = rewriteRule.Domain();
+        var fstDomain = rewriteFst.Domain();
 
         var initialMatch = // mark the beginnings of all rewrite occurrences by inserting "cb"
             Intro(allSymbols, new HashSet<char> { cb })
@@ -65,74 +65,61 @@ public static class Rewriters
                     LiffR(
                         allSymbolsStarFsa,
                         FsaBuilder.FromWord(cb.ToString()),
-                        XIgnore(ruleDomain, allSymbols, new HashSet<char> { cb }))
+                        XIgnore(fstDomain, allSymbols, new HashSet<char> { cb }))
                     .Identity());
-
-        // Console.WriteLine("Constructed the initial match transducer.");
 
         var leftmost = // insert boundary markers ("lb", "rb") around the leftmost rewrite occurrences
             alphabetStarFsa.Identity() // preceeded by arbitrary text that is not matched by the rule
                 .Concat(
                     FstBuilder.FromWordPair(cb.ToString(), lb.ToString()), // replace intial match marker with the left boundary marker
-                    IgnoreX(ruleDomain, allSymbols, new HashSet<char> { cb }).Identity(), // recognize matches with the leftover "cb" symbol inbetween the markers
+                    IgnoreX(fstDomain, allSymbols, new HashSet<char> { cb }).Identity(), // recognize matches with the leftover "cb" symbol inbetween the markers
                     FstBuilder.FromWordPair(string.Empty, rb.ToString())) // insert right boundary marker at the end of the matched substring
                 .Star() // handle multiple rewrite occurrences
                 .Concat(alphabetStarFsa.Identity()) // succeeded by arbitrary text that is not matched by the rule
                 .Compose(
                     FstBuilder.FromWordPair(cb.ToString(), string.Empty).ToRewriter(allSymbols)); // delete the remaining initial match markers
 
-        // Console.WriteLine("Constructed the leftmost match transducer.");
-
         var intermediate = 
-            ContainsLang(FsaBuilder.FromWord(lb.ToString())
-                .Concat(IgnoreX(ruleDomain, allSymbols, new HashSet<char> { lb, rb })
-                    .Intersect(ContainsLang(FsaBuilder.FromWord(rb.ToString())))));
+            ContainsLang(
+                FsaBuilder.FromWord(lb.ToString())
+                    .Concat(
+                        IgnoreX(fstDomain, allSymbols, new HashSet<char> { lb, rb })
+                            .Intersect(ContainsLang(FsaBuilder.FromWord(rb.ToString())))));
         // amongst occurrences with the same starting point, preserve only the longest ones
         var longestMatch = NotInLang(intermediate).Identity();
-
-        // Console.WriteLine("Constructed the longest match transducer.");
 
         var replacement = // replace the rewrite occurrence and delete the left and right markers
             FstBuilder.FromWordPair(lb.ToString(), string.Empty) // delete the left boundary marker
                 .Concat(
-                    rewriteRule, // perform the replacement
+                    rewriteFst, // perform the replacement
                     FstBuilder.FromWordPair(rb.ToString(), string.Empty)) // delete the right boundary marker
                 .ToRewriter(allSymbols);
-
-        // Console.WriteLine("Constructed the replacement transducer.");
-        // Console.WriteLine("Composing the transducers");
 
         return initialMatch.Compose(leftmost, longestMatch, replacement);
     }
 
     // Introduce symbols from a set S into an input string not containing symbols in S
-    static Fst Intro(ISet<char> alphabet, ISet<char> symbols)
-    {
-        return FsaBuilder
+    static Fst Intro(ISet<char> alphabet, ISet<char> symbols) => 
+        FsaBuilder
             .FromSymbolSet(alphabet.Except(symbols))
             .Identity()
             .Union(
                 FsaBuilder.FromEpsilon()
                     .Product(FsaBuilder.FromSymbolSet(symbols)))
             .Star();
-    }
 
     // Same as "Intro" except symbols from S cannot occur at the end of the string
-    static Fst IntroX(ISet<char> alphabet, ISet<char> symbols)
-    {
-        return Intro(alphabet, symbols)
+    static Fst IntroX(ISet<char> alphabet, ISet<char> symbols) => 
+        Intro(alphabet, symbols)
             .Concat(FsaBuilder.FromSymbolSet(alphabet.Except(symbols)).Identity())
             .Optional();
-    }
 
     // Same as "Intro" except symbols from S cannot occur at the beginning of the string
-    static Fst Xintro(ISet<char> alphabet, ISet<char> symbols)
-    {
-        return FsaBuilder.FromSymbolSet(alphabet.Except(symbols))
+    static Fst Xintro(ISet<char> alphabet, ISet<char> symbols) => 
+        FsaBuilder.FromSymbolSet(alphabet.Except(symbols))
             .Identity()
             .Concat(Intro(alphabet, symbols))
             .Optional();
-    }
 
     /* For a given automaton L and a set of symbols S, construct the automaton 
         which recognizes all words from L with freely introduced symbols from S */

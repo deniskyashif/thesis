@@ -71,8 +71,8 @@ class CSharpLexer
             "->", "==", "!=", "<=", ">=", "\\+=", "-=", "\\*=", "/=", "%=",
             "&=", "\\|=", "^=", "<<", "<<=", "=>"
         });
-        var right_shift = ">>";
-        var right_shift_assignment = ">>=";
+        // var right_shift = ">>";
+        // var right_shift_assignment = ">>=";
 
         var literal = $"({boolean_literal})|({integer_literal})|({real_literal})|({character_literal})|({string_literal})|({null_literal})";
 

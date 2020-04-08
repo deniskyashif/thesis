@@ -27,7 +27,7 @@ public class Lexer
         var rPath = this.Bm.Reverse.RecognitionPathRToL(this.Input);
 
         if (rPath.Count != this.Input.Size + 1)
-            throw new ArgumentException($"Unrecognized input. {this.Input.CharAt(this.Input.Size - rPath.Count)}");
+            throw new ArgumentException($"Unrecognized symbol. {this.Input.CharAt(this.Input.Size - rPath.Count)}");
 
         var leftState = this.Bm.Forward.Initial;
         var token = new StringBuilder();
@@ -42,7 +42,7 @@ public class Lexer
             var triple = (leftState, ch, rPath[rightIndex]);
 
             if (!this.Bm.Output.ContainsKey(triple))
-                throw new ArgumentException($"Unrecognized input. {ch}");
+                throw new ArgumentException($"Unrecognized token '{token.ToString()+ch}'");
 
             var outStr = Bm.Output[triple];
             token.Append(outStr);
@@ -84,15 +84,16 @@ public class Lexer
 
         for (int index = 0; index < grammar.Count; index++)
         {
-            var ruleFsa = new RegExp(grammar[index].Pattern).Automaton;
-            // <ε,Type SoT> · Id(R) · <ε,EoT>
+            var ruleFsa = new RegExp(grammar[index].Pattern).Automaton.Determinize().Minimal();
+            // {<ε,TypeIndex SOT>} · Id(R) · {<ε,EOT>}
             var ruleFst = FstBuilder.FromWordPair(string.Empty, $"{index}{StartOfToken}")
                 .Concat(ruleFsa.Identity())
                 .Concat(FstBuilder.FromWordPair(string.Empty, $"{EndOfToken}"));
+
             tokenFsts.Add(ruleFst);
         }
 
-        var combinedTokenFst = tokenFsts.Aggregate((u, f) => u.Union(f));
+        var combinedTokenFst = tokenFsts.Aggregate((u, f) => u.Union(f)).PseudoMinimal();
         var alphabet = combinedTokenFst.Transitions
             .Where(t => !string.IsNullOrEmpty(t.In))
             .Select(t => t.In.Single())
@@ -108,7 +109,14 @@ public class Lexer
     {
         var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
         var formatter = new BinaryFormatter();
-        formatter.Serialize(stream, this);
+
+        formatter.Serialize(
+            stream,
+            new LexerExport 
+            { 
+                grammar = this.grammar, 
+                bm = this.Bm.PseudoMinimal() 
+            });
         stream.Close();
     }
 
@@ -117,6 +125,14 @@ public class Lexer
         var stream = new FileStream(path, FileMode.Open, FileAccess.Read);
         var formatter = new BinaryFormatter();
 
-        return (Lexer)formatter.Deserialize(stream);
+        var exp = (LexerExport)formatter.Deserialize(stream);
+        return new Lexer(exp.bm, exp.grammar);
+    }
+
+    [Serializable]
+    class LexerExport
+    {
+        public IList<Rule> grammar;
+        public Bimachine bm;
     }
 }

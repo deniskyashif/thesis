@@ -47,7 +47,7 @@ foreach (Token token in lexer.GetNextToken())
 [@4,10:10='5',<NUM>]
 ```
 
-`Lexer.GetNextToken()` returns an iterator which yields a sequence of tokens one at a time. The `Token` type holds the following properties:
+`Lexer.GetNextToken()` returns an iterator which yields a sequence of tokens one at a time. The `Token` class contains the following properties:
 
 ```csharp
 public class Token
@@ -60,6 +60,19 @@ public class Token
     public override string ToString() =>
         $"[@{Index},{Position.Start}:{Position.End}='{Text}',<{Type}>]";
 }
+```
+
+### Import/Export
+
+Depending on the grammar, the lexer construction might take some time. Hence, once built, it can be exported as a binary file and then loaded in a project.
+
+```cs
+var lexer = Lexer.Create(grammar);
+lexer.ExportToFile("lexout");
+```
+
+```cs
+var lexer = Lexer.LoadFromFile("lexout");
 ```
 
 ### Example Lexers
