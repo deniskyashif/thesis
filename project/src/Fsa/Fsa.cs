@@ -91,10 +91,13 @@ public class Fsa
         var sb = new StringBuilder("digraph { rankdir=LR; size=\"8,5\" ");
 
         sb.Append("node [shape=circle] ");
-        sb.Append("-1 [label= \"\", shape=none,height=.0,width=.0];");
-
-        foreach (var i in this.Initial)
-            sb.Append($"-1 -> {i};");
+        
+        for (var index = 0; index < this.Initial.Count; index++)
+        {
+            var i = -1 - index;
+            sb.Append($"{i} [label= \"\", shape=point];");
+            sb.Append($"{i} -> {this.Initial.ElementAt(index)};");
+        }
 
         foreach (var tr in this.Transitions)
         {

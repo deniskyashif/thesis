@@ -419,18 +419,20 @@ public static class FstOperations
 
         foreach (var tr in rtFst.Transitions)
         {
-            if (!fstTransGroupedBy_21to43.ContainsKey((tr.In[0], tr.From)))
+            if (!fstTransGroupedBy_21to43.ContainsKey((tr.In.Single(), tr.From)))
                 fstTransGroupedBy_21to43[(tr.In.Single(), tr.From)] = new HashSet<(int, string)>();
 
             fstTransGroupedBy_21to43[(tr.In.Single(), tr.From)].Add((tr.To, tr.Out));
         }
 
         // Construct the left Dfa and the bimachine's output function
-        var leftStates = new List<(ISet<int> SState, IDictionary<int, int> Selector)>();
+        var leftDfaStates = new List<(ISet<int> SState, IDictionary<int, int> Selector)>();
         var leftTransitions = new Dictionary<(int, char), int>();
         var bmOutput = new Dictionary<(int, char, int), string>();
 
-        // Construct left Dfa's initial selector function
+        // Construct left Dfa's initial selector function.
+        // The selector function maps a right dfa state (subset state index)
+        // to a state in the input transducer
         var initStateSelector = new Dictionary<int, int>();
 
         for (int rIndex = 0; rIndex < rightSStates.Count; rIndex++)
@@ -440,20 +442,20 @@ public static class FstOperations
                 initStateSelector.Add(rIndex, initStates.First());
         }
 
-        leftStates.Add((rtFst.Initial.ToHashSet(), initStateSelector));
+        leftDfaStates.Add((rtFst.Initial.ToHashSet(), initStateSelector));
 
-        for (int k = 0; k < leftStates.Count; k++)
+        for (int k = 0; k < leftDfaStates.Count; k++)
         {
-            var curr = leftStates[k];
-            // Find target states & their selectors on each alphabet symbol
+            var currLState = leftDfaStates[k];
+            // Find target states & their compute selectors on each alphabet symbol
             var targetLStatesPerSymbol =
-                new Dictionary<char, (ISet<int> LeftSState, IDictionary<int, int> SelectorForSymbol)>();
+                new Dictionary<char, (ISet<int> LeftSState, IDictionary<int, int> Selector)>();
 
             foreach (var symbol in alphabet)
             {
                 var targetLSState = new HashSet<int>();
-
-                foreach (var st in curr.SState)
+                // Successor (set of states) of L on symbol
+                foreach (var st in currLState.SState)
                     if (fstTransGroupedBy_21to43.ContainsKey((symbol, st)))
                         targetLSState.UnionWith(
                             fstTransGroupedBy_21to43[(symbol, st)].Select(x => x.To));
@@ -463,22 +465,24 @@ public static class FstOperations
 
                 var targetSelector = new Dictionary<int, int>();
 
-                foreach (var (toRIndex, fstState) in curr.Selector)
+                foreach (var (toRIndex, fstState) in currLState.Selector)
                 {
                     if (!rDfaTransGroupedBy_3to12.ContainsKey(toRIndex))
                         continue;
-
+                    // toRIndex <--symbol-- fromRIndex
                     foreach (var (fromRIndex, _) in
                         rDfaTransGroupedBy_3to12[toRIndex].Where(p => p.Symbol == symbol))
                     {
                         if (!fstTransGroupedBy_21to43.ContainsKey((symbol, fstState)))
                             continue;
-
-                        var reachableTarget = fstTransGroupedBy_21to43[(symbol, fstState)]
+                        /* Pick any state from the intersection of the target left & source right states.
+                            If there is a transition in the source transducer from this state on this symbol
+                            but with different outputs - the transducer is not functional & we shoud throw. */
+                        var reachableFstState = fstTransGroupedBy_21to43[(symbol, fstState)]
                             .FirstOrDefault(p => rightSStates[fromRIndex].Contains(p.To));
 
-                        if (reachableTarget != default)
-                            targetSelector.Add(fromRIndex, reachableTarget.To);
+                        if (reachableFstState != default)
+                            targetSelector.Add(fromRIndex, reachableFstState.To);
                     }
                 }
 
@@ -488,45 +492,44 @@ public static class FstOperations
                 targetLStatesPerSymbol.Add(symbol, (targetLSState, targetSelector));
             }
 
-            foreach (var (symbol, (targetSState, targetSelector)) in targetLStatesPerSymbol)
+            foreach (var (symbol, (targetLSState, targetSelector)) in targetLStatesPerSymbol)
             {
                 // Add to the bimachine's output function
                 foreach (var (fromRIndex, fstState) in targetSelector)
                 {
-                    var state = curr.Selector[rightTrans[(fromRIndex, symbol)]];
+                    var predecessorOfR = rightTrans[(fromRIndex, symbol)];
+                    var state = currLState.Selector[predecessorOfR];
                     var destinationStates = fstTransGroupedBy_21to43[(symbol, state)]
                         .Where(p => p.To == fstState);
 
                     foreach (var (toState, word) in destinationStates)
                     {
-                        var pair = (Key: (k, symbol, fromRIndex), Val: word);
+                        var outFnPair = (Key: (k, symbol, fromRIndex), Val: word);
 
-                        if (bmOutput.ContainsKey(pair.Key))
+                        if (bmOutput.ContainsKey(outFnPair.Key))
                         {
-                            if (bmOutput[pair.Key] != pair.Val)
+                            if (bmOutput[outFnPair.Key] != outFnPair.Val)
                                 throw new InvalidOperationException(
-                                    $"Cannot have different values for the same key: '{bmOutput[pair.Key]}', '{pair.Val}'");
-                            continue;
+                                    $"Cannot have different values for the same key: '{bmOutput[outFnPair.Key]}', '{outFnPair.Val}'");
                         }
-
-                        bmOutput.Add(pair.Key, pair.Val);
+                        else bmOutput.Add(outFnPair.Key, outFnPair.Val);
                     }
                 }
 
-                var nextLState = (targetSState, targetSelector);
+                var nextLState = (targetLSState, targetSelector);
 
                 // Left Dfa's states
-                if (!leftStates.Any(ls => AreBmLeftStatesEqual(ls, nextLState)))
-                    leftStates.Add((targetSState, targetSelector));
+                if (!leftDfaStates.Any(ls => AreBmLeftStatesEqual(ls, nextLState)))
+                    leftDfaStates.Add(nextLState);
 
                 // Left Dfa's transitions
                 leftTransitions.Add(
                     (k, symbol),
-                    leftStates.FindIndex(ls => AreBmLeftStatesEqual(ls, nextLState)));
+                    leftDfaStates.FindIndex(ls => AreBmLeftStatesEqual(ls, nextLState)));
             }
         }
 
-        var leftStateIndices = Enumerable.Range(0, leftStates.Count);
+        var leftStateIndices = Enumerable.Range(0, leftDfaStates.Count);
         var leftDfsa = new Dfsa(leftStateIndices, 0, Array.Empty<int>(), leftTransitions);
         var rightStateIndices = Enumerable.Range(0, rightSStates.Count);
         var rightDfsa = new Dfsa(rightStateIndices, 0, Array.Empty<int>(), rightTrans);

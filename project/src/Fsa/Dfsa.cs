@@ -46,7 +46,7 @@ public class Dfsa
         var sb = new StringBuilder($"digraph {{ rankdir={rankDir}; size=\"8,5\" ");
 
         sb.Append("node [shape=circle] ");
-        sb.Append("-1 [label= \"\", shape=none,height=.0,width=.0];");
+        sb.Append("-1 [label= \"\", shape=point];");
         sb.Append($"-1 -> {this.Initial};");
 
         foreach (var tr in this.Transitions)
