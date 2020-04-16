@@ -9,7 +9,7 @@ public static class Rewriters
     const char rb = '\u0003'; // marks the right boundary (end) of a rewrite occurrence
     static readonly char[] boundaryMarkers = new char[] { cb, lb, rb };
 
-    // Convert to an optional rewrite transducer
+    // Convert an FST to an optional rewrite transducer
     public static Fst ToOptionalRewriter(this Fst fst, ISet<char> alphabet)
     {
         var idAll = FsaBuilder.All(alphabet).Identity();

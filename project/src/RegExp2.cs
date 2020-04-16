@@ -35,26 +35,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public class RegExp
+public class RegExp2
 {
-    static readonly ISet<char> alphabet = Enumerable.Range(0, 255)
-        .Select(Convert.ToChar)
-        .Where(c => !char.IsControl(c))
-        .ToHashSet();
-
     static readonly ISet<char> metaChars = new HashSet<char> { '?', '*', '+' };
-    static readonly Fsa alphabetFsa = FsaBuilder.FromSymbolSet(alphabet).Determinize().Minimal().ToFsa();
 
     string pattern;
     int pos = 0;
 
-    public RegExp(string pattern)
+    public RegExp2(string pattern)
     {
         this.pattern = pattern;
         this.Automaton = this.Expr();
     }
 
-    public Fsa Automaton { get; private set; }
+    public Pfsa Automaton { get; private set; }
 
     public bool Match(string word) => this.Automaton.Recognize(word);
 
@@ -80,7 +74,7 @@ public class RegExp
         return ch;
     }
 
-    Fsa Expr()
+    Pfsa Expr()
     {
         var term = this.Term();
 
@@ -93,15 +87,15 @@ public class RegExp
         return term;
     }
 
-    Fsa Term()
+    Pfsa Term()
     {
         if (this.HasMoreChars() && this.Peek() != ')' && this.Peek() != '|')
             return this.Factor().Concat(this.Term());
 
-        return FsaBuilder.FromEpsilon();
+        return PfsaBuilder.FromEpsilon();
     }
 
-    Fsa Factor()
+    Pfsa Factor()
     {
         var atom = this.Atom();
 
@@ -121,7 +115,7 @@ public class RegExp
         if (this.HasMoreChars() && this.Peek() == '{')
         {
             var (min, max) = this.CharCount();
-            var fsa = FsaBuilder.FromEpsilon();
+            var fsa = PfsaBuilder.FromEpsilon();
 
             for (var i = 0; i < min; i++)
                 fsa = fsa.Concat(atom);
@@ -142,12 +136,12 @@ public class RegExp
         return atom;
     }
 
-    Fsa Atom()
+    Pfsa Atom()
     {
         if (this.Peek() == '.')
         {
             this.Eat('.');
-            return alphabetFsa;
+            return PfsaBuilder.All();
         }
 
         if (this.Peek() == '(')
@@ -162,12 +156,13 @@ public class RegExp
         if (this.Peek() == '[')
         {
             this.Eat('[');
-            Fsa set;
+            Pfsa set;
 
             if (this.Peek() == '^')
             {
                 this.Eat('^');
-                set = alphabetFsa.Difference(this.CharSet());
+                throw new NotSupportedException("Negative set not supported");
+                // set = PfsaBuilder.All().Difference(this.CharSet());
             }
             else set = this.CharSet();
 
@@ -179,7 +174,7 @@ public class RegExp
         return this.Char();
     }
 
-    Fsa CharSet()
+    Pfsa CharSet()
     {
         var setItem = this.CharSetItem();
 
@@ -189,13 +184,13 @@ public class RegExp
         return setItem;
     }
 
-    Fsa CharSetItem()
+    Pfsa CharSetItem()
     {
         if (this.Peek() == '\\')
             this.Eat('\\');
 
         var from = this.Next();
-        var symbols = new List<char> { from };
+        var symbols = new HashSet<char> { from };
 
         if (this.Peek() == '-')
         {
@@ -215,20 +210,17 @@ public class RegExp
             }
         }
 
-        return FsaBuilder.FromSymbolSet(symbols);
+        return PfsaBuilder.FromSymbolSet(symbols);
     }
 
-    Fsa Char()
+    Pfsa Char()
     {
         if (this.Peek() == '\\')
         {
             this.Eat('\\');
             var ch = this.Next();
 
-            if (!alphabet.Contains(ch))
-                throw new ArgumentException($"Invalid character {ch} for {pattern} at pos {pos}");
-
-            return FsaBuilder.FromWord(ch.ToString());
+            return PfsaBuilder.FromSymbol(ch);
         }
         else
         {
@@ -237,7 +229,7 @@ public class RegExp
             if (metaChars.Contains(ch))
                 throw new ArgumentException($"Unescaped meta character {ch} for {pattern} at pos {pos}");
 
-            return FsaBuilder.FromWord(ch.ToString());
+            return PfsaBuilder.FromSymbol(ch);
         }
     }
 

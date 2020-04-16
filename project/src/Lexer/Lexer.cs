@@ -27,7 +27,8 @@ public class Lexer
         var rPath = this.Bm.Reverse.RecognitionPathRToL(this.Input);
 
         if (rPath.Count != this.Input.Size + 1)
-            throw new ArgumentException($"Unrecognized symbol. {this.Input.CharAt(this.Input.Size - rPath.Count)}");
+            throw new ArgumentException(
+                $"Unrecognized input symbol. {this.Input.CharAt(this.Input.Size - rPath.Count)}");
 
         var leftState = this.Bm.Forward.Initial;
         var token = new StringBuilder();

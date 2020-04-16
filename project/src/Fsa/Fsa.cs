@@ -32,11 +32,8 @@ public class Fsa
     }
 
     public IReadOnlyCollection<int> States { get; private set; }
-
     public IReadOnlyCollection<int> Initial { get; private set; }
-
     public IReadOnlyCollection<int> Final { get; private set; }
-
     public IReadOnlyCollection<(int From, string Label, int To)> Transitions { get; private set; }
 
     public bool Recognize(string word)

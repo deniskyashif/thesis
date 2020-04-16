@@ -19,11 +19,8 @@ public class Dfsa
     }
 
     public IReadOnlyCollection<int> States { get; private set; }
-    
     public int Initial { get; private set; }
-
     public IReadOnlyCollection<int> Final { get; private set; }
-
     public IReadOnlyDictionary<(int From, char Label), int> Transitions { get; private set; }
 
     public bool Recognize(string word)

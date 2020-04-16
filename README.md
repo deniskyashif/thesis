@@ -92,20 +92,21 @@ var lexer = Lexer.LoadFromFile("lexout");
 
 #### Supported syntax
 
-- Concatenation `ab`
-- Union `a|b`
-- Zero-or-more `a*`
-- One-or-more `a+`
-- Optional `a?`
-- Grouping `(a|b)*c`
-- Character sets
-  - Positive `[a-z0-9,]`
-  - Negative (excludes) `[^a-z0-9,]`
-- Count
-  - `a{2}` - match exactly 2 'a's
-  - `a{2,}` - match at least 2 'a's
-  - `a{2,4}` - match between 2 and 4 'a's
-- Escaping `a\*` (match "a*"), `[a\-z]` (match 'a', '-' or 'z')
+| Expression                                       | Example        |
+|:-------------------------------------------------|:---------------|
+| Concatenation                                    | `ab`           |
+| Union                                            | `a|b`          |
+| Zero-or-more                                     | `a*`           |
+| One-or-more                                      | `a+`           |
+| Optional                                         | `a?`           |
+| Grouping                                         | `(a|b)*c`      |
+| Char class                                       | `[a-z0-9,]`    |
+| Negative char class                              | `[^a-z0-9,]`   |
+| Match exactly 2 'a's                             | `a{2}`         |
+| Match at least 2 'a's                            | `a{2,}`        |
+| Match between 2 and 4 'a's                       | `a{2,4}`       |
+| Escaping  (matches "a*")                         | `a\*`          |
+| Escaping in char classes (match 'a', '-' or 'z') | `[a\-z]`       |
 
 ### Finite-state device construction and operations
 
