@@ -110,4 +110,18 @@ public static class PfsaOperations
             automaton.Final.Union(state),
             automaton.Transitions);
     }
+
+    public static Pfsa EpsilonFree(this Pfsa automaton)
+    {
+        var initial = automaton.Initial.SelectMany(automaton.EpsilonClosure);
+
+        var transitions = automaton.Transitions
+            .Where(t => t.Pred != default)
+            .SelectMany(t =>
+                automaton
+                    .EpsilonClosure(t.To)
+                    .Select(es => (t.From, t.Pred, es)));
+
+        return new Pfsa(automaton.States, initial, automaton.Final, transitions);
+    }
 }
