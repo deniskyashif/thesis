@@ -239,4 +239,58 @@ public class PfsaTests
         Assert.True(new[] { "abbac", "ac", "bc", "ababbbbac", "aac" }.All(fsa.Recognize));
         Assert.DoesNotContain(new[] { "ca", "aaba", string.Empty, "cc", "c" }, fsa.Recognize);
     }
+
+    [Fact]
+    public void TrimPfsaTest()
+    {
+        var states = new[] { 1, 2, 3, 4 };
+        var initial = new[] { 2, 3 };
+        var final = new[] { 4 };
+        var transitions = new (int, Func<char, bool>, int)[] { (3, c => c == 'a', 4), (2, c => c == 'b', 1) };
+        var fsa = new Pfsa(states, initial, final, transitions).Trim();
+
+        Assert.Equal(2, fsa.States.Count);
+        Assert.Single(fsa.Transitions);
+        Assert.Single(fsa.Initial);
+        Assert.Single(fsa.Final);
+        Assert.True(fsa.Recognize("a"));
+        Assert.False(fsa.Recognize("ab"));
+    }
+
+    [Fact]
+    public void IntersectPfsaTest()
+    {
+        // even number of "a"'s & any number of "b"'s
+        var first = new Pfsa(
+            new[] { 0, 1 },
+            new[] { 0 },
+            new[] { 0 },
+            new List<(int, Func<char, bool>, int)>
+            {
+                (0, c => c == 'b', 0),
+                (0, c => c == 'a', 1 ),
+                (1, c => c == 'b', 1 ),
+                (1, c => c == 'a', 0),
+            });
+        // even number of "b"'s & any number of "a"'s
+        var second = new Pfsa(
+            new[] { 2, 3 },
+            new[] { 2 },
+            new[] { 2 },
+            new List<(int, Func<char, bool>, int)>
+            {
+                (2, c => c == 'a', 2 ),
+                (2, c => c == 'b', 3 ),
+                (3, c => c == 'a', 3 ),
+                (3, c => c == 'b', 2 ),
+            });
+
+        Assert.True(new[] { string.Empty, "aaaa", "aab", "baabaa", "baba", "abab", "bbbaa" }.All(first.Recognize));
+        Assert.True(new[] { string.Empty, "aa", "bb", "abab", "aabb", "baba", "bbaa", "bbaaaaaaabb" }.All(second.Recognize));
+
+        // even number of "a"'s and "b"'s
+        var intersected = first.Intersect(second);
+        Assert.True(new[] { "abab", "aaaabbbb", "bbabba", "bbaa", "aabbaa", "aabb" }.All(intersected.Recognize));
+        Assert.DoesNotContain(new[] { "aaa", "aaabb", "aaabaabb", "aaabb", "baaba", "bbbaa" }, intersected.Recognize);
+    }
 }
