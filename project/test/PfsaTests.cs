@@ -208,7 +208,7 @@ public class PfsaTests
                 PfsaBuilder.FromWord("@"),
                 allPlus,
                 PfsaBuilder.FromWord(".com"))
-            ; // .Determinize();
+            .Determinize();
 
         Assert.DoesNotContain(new[] { "me@yahoo.co", "you_gmail.com", "info@aol.cc", "about@.mail.comm" }, fsa.Recognize);
         Assert.True(new[] { "me@yahoo.com", "you@gmail.com", "info@aol.com" }.All(fsa.Recognize));

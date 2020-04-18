@@ -56,7 +56,7 @@ public class Pfsa
 
     IEnumerable<int> GetTransitions(int state, char symbol) => 
         this.Transitions
-            .Where(t => t.From == state && t.Label != null && t.Label.Contains(symbol))
+            .Where(t => t.From == state && t.Label != null && t.Label.Includes(symbol))
             .Select(t => t.To);
 
     IDictionary<int, IEnumerable<int>> PrecomputeEpsilonClosure() => 

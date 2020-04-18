@@ -210,7 +210,7 @@ public static class PfsaOperations
                             departingTransitions.Add((@int, (t1.To, t2.To)));
                     }
                 }
-                        
+
             }
 
             foreach (var t in departingTransitions)
@@ -228,7 +228,64 @@ public static class PfsaOperations
     public static Pdfsa Determinize(this Pfsa automaton)
     {
         var fsa = automaton.EpsilonFree();
-        return null;
+        var startPointSet = new HashSet<char>() { char.MinValue };
+
+        foreach (var tr in fsa.Transitions)
+        {
+            startPointSet.Add(tr.Label.Min);
+            if (tr.Label.Max < char.MaxValue)
+                startPointSet.Add((char)(tr.Label.Max + 1));
+        }
+
+        var startPoints = startPointSet.OrderBy(x => x).ToList();
+
+        var subsetStates = new List<ISet<int>> { fsa.Initial.ToHashSet() };
+        var dfsaTransitions = new Dictionary<int, IList<(Range, int)>>();
+        var stateTransitionMap = fsa.Transitions
+            .GroupBy(t => t.From, t => (t.Label, t.To))
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        for (var n = 0; n < subsetStates.Count; n++)
+        {
+            var curr = subsetStates[n];
+
+            for (int i = 0; i < startPoints.Count; i++)
+            {
+                var target = new HashSet<int>();
+
+                foreach (var state in curr.Where(s => stateTransitionMap.ContainsKey(s)))
+                    foreach (var tr in stateTransitionMap[state])
+                        if (tr.Label.Includes(startPoints[i]))
+                            target.Add(tr.To);
+
+                if (target.Any())
+                {
+                    if (!dfsaTransitions.ContainsKey(n))
+                        dfsaTransitions[n] = new List<(Range, int)>();
+                    if (!subsetStates.Any(ss => ss.SetEquals(target)))
+                        subsetStates.Add(target);
+
+                    var min = startPoints[i];
+                    var max = i + 1 < startPoints.Count
+                        ? (char)(startPoints[i + 1] - 1)
+                        : char.MaxValue;
+
+                    dfsaTransitions[n].Add(
+                        (new Range(min, max),
+                        subsetStates.FindIndex(ss => ss.SetEquals(target))));
+                }
+            }
+        }
+
+        // DFA state names are the indices of the state subsets
+        var renamedStates = Enumerable.Range(0, subsetStates.Count);
+
+        // if a state subset contains a final state from the original automaton
+        // then it is marked as final in the deterministic automaton
+        var finalStates = renamedStates
+            .Where(index => subsetStates[index].Intersect(fsa.Final).Any());
+
+        return new Pdfsa(renamedStates, 0, finalStates, dfsaTransitions);
     }
 
     public static Pfsa Difference(this Pfsa automaton)

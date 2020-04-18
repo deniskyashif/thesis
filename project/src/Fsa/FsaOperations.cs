@@ -235,13 +235,11 @@ public static class FsaOperations
     public static Dfsa Determinize(this Fsa automaton)
     {
         var fsa = automaton.EpsilonFree().Expand();
-
+        var subsetStates = new List<ISet<int>> { fsa.Initial.ToHashSet() };
+        var dfsaTransitions = new Dictionary<(int, char), int>();
         var stateTransitionMap = fsa.Transitions
             .GroupBy(t => t.From, t => (t.Label, t.To))
             .ToDictionary(g => g.Key, g => g.ToList());
-
-        var subsetStates = new List<ISet<int>> { fsa.Initial.ToHashSet() };
-        var dfsaTransitions = new Dictionary<(int, char), int>();
 
         for (var n = 0; n < subsetStates.Count; n++) // we break from the loop when there is no unexamined state
         {

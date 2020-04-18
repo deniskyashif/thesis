@@ -7,7 +7,7 @@ public class Pdfsa
     public Pdfsa(IEnumerable<int> states,
         int initial,
         IEnumerable<int> final,
-        IReadOnlyDictionary<int, IEnumerable<(Func<char, bool>, int)>> transitions)
+        IReadOnlyDictionary<int, IList<(Range, int)>> transitions)
     {
         States = states.ToList();
         Initial = initial;
@@ -18,8 +18,7 @@ public class Pdfsa
     public IReadOnlyCollection<int> States { get; private set; }
     public int Initial { get; private set; }
     public IReadOnlyCollection<int> Final { get; private set; }
-    public IReadOnlyDictionary<int, IEnumerable<(Func<char, bool> Pred, int To)>> 
-        Transitions { get; private set; }
+    public IReadOnlyDictionary<int, IList<(Range Label, int To)>> Transitions { get; private set; }
 
     public bool Recognize(string word)
     {
@@ -30,7 +29,7 @@ public class Pdfsa
             if (!this.Transitions.ContainsKey(curr))
                 return false;
 
-            var next = this.Transitions[curr].SingleOrDefault(t => t.Pred(symbol));
+            var next = this.Transitions[curr].SingleOrDefault(t => t.Label.Includes(symbol));
 
             if (next == default)
                 return false;

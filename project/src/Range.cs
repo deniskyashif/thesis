@@ -19,7 +19,7 @@ public class Range : IEquatable<Range>
     public char Min { get; }
     public char Max { get; }
 
-    public bool Contains(char ch) =>
+    public bool Includes(char ch) =>
         this.Min <= ch && ch <= this.Max;
     
     public Range Intersect(Range other)
@@ -56,4 +56,7 @@ public class Range : IEquatable<Range>
 
     public override int GetHashCode() => 
         this.Min.GetHashCode() ^ this.Max.GetHashCode();
+    
+    public override string ToString() =>
+        this.Min == this.Max ? $"'{this.Min}'" : $"'{this.Min}'-'{this.Max}'";
 }
