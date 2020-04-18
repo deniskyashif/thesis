@@ -10,12 +10,12 @@ public static class PfsaBuilder
         var state = 0;
         var states = new List<int> { state };
         var initialStates = new int[] { state };
-        var transitions = new List<(int, Func<char, bool>, int)>();
+        var transitions = new List<(int, Range, int)>();
 
         foreach (var symbol in word)
         {
             var next = state + 1;
-            transitions.Add((state, c => c == symbol, next));
+            transitions.Add((state, new Range(symbol), next));
             states.Add(next);
             state = next;
         }
@@ -25,12 +25,14 @@ public static class PfsaBuilder
 
     public static Pfsa FromSymbol(char symbol) => FromWord(symbol.ToString());
 
-    public static Pfsa FromSymbolSet(ISet<char> alphabet)
+    public static Pfsa FromSymbolSet(ISet<char> symbols)
     {
         var initial = 0;
         var final = 1;
-        var transitions = new List<(int, Func<char, bool>, int)>();
-        transitions.Add((initial, c => alphabet.Contains(c), final));
+        var transitions = new List<(int, Range, int)>();
+
+        foreach (var ch in symbols)
+            transitions.Add((initial, new Range(ch), final));
 
         return new Pfsa(
             states: new int[] { initial, final },
@@ -39,12 +41,12 @@ public static class PfsaBuilder
             transitions);
     }
 
-    public static Pfsa All()
+    public static Pfsa Any()
     {
         var initial = 0;
         var final = 1;
-        var transitions = new List<(int, Func<char, bool>, int)>();
-        transitions.Add((initial, c => true, final));
+        var transitions = new List<(int, Range, int)>();
+        transitions.Add((initial, Range.All, final));
 
         return new Pfsa(
             states: new int[] { initial, final },
@@ -53,12 +55,16 @@ public static class PfsaBuilder
             transitions);
     }
 
-    public static Pfsa AllExcept(ISet<char> symbols)
+    public static Pfsa FromCharRange(char from, char to)
     {
+        if (from > to)
+            throw new ArgumentException($"Invalid character range '{from}'-'{to}'.");
+        
         var initial = 0;
         var final = 1;
-        var transitions = new List<(int, Func<char, bool>, int)>();
-        transitions.Add((initial, c => !symbols.Contains(c), final));
+        var transitions = new List<(int, Range, int)>();
+        transitions.Add(
+            (initial, new Range(from, to), final));
 
         return new Pfsa(
             states: new int[] { initial, final },

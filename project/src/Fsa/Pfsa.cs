@@ -9,7 +9,7 @@ public class Pfsa
     public Pfsa(IEnumerable<int> states,
         IEnumerable<int> initial,
         IEnumerable<int> final,
-        IEnumerable<(int, Func<char, bool>, int)> transitions)
+        IEnumerable<(int, Range, int)> transitions)
     {
         States = states.ToList();
         Initial = initial.ToList();
@@ -23,7 +23,7 @@ public class Pfsa
     public IReadOnlyCollection<int> States { get; private set; }
     public IReadOnlyCollection<int> Initial { get; private set; }
     public IReadOnlyCollection<int> Final { get; private set; }
-    public IReadOnlyCollection<(int From, Func<char, bool> Pred, int To)> Transitions { get; private set; }
+    public IReadOnlyCollection<(int From, Range Label, int To)> Transitions { get; private set; }
 
     public bool Recognize(string word)
     {
@@ -56,12 +56,12 @@ public class Pfsa
 
     IEnumerable<int> GetTransitions(int state, char symbol) => 
         this.Transitions
-            .Where(t => t.From == state && t.Pred != default && t.Pred(symbol))
+            .Where(t => t.From == state && t.Label != null && t.Label.Contains(symbol))
             .Select(t => t.To);
 
     IDictionary<int, IEnumerable<int>> PrecomputeEpsilonClosure() => 
         this.Transitions
-            .Where(t => t.Pred == default)
+            .Where(t => t.Label == null)
             .Select(t => (t.From, t.To))
             .ToHashSet()
             .TransitiveClosure()

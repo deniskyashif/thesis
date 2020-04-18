@@ -159,7 +159,7 @@ public class PfsaTests
     [Fact]
     public void AllPfsaTest()
     {
-        var fsa = PfsaBuilder.All().Star();
+        var fsa = PfsaBuilder.Any().Star();
 
         Assert.Equal(3, fsa.States.Count);
         Assert.Equal(1, fsa.Initial.Count);
@@ -202,7 +202,7 @@ public class PfsaTests
     public void ComplexPfsaConstructionTest2()
     {
         // .+@.+\.com
-        var allPlus = PfsaBuilder.All().Plus();
+        var allPlus = PfsaBuilder.Any().Plus();
         var fsa = allPlus
             .Concat(
                 PfsaBuilder.FromWord("@"),
@@ -220,7 +220,7 @@ public class PfsaTests
         // a*
         var fsa = PfsaBuilder.FromWord("a").Star().EpsilonFree();
 
-        Assert.DoesNotContain(fsa.Transitions, t => t.Pred == default);
+        Assert.DoesNotContain(fsa.Transitions, t => t.Label == null);
         Assert.DoesNotContain(new[] { "ca", "aaba", "b", "cc" }, fsa.Recognize);
         Assert.True(new[] { "aaaa", "a", "aa", string.Empty, "aaaaaaaa" }.All(fsa.Recognize));
     }
@@ -235,7 +235,7 @@ public class PfsaTests
             .Concat(PfsaBuilder.FromWord("c"))
             .EpsilonFree();
 
-        Assert.DoesNotContain(fsa.Transitions, t => t.Pred == default);
+        Assert.DoesNotContain(fsa.Transitions, t => t.Label == null);
         Assert.True(new[] { "abbac", "ac", "bc", "ababbbbac", "aac" }.All(fsa.Recognize));
         Assert.DoesNotContain(new[] { "ca", "aaba", string.Empty, "cc", "c" }, fsa.Recognize);
     }
@@ -246,7 +246,7 @@ public class PfsaTests
         var states = new[] { 1, 2, 3, 4 };
         var initial = new[] { 2, 3 };
         var final = new[] { 4 };
-        var transitions = new (int, Func<char, bool>, int)[] { (3, c => c == 'a', 4), (2, c => c == 'b', 1) };
+        var transitions = new (int, Range, int)[] { (3, new Range('a'), 4), (2, new Range('b'), 1) };
         var fsa = new Pfsa(states, initial, final, transitions).Trim();
 
         Assert.Equal(2, fsa.States.Count);
@@ -265,24 +265,24 @@ public class PfsaTests
             new[] { 0, 1 },
             new[] { 0 },
             new[] { 0 },
-            new List<(int, Func<char, bool>, int)>
+            new List<(int, Range, int)>
             {
-                (0, c => c == 'b', 0),
-                (0, c => c == 'a', 1 ),
-                (1, c => c == 'b', 1 ),
-                (1, c => c == 'a', 0),
+                (0, new Range('b'), 0),
+                (0, new Range('a'), 1 ),
+                (1, new Range('b'), 1 ),
+                (1, new Range('a'), 0),
             });
         // even number of "b"'s & any number of "a"'s
         var second = new Pfsa(
             new[] { 2, 3 },
             new[] { 2 },
             new[] { 2 },
-            new List<(int, Func<char, bool>, int)>
+            new List<(int, Range, int)>
             {
-                (2, c => c == 'a', 2 ),
-                (2, c => c == 'b', 3 ),
-                (3, c => c == 'a', 3 ),
-                (3, c => c == 'b', 2 ),
+                (2, new Range('a'), 2 ),
+                (2, new Range('b'), 3 ),
+                (3, new Range('a'), 3 ),
+                (3, new Range('b'), 2 ),
             });
 
         Assert.True(new[] { string.Empty, "aaaa", "aab", "baabaa", "baba", "abab", "bbbaa" }.All(first.Recognize));

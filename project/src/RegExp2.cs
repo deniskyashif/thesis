@@ -141,7 +141,7 @@ public class RegExp2
         if (this.Peek() == '.')
         {
             this.Eat('.');
-            return PfsaBuilder.All();
+            return PfsaBuilder.Any();
         }
 
         if (this.Peek() == '(')
@@ -156,7 +156,7 @@ public class RegExp2
         if (this.Peek() == '[')
         {
             this.Eat('[');
-            Pfsa set;
+            Pfsa @class;
 
             if (this.Peek() == '^')
             {
@@ -164,27 +164,27 @@ public class RegExp2
                 throw new NotSupportedException("Negative set not supported");
                 // set = PfsaBuilder.All().Difference(this.CharSet());
             }
-            else set = this.CharSet();
+            else @class = this.CharClass();
 
             this.Eat(']');
 
-            return set;
+            return @class;
         }
 
         return this.Char();
     }
 
-    Pfsa CharSet()
+    Pfsa CharClass()
     {
-        var setItem = this.CharSetItem();
+        var setItem = this.CharClassItem();
 
         if (this.HasMoreChars() && this.Peek() != ']')
-            return setItem.Union(this.CharSet());
+            return setItem.Union(this.CharClass());
 
         return setItem;
     }
 
-    Pfsa CharSetItem()
+    Pfsa CharClassItem()
     {
         if (this.Peek() == '\\')
             this.Eat('\\');
@@ -200,14 +200,7 @@ public class RegExp2
             if (this.Peek() == ']')
                 symbols.Add('-');
             else
-            {
-                var to = this.Next();
-                if (from > to)
-                    throw new ArgumentException($"Invalid character range '{from}'-'{to}'.");
-
-                for (var i = from + 1; i <= to; i++)
-                    symbols.Add(((char)i));
-            }
+                return PfsaBuilder.FromCharRange(from, to: this.Next());
         }
 
         return PfsaBuilder.FromSymbolSet(symbols);

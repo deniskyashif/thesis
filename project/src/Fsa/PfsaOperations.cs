@@ -18,7 +18,7 @@ public static class PfsaOperations
             automaton.States.Select(s => s + k),
             automaton.Initial.Select(s => s + k),
             automaton.Final.Select(s => s + k),
-            automaton.Transitions.Select(t => (t.From + k, t.Pred, t.To + k)));
+            automaton.Transitions.Select(t => (t.From + k, t.Label, t.To + k)));
     }
 
     public static Pfsa Concat(this Pfsa first, Pfsa second)
@@ -35,7 +35,7 @@ public static class PfsaOperations
 
         foreach (var tr in first.Transitions.Where(t => first.Final.Contains(t.To)))
             foreach (var state in second.Initial)
-                transitions.Add((tr.From, tr.Pred, state));
+                transitions.Add((tr.From, tr.Label, state));
 
         return new Pfsa(
             states: first.States.Union(second.States),
@@ -66,7 +66,7 @@ public static class PfsaOperations
     {
         var initial = NewState(automaton.States);
         var initialStates = new int[] { initial };
-        var newTransitions = new List<(int, Func<char, bool>, int)>();
+        var newTransitions = new List<(int, Range, int)>();
 
         foreach (var state in automaton.Initial)
             newTransitions.Add((initial, default, state));
@@ -85,7 +85,7 @@ public static class PfsaOperations
     {
         var initial = NewState(automaton.States);
         var initialStates = new int[] { initial };
-        var newTransitions = new List<(int, Func<char, bool>, int)>();
+        var newTransitions = new List<(int, Range, int)>();
 
         foreach (var state in automaton.Initial)
             newTransitions.Add((initial, default, state));
@@ -116,11 +116,11 @@ public static class PfsaOperations
         var initial = automaton.Initial.SelectMany(automaton.EpsilonClosure);
 
         var transitions = automaton.Transitions
-            .Where(t => t.Pred != default)
+            .Where(t => t.Label != null)
             .SelectMany(t =>
                 automaton
                     .EpsilonClosure(t.To)
-                    .Select(es => (t.From, t.Pred, es)));
+                    .Select(es => (t.From, t.Label, es)));
 
         return new Pfsa(automaton.States, initial, automaton.Final, transitions);
     }
@@ -146,7 +146,7 @@ public static class PfsaOperations
             .Where(t => states.Contains(t.From) && states.Contains(t.To))
             .Select(t => (
                 states.IndexOf(t.From),
-                t.Pred,
+                t.Label,
                 states.IndexOf(t.To)));
 
         var newInitial = states.Intersect(automaton.Initial);
@@ -175,15 +175,15 @@ public static class PfsaOperations
         return new Pfsa(states, new[] { 0 }, final, product.Transitions).Trim();
     }
 
-    public static (IList<(int, int)> States, IList<(int , Func<char, bool>, int)> Transitions) 
+    public static (IList<(int, int)> States, IList<(int, Range, int)> Transitions)
         Product(Pfsa first, Pfsa second)
     {
         var firstTransPerState = first.Transitions
-            .GroupBy(t => t.From, t => (t.Pred, t.To))
+            .GroupBy(t => t.From, t => (t.Label, t.To))
             .ToDictionary(g => g.Key, g => g.ToList());
-        
+
         var secondTransPerState = second.Transitions
-            .GroupBy(t => t.From, t => (t.Pred, t.To))
+            .GroupBy(t => t.From, t => (t.Label, t.To))
             .ToDictionary(g => g.Key, g => g.ToList());
 
         var productStates = new List<(int, int)>();
@@ -192,18 +192,25 @@ public static class PfsaOperations
             foreach (var i2 in second.Initial)
                 productStates.Add((i1, i2));
 
-        var transitions = new List<(int , Func<char, bool>, int)>();
+        var transitions = new List<(int, Range, int)>();
 
         for (var n = 0; n < productStates.Count; n++)
         {
             var (p1, p2) = productStates[n];
-            var departingTransitions = new List<(Func<char, bool> Pred, (int, int) To)>();
+            var departingTransitions = new List<(Range Label, (int, int) To)>();
 
             if (firstTransPerState.ContainsKey(p1) && secondTransPerState.ContainsKey(p2))
             {
                 foreach (var t1 in firstTransPerState[p1])
+                {
                     foreach (var t2 in secondTransPerState[p2])
-                        departingTransitions.Add((c => t1.Pred(c) && t2.Pred(c), (t1.To, t2.To)));
+                    {
+                        var @int = t1.Label.Intersect(t2.Label);
+                        if (@int != null)
+                            departingTransitions.Add((@int, (t1.To, t2.To)));
+                    }
+                }
+                        
             }
 
             foreach (var t in departingTransitions)
@@ -212,9 +219,20 @@ public static class PfsaOperations
 
             // Transitions refer to states by their index in the states list
             foreach (var pair in departingTransitions)
-                transitions.Add((n, pair.Pred, productStates.IndexOf(pair.Item2)));
+                transitions.Add((n, pair.Label, productStates.IndexOf(pair.To)));
         }
 
         return (productStates, transitions);
+    }
+
+    public static Pdfsa Determinize(this Pfsa automaton)
+    {
+        var fsa = automaton.EpsilonFree();
+        return null;
+    }
+
+    public static Pfsa Difference(this Pfsa automaton)
+    {
+        return null;
     }
 }

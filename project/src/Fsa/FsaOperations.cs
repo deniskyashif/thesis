@@ -56,10 +56,10 @@ public static class FsaOperations
         second = Remap(second, first.States);
 
         return new Fsa(
-            states: first.States.Union(second.States),
-            initial: first.Initial.Union(second.Initial),
-            final: first.Final.Union(second.Final),
-            transitions: first.Transitions.Union(second.Transitions));
+            states: first.States.Concat(second.States),
+            initial: first.Initial.Concat(second.Initial),
+            final: first.Final.Concat(second.Final),
+            transitions: first.Transitions.Concat(second.Transitions));
     }
 
     public static Fsa Union(this Fsa fsa, params Fsa[] automata) =>
@@ -79,10 +79,10 @@ public static class FsaOperations
             newTransitions.Add((state, string.Empty, initial));
 
         return new Fsa(
-            states: automaton.States.Union(initialStates),
+            states: automaton.States.Concat(initialStates),
             initialStates,
-            automaton.Final.Union(initialStates),
-            automaton.Transitions.Union(newTransitions));
+            automaton.Final.Concat(initialStates),
+            automaton.Transitions.Concat(newTransitions));
     }
 
     public static Fsa Plus(this Fsa automaton)
@@ -98,10 +98,10 @@ public static class FsaOperations
             newTransitions.Add((state, string.Empty, initial));
 
         return new Fsa(
-            automaton.States.Union(initialStates),
+            automaton.States.Concat(initialStates),
             initialStates,
             automaton.Final,
-            automaton.Transitions.Union(newTransitions));
+            automaton.Transitions.Concat(newTransitions));
     }
 
     public static Fsa Optional(this Fsa automaton)
@@ -349,7 +349,7 @@ public static class FsaOperations
             var departingTransitions = stateTransitionMapOfFirst.ContainsKey(p1)
                 ? stateTransitionMapOfFirst[p1]
                     .Where(pair => second.Transitions.ContainsKey((p2, pair.Label)))
-                    .Select(pair => (pair.Label, (pair.Value, second.Transitions[(p2, pair.Label)])))
+                    .Select(pair => (pair.Label, To: (pair.Value, second.Transitions[(p2, pair.Label)])))
                 : Array.Empty<(char, (int, int))>();
 
             foreach (var prodState in departingTransitions.Select(pair => pair.Item2))
@@ -358,7 +358,7 @@ public static class FsaOperations
 
             // Transitions refer to states by their index in the states list
             foreach (var pair in departingTransitions)
-                transitions.Add((n, pair.Label), productStates.IndexOf(pair.Item2));
+                transitions.Add((n, pair.Label), productStates.IndexOf(pair.To));
         }
 
         return (productStates, transitions);
