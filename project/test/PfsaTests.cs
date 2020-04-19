@@ -293,4 +293,28 @@ public class PfsaTests
         Assert.True(new[] { "abab", "aaaabbbb", "bbabba", "bbaa", "aabbaa", "aabb" }.All(intersected.Recognize));
         Assert.DoesNotContain(new[] { "aaa", "aaabb", "aaabaabb", "aaabb", "baaba", "bbbaa" }, intersected.Recognize);
     }
+
+    [Fact]
+    public void ComplementPfsaTest()
+    {
+        var pfsa = new RegExp2("a+b").Automaton.Complement();
+
+        var notInL = new[] { "ab", "aab", "aaaab", "aaaaaaaaab" };
+        var inL = new[] { "b", "aabb", "aa", "aaaaaaaaaba", string.Empty, "ov", "123v" };
+
+        Assert.True(!notInL.All(pfsa.Recognize));
+        Assert.True(inL.All(pfsa.Recognize));
+    }
+
+    [Fact]
+    public void ComplementPfsaTest1()
+    {
+        var pfsa = new RegExp2("[0-9]*").Automaton.Complement();
+
+        var notInL = new[] { "123", string.Empty, "4", "435900491" };
+        var inL = new[] { "123213_", "b", "aabb", "aa", "1ba", "ov", "123v" };
+
+        Assert.True(!notInL.All(pfsa.Recognize));
+        Assert.True(inL.All(pfsa.Recognize));
+    }
 }

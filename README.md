@@ -95,11 +95,11 @@ var lexer = Lexer.LoadFromFile("lexout");
 | Expression                                       | Example        |
 |:-------------------------------------------------|:---------------|
 | Concatenation                                    | `ab`           |
-| Union                                            | `a|b`          |
+| Union                                            | `a\|b`         |
 | Zero-or-more                                     | `a*`           |
 | One-or-more                                      | `a+`           |
 | Optional                                         | `a?`           |
-| Grouping                                         | `(a|b)*c`      |
+| Grouping                                         | `(a\|b)*c`     |
 | Char class                                       | `[a-z0-9,]`    |
 | Negative char class                              | `[^a-z0-9,]`   |
 | Match exactly 2 'a's                             | `a{2}`         |

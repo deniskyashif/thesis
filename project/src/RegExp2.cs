@@ -161,8 +161,8 @@ public class RegExp2
             if (this.Peek() == '^')
             {
                 this.Eat('^');
-                throw new NotSupportedException("Negative set not supported");
-                // set = PfsaBuilder.All().Difference(this.CharSet());
+                throw new NotSupportedException();
+                // @class = this.CharClass().Complement();
             }
             else @class = this.CharClass();
 

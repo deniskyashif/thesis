@@ -228,12 +228,12 @@ public static class PfsaOperations
     public static Pdfsa Determinize(this Pfsa automaton)
     {
         var fsa = automaton.EpsilonFree();
-        var startPointSet = new HashSet<char>() { char.MinValue };
+        var startPointSet = new HashSet<char>() { Range.MinValue };
 
         foreach (var tr in fsa.Transitions)
         {
             startPointSet.Add(tr.Label.Min);
-            if (tr.Label.Max < char.MaxValue)
+            if (tr.Label.Max < Range.MaxValue)
                 startPointSet.Add((char)(tr.Label.Max + 1));
         }
 
@@ -268,7 +268,7 @@ public static class PfsaOperations
                     var min = startPoints[i];
                     var max = i + 1 < startPoints.Count
                         ? (char)(startPoints[i + 1] - 1)
-                        : char.MaxValue;
+                        : Range.MaxValue;
 
                     dfsaTransitions[n].Add(
                         (new Range(min, max),
@@ -288,8 +288,64 @@ public static class PfsaOperations
         return new Pdfsa(renamedStates, 0, finalStates, dfsaTransitions);
     }
 
-    public static Pfsa Difference(this Pfsa automaton)
+    public static Pfsa Complement(this Pfsa automaton)
     {
-        return null;
+        var dfa = automaton.Determinize();
+        Total(dfa);
+
+        return new Pdfsa(
+            dfa.States,
+            dfa.Initial,
+            dfa.States.Except(dfa.Final),
+            dfa.Transitions).ToPfsa();
+    }
+
+    // TODO: Avoid mutating the input automaton
+    private static void Total(Pdfsa automaton)
+    {
+        const int deadState = -1;
+        automaton.States.Add(deadState);
+        automaton.Transitions.Add(deadState, new List<(Range, int)> { (Range.All, deadState) });
+
+        foreach (var state in automaton.States)
+        {
+            if (!automaton.Transitions.ContainsKey(state))
+                automaton.Transitions.Add(state, new List<(Range, int)>());
+
+            int maxi = Range.MinValue;
+            var sortedTrans = automaton.Transitions[state].OrderBy(t => t.Label.Min);
+
+            foreach (var tr in sortedTrans)
+            {
+                if (tr.Label.Min > maxi)
+                {
+                    automaton.Transitions[state].Add(
+                        (new Range((char)maxi, (char)(tr.Label.Min - 1)), deadState));
+                }
+                if (tr.Label.Max + 1 > maxi)
+                    maxi = tr.Label.Max + 1;
+            }
+
+            if (maxi <= Range.MaxValue)
+            {
+                automaton.Transitions[state].Add(
+                    (new Range((char)maxi, Range.MaxValue), deadState));
+            }
+        }
+    }
+
+    public static Pfsa ToPfsa(this Pdfsa automaton)
+    {
+        var transitions = new List<(int, Range, int)>();
+        
+        foreach (var tr in automaton.Transitions)
+            foreach (var target in tr.Value)           
+                transitions.Add((tr.Key, target.Label, target.To));
+
+        return new Pfsa(
+            automaton.States,
+            new[] { automaton.Initial },
+            automaton.Final,
+            transitions);
     }
 }

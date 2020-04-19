@@ -3,7 +3,9 @@ using System.Diagnostics.CodeAnalysis;
 
 public class Range : IEquatable<Range>
 {
-    public static readonly Range All = new Range(char.MinValue, char.MaxValue);
+    public const char MinValue = '\u0020';
+    public const char MaxValue = '\uFFFF';
+    public static readonly Range All = new Range(MinValue, MaxValue);
 
     public Range(char ch) : this(ch, ch) { }
 

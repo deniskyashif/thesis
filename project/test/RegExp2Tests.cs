@@ -297,7 +297,7 @@ public class RegExp2Tests
     public void FromPatternShouldMatchCorrectly23()
     {
         var re = new RegExp2("[01]*1[01]{5}");
-        var fsm = re.Automaton; // .Automaton.Determinize().Minimal();
+        var fsm = re.Automaton.Determinize(); //.Minimal();
 
         Assert.True(fsm.Recognize("100000"));
         Assert.True(fsm.Recognize("111001"));
