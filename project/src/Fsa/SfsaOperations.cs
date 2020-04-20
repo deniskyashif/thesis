@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public static class PfsaOperations
+/*
+    Operations on symbolic finite-state automata.
+*/
+public static class SfsaOperations
 {
     static int NewState(IReadOnlyCollection<int> states) => states.Count;
 
@@ -10,18 +13,18 @@ public static class PfsaOperations
         Enumerable.Range(states.Count, k);
 
     // Clones the finite automaton by renaming the states
-    static Pfsa Remap(this Pfsa automaton, IReadOnlyCollection<int> states)
+    static Sfsa Remap(this Sfsa automaton, IReadOnlyCollection<int> states)
     {
         var k = states.Count;
 
-        return new Pfsa(
+        return new Sfsa(
             automaton.States.Select(s => s + k),
             automaton.Initial.Select(s => s + k),
             automaton.Final.Select(s => s + k),
             automaton.Transitions.Select(t => (t.From + k, t.Label, t.To + k)));
     }
 
-    public static Pfsa Concat(this Pfsa first, Pfsa second)
+    public static Sfsa Concat(this Sfsa first, Sfsa second)
     {
         var firstFinalStates = first.Final;
         second = Remap(second, first.States);
@@ -37,32 +40,32 @@ public static class PfsaOperations
             foreach (var state in second.Initial)
                 transitions.Add((tr.From, tr.Label, state));
 
-        return new Pfsa(
+        return new Sfsa(
             states: first.States.Union(second.States),
             initialStates,
             second.Final,
             transitions);
     }
 
-    public static Pfsa Concat(this Pfsa fsa, params Pfsa[] automata) =>
+    public static Sfsa Concat(this Sfsa fsa, params Sfsa[] automata) =>
         automata.Aggregate(fsa, Concat);
 
-    public static Pfsa Union(this Pfsa first, Pfsa second)
+    public static Sfsa Union(this Sfsa first, Sfsa second)
     {
         second = Remap(second, first.States);
 
-        return new Pfsa(
+        return new Sfsa(
             states: first.States.Union(second.States),
             initial: first.Initial.Union(second.Initial),
             final: first.Final.Union(second.Final),
             transitions: first.Transitions.Union(second.Transitions));
     }
 
-    public static Pfsa Union(this Pfsa fsa, params Pfsa[] automata) =>
+    public static Sfsa Union(this Sfsa fsa, params Sfsa[] automata) =>
         automata.Aggregate(fsa, Union);
 
     // Kleene star operation on a finite automaton
-    public static Pfsa Star(this Pfsa automaton)
+    public static Sfsa Star(this Sfsa automaton)
     {
         var initial = NewState(automaton.States);
         var initialStates = new int[] { initial };
@@ -74,14 +77,14 @@ public static class PfsaOperations
         foreach (var state in automaton.Final)
             newTransitions.Add((state, default, initial));
 
-        return new Pfsa(
+        return new Sfsa(
             states: automaton.States.Union(initialStates),
             initialStates,
             automaton.Final.Union(initialStates),
             automaton.Transitions.Union(newTransitions));
     }
 
-    public static Pfsa Plus(this Pfsa automaton)
+    public static Sfsa Plus(this Sfsa automaton)
     {
         var initial = NewState(automaton.States);
         var initialStates = new int[] { initial };
@@ -93,25 +96,25 @@ public static class PfsaOperations
         foreach (var state in automaton.Final)
             newTransitions.Add((state, default, initial));
 
-        return new Pfsa(
+        return new Sfsa(
             automaton.States.Union(initialStates),
             initialStates,
             automaton.Final,
             automaton.Transitions.Union(newTransitions));
     }
 
-    public static Pfsa Optional(this Pfsa automaton)
+    public static Sfsa Optional(this Sfsa automaton)
     {
         var state = new[] { NewState(automaton.States) };
 
-        return new Pfsa(
+        return new Sfsa(
             automaton.States.Union(state),
             automaton.Initial.Union(state),
             automaton.Final.Union(state),
             automaton.Transitions);
     }
 
-    public static Pfsa EpsilonFree(this Pfsa automaton)
+    public static Sfsa EpsilonFree(this Sfsa automaton)
     {
         var initial = automaton.Initial.SelectMany(automaton.EpsilonClosure);
 
@@ -122,10 +125,10 @@ public static class PfsaOperations
                     .EpsilonClosure(t.To)
                     .Select(es => (t.From, t.Label, es)));
 
-        return new Pfsa(automaton.States, initial, automaton.Final, transitions);
+        return new Sfsa(automaton.States, initial, automaton.Final, transitions);
     }
 
-    public static Pfsa Trim(this Pfsa automaton)
+    public static Sfsa Trim(this Sfsa automaton)
     {
         var transitiveClosure = automaton.Transitions
             .Select(t => (t.From, t.To))
@@ -152,14 +155,14 @@ public static class PfsaOperations
         var newInitial = states.Intersect(automaton.Initial);
         var newFinal = states.Intersect(automaton.Final);
 
-        return new Pfsa(
+        return new Sfsa(
             states.Select(s => states.IndexOf(s)),
             newInitial.Select(s => states.IndexOf(s)),
             newFinal.Select(s => states.IndexOf(s)),
             transitions);
     }
 
-    public static Pfsa Intersect(this Pfsa first, Pfsa second)
+    public static Sfsa Intersect(this Sfsa first, Sfsa second)
     {
         var firstEpsFree = first.EpsilonFree();
         var secondEpsFree = second.EpsilonFree();
@@ -172,11 +175,11 @@ public static class PfsaOperations
                 first.Final.Contains(product.States[s].Item1) &&
                 second.Final.Contains(product.States[s].Item2));
 
-        return new Pfsa(states, new[] { 0 }, final, product.Transitions).Trim();
+        return new Sfsa(states, new[] { 0 }, final, product.Transitions).Trim();
     }
 
     public static (IList<(int, int)> States, IList<(int, Range, int)> Transitions)
-        Product(Pfsa first, Pfsa second)
+        Product(Sfsa first, Sfsa second)
     {
         var firstTransPerState = first.Transitions
             .GroupBy(t => t.From, t => (t.Label, t.To))
@@ -225,7 +228,7 @@ public static class PfsaOperations
         return (productStates, transitions);
     }
 
-    public static Pdfsa Determinize(this Pfsa automaton)
+    public static Sdfsa Determinize(this Sfsa automaton)
     {
         var fsa = automaton.EpsilonFree();
         var startPointSet = new HashSet<char>() { Range.MinValue };
@@ -285,15 +288,15 @@ public static class PfsaOperations
         var finalStates = renamedStates
             .Where(index => subsetStates[index].Intersect(fsa.Final).Any());
 
-        return new Pdfsa(renamedStates, 0, finalStates, dfsaTransitions);
+        return new Sdfsa(renamedStates, 0, finalStates, dfsaTransitions);
     }
 
-    public static Pfsa Complement(this Pfsa automaton)
+    public static Sfsa Complement(this Sfsa automaton)
     {
         var dfa = automaton.Determinize();
         Total(dfa);
 
-        return new Pdfsa(
+        return new Sdfsa(
             dfa.States,
             dfa.Initial,
             dfa.States.Except(dfa.Final),
@@ -301,7 +304,7 @@ public static class PfsaOperations
     }
 
     // TODO: Avoid mutating the input automaton
-    private static void Total(Pdfsa automaton)
+    private static void Total(Sdfsa automaton)
     {
         const int deadState = -1;
         automaton.States.Add(deadState);
@@ -334,7 +337,7 @@ public static class PfsaOperations
         }
     }
 
-    public static Pfsa ToPfsa(this Pdfsa automaton)
+    public static Sfsa ToPfsa(this Sdfsa automaton)
     {
         var transitions = new List<(int, Range, int)>();
         
@@ -342,7 +345,7 @@ public static class PfsaOperations
             foreach (var target in tr.Value)           
                 transitions.Add((tr.Key, target.Label, target.To));
 
-        return new Pfsa(
+        return new Sfsa(
             automaton.States,
             new[] { automaton.Initial },
             automaton.Final,

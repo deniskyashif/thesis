@@ -48,7 +48,7 @@ public class RegExp2
         this.Automaton = this.Expr();
     }
 
-    public Pfsa Automaton { get; private set; }
+    public Sfsa Automaton { get; private set; }
 
     public bool Match(string word) => this.Automaton.Recognize(word);
 
@@ -74,7 +74,7 @@ public class RegExp2
         return ch;
     }
 
-    Pfsa Expr()
+    Sfsa Expr()
     {
         var term = this.Term();
 
@@ -87,15 +87,15 @@ public class RegExp2
         return term;
     }
 
-    Pfsa Term()
+    Sfsa Term()
     {
         if (this.HasMoreChars() && this.Peek() != ')' && this.Peek() != '|')
             return this.Factor().Concat(this.Term());
 
-        return PfsaBuilder.FromEpsilon();
+        return SfsaBuilder.FromEpsilon();
     }
 
-    Pfsa Factor()
+    Sfsa Factor()
     {
         var atom = this.Atom();
 
@@ -115,7 +115,7 @@ public class RegExp2
         if (this.HasMoreChars() && this.Peek() == '{')
         {
             var (min, max) = this.CharCount();
-            var fsa = PfsaBuilder.FromEpsilon();
+            var fsa = SfsaBuilder.FromEpsilon();
 
             for (var i = 0; i < min; i++)
                 fsa = fsa.Concat(atom);
@@ -136,12 +136,12 @@ public class RegExp2
         return atom;
     }
 
-    Pfsa Atom()
+    Sfsa Atom()
     {
         if (this.Peek() == '.')
         {
             this.Eat('.');
-            return PfsaBuilder.Any();
+            return SfsaBuilder.Any();
         }
 
         if (this.Peek() == '(')
@@ -156,7 +156,7 @@ public class RegExp2
         if (this.Peek() == '[')
         {
             this.Eat('[');
-            Pfsa @class;
+            Sfsa @class;
 
             if (this.Peek() == '^')
             {
@@ -174,7 +174,7 @@ public class RegExp2
         return this.Char();
     }
 
-    Pfsa CharClass()
+    Sfsa CharClass()
     {
         var setItem = this.CharClassItem();
 
@@ -184,7 +184,7 @@ public class RegExp2
         return setItem;
     }
 
-    Pfsa CharClassItem()
+    Sfsa CharClassItem()
     {
         if (this.Peek() == '\\')
             this.Eat('\\');
@@ -200,20 +200,20 @@ public class RegExp2
             if (this.Peek() == ']')
                 symbols.Add('-');
             else
-                return PfsaBuilder.FromCharRange(from, to: this.Next());
+                return SfsaBuilder.FromCharRange(from, to: this.Next());
         }
 
-        return PfsaBuilder.FromSymbolSet(symbols);
+        return SfsaBuilder.FromSymbolSet(symbols);
     }
 
-    Pfsa Char()
+    Sfsa Char()
     {
         if (this.Peek() == '\\')
         {
             this.Eat('\\');
             var ch = this.Next();
 
-            return PfsaBuilder.FromSymbol(ch);
+            return SfsaBuilder.FromSymbol(ch);
         }
         else
         {
@@ -222,7 +222,7 @@ public class RegExp2
             if (metaChars.Contains(ch))
                 throw new ArgumentException($"Unescaped meta character {ch} for {pattern} at pos {pos}");
 
-            return PfsaBuilder.FromSymbol(ch);
+            return SfsaBuilder.FromSymbol(ch);
         }
     }
 

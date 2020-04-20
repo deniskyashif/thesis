@@ -17,7 +17,7 @@ public static class Rewriters
         return idAll.Concat(fst.Concat(idAll).Star()).Expand();
     }
 
-    // Convert to ab obligatory rewrite transducer
+    // Convert to an obligatory rewrite transducer
     public static Fst ToRewriter(this Fst fst, ISet<char> alphabet)
     {
         var all = FsaBuilder.All(alphabet);

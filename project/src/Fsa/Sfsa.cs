@@ -2,11 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public class Pfsa
+/*
+    Symbolic finite-state automaton.
+*/
+public class Sfsa
 {
     private readonly Lazy<IDictionary<int, IEnumerable<int>>> epsilonClosureOf;
 
-    public Pfsa(IEnumerable<int> states,
+    public Sfsa(IEnumerable<int> states,
         IEnumerable<int> initial,
         IEnumerable<int> final,
         IEnumerable<(int, Range, int)> transitions)

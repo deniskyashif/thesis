@@ -229,18 +229,18 @@ public static class FstOperations
             .GroupBy(t => t.From, t => (t.In, t.Out, t.To))
             .ToDictionary(g => g.Key, g => g);
 
-        var prodStates = new List<(int, int)>();
+        var productStates = new List<(int, int)>();
         var transitions = new HashSet<(int, string, string, int)>();
 
         foreach (var i1 in first.Initial)
             foreach (var i2 in second.Initial)
-                prodStates.Add((i1, i2));
+                productStates.Add((i1, i2));
 
-        var addedStates = new HashSet<(int, int)>(prodStates);
+        var addedStates = new HashSet<(int, int)>(productStates);
 
-        for (int n = 0; n < prodStates.Count; n++)
+        for (int n = 0; n < productStates.Count; n++)
         {
-            var curr = prodStates[n];
+            var curr = productStates[n];
             var compositeTransitions = new HashSet<((string In, string Out) Label, (int, int) To)>();
 
             foreach (var tr1 in firstTransPerState[curr.Item1])
@@ -253,25 +253,25 @@ public static class FstOperations
             {
                 if (!addedStates.Contains(tr.To))
                 {
-                    prodStates.Add(tr.To);
+                    productStates.Add(tr.To);
                     addedStates.Add(tr.To);
                 }
             }
 
             transitions.UnionWith(
                 compositeTransitions.Select(tr =>
-                    (n, tr.Label.In, tr.Label.Out, prodStates.IndexOf(tr.To))));
+                    (n, tr.Label.In, tr.Label.Out, productStates.IndexOf(tr.To))));
         }
 
-        var prodStateIndices = Enumerable.Range(0, prodStates.Count);
+        var prodStateIndices = Enumerable.Range(0, productStates.Count);
 
         var initial = prodStateIndices.Where(s =>
-            first.Initial.Contains(prodStates[s].Item1) &&
-            second.Initial.Contains(prodStates[s].Item2));
+            first.Initial.Contains(productStates[s].Item1) &&
+            second.Initial.Contains(productStates[s].Item2));
 
         var final = prodStateIndices.Where(s =>
-            first.Final.Contains(prodStates[s].Item1) &&
-            second.Final.Contains(prodStates[s].Item2));
+            first.Final.Contains(productStates[s].Item1) &&
+            second.Final.Contains(productStates[s].Item2));
 
         return new Fst(prodStateIndices, initial, final, transitions).EpsilonFree().Trim();
     }

@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 
-public static class PfsaBuilder
+public static class SfsaBuilder
 {
-    public static Pfsa FromEpsilon() => FromWord(string.Empty);
+    public static Sfsa FromEpsilon() => FromWord(string.Empty);
 
-    public static Pfsa FromWord(string word)
+    public static Sfsa FromWord(string word)
     {
         var state = 0;
         var states = new List<int> { state };
@@ -20,12 +20,12 @@ public static class PfsaBuilder
             state = next;
         }
 
-        return new Pfsa(states, initialStates, new int[] { state }, transitions);
+        return new Sfsa(states, initialStates, new int[] { state }, transitions);
     }
 
-    public static Pfsa FromSymbol(char symbol) => FromWord(symbol.ToString());
+    public static Sfsa FromSymbol(char symbol) => FromWord(symbol.ToString());
 
-    public static Pfsa FromSymbolSet(ISet<char> symbols)
+    public static Sfsa FromSymbolSet(ISet<char> symbols)
     {
         var initial = 0;
         var final = 1;
@@ -34,28 +34,28 @@ public static class PfsaBuilder
         foreach (var ch in symbols)
             transitions.Add((initial, new Range(ch), final));
 
-        return new Pfsa(
+        return new Sfsa(
             states: new int[] { initial, final },
             initial: new int[] { initial },
             final: new int[] { final },
             transitions);
     }
 
-    public static Pfsa Any()
+    public static Sfsa Any()
     {
         var initial = 0;
         var final = 1;
         var transitions = new List<(int, Range, int)>();
         transitions.Add((initial, Range.All, final));
 
-        return new Pfsa(
+        return new Sfsa(
             states: new int[] { initial, final },
             initial: new int[] { initial },
             final: new int[] { final },
             transitions);
     }
 
-    public static Pfsa FromCharRange(char from, char to)
+    public static Sfsa FromCharRange(char from, char to)
     {
         if (from > to)
             throw new ArgumentException($"Invalid character range '{from}'-'{to}'.");
@@ -66,7 +66,7 @@ public static class PfsaBuilder
         transitions.Add(
             (initial, new Range(from, to), final));
 
-        return new Pfsa(
+        return new Sfsa(
             states: new int[] { initial, final },
             initial: new int[] { initial },
             final: new int[] { final },

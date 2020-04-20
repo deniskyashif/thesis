@@ -2,9 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public class Pdfsa
+/*
+    Symbolic deterministic finite-state automaton.
+*/
+public class Sdfsa
 {
-    public Pdfsa(IEnumerable<int> states,
+    public Sdfsa(IEnumerable<int> states,
         int initial,
         IEnumerable<int> final,
         IDictionary<int, IList<(Range, int)>> transitions)
