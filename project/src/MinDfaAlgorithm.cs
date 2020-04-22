@@ -130,6 +130,6 @@ public static class DfaBuilder
             register.Add(child);
     }
 
-    static DfaNode FindEquivalent(DfaNode state, ICollection<DfaNode> register)
-        => register.FirstOrDefault(s => s.IsEquivalentTo(state));
+    static DfaNode FindEquivalent(DfaNode state, ICollection<DfaNode> register) => 
+        register.FirstOrDefault(s => s.IsEquivalentTo(state));
 }

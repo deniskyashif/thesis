@@ -7,8 +7,8 @@ using System.Text;
 public class Dfsa
 {
     public Dfsa(
-        IEnumerable<int> states, 
-        int initialState, 
+        IEnumerable<int> states,
+        int initialState,
         IEnumerable<int> finalStates,
         IReadOnlyDictionary<(int, char), int> transitions)
     {
@@ -41,15 +41,22 @@ public class Dfsa
     public string ToGraphViz(string rankDir = "LR")
     {
         var sb = new StringBuilder($"digraph {{ rankdir={rankDir}; size=\"8,5\" ");
-
         sb.Append("node [shape=circle] ");
-        sb.Append("-1 [label= \"\", shape=point];");
-        sb.Append($"-1 -> {this.Initial};");
 
-        foreach (var tr in this.Transitions)
-            sb.Append($"{tr.Key.From} -> {tr.Value} [label=\"{tr.Key.Label}\"] ");
+        foreach (var st in this.States)
+        {
+            var trans = this.Transitions.Where(kvp => kvp.Key.From == st);
+            if (trans.Any())
+            {
+                foreach (var tr in trans)
+                    sb.Append($"{tr.Key.From} -> {tr.Value} [label=\"{tr.Key.Label}\"]; ");
+            }
+            else sb.Append($"{st};");
+            
+        }
 
         sb.Append($"{string.Join(",", this.Final)} [shape = doublecircle]");
+        sb.Append($"{string.Join(",", this.Initial)} [style = filled, fillcolor = lightgrey]");
 
         return sb.Append("}").ToString();
     }

@@ -86,23 +86,19 @@ public class Fsa
     public string ToGraphViz()
     {
         var sb = new StringBuilder("digraph { rankdir=LR; size=\"8,5\" ");
-
         sb.Append("node [shape=circle] ");
-        
-        for (var index = 0; index < this.Initial.Count; index++)
-        {
-            var i = -1 - index;
-            sb.Append($"{i} [label= \"\", shape=point];");
-            sb.Append($"{i} -> {this.Initial.ElementAt(index)};");
-        }
 
-        foreach (var tr in this.Transitions)
+        foreach (var st in this.States)
         {
-            var label = string.IsNullOrEmpty(tr.Label) ? "ε" : tr.Label;
-            sb.Append($"{tr.From} -> {tr.To} [label=\"{label}\"]; ");
+            foreach (var tr in this.Transitions.Where(t => t.From == st))
+            {
+                var label = string.IsNullOrEmpty(tr.Label) ? "ε" : tr.Label;
+                sb.Append($"{tr.From} -> {tr.To} [label=\"{label}\"]; ");
+            }            
         }
 
         sb.Append($"{string.Join(",", this.Final)} [shape = doublecircle]");
+        sb.Append($"{string.Join(",", this.Initial)} [style = filled, fillcolor = lightgrey]");
 
         return sb.Append("}").ToString();
     }

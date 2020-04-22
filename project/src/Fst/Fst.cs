@@ -79,21 +79,18 @@ public class Fst
 
         sb.Append("node [shape=circle] ");
 
-        for (var index = 0; index < this.Initial.Count; index++)
+        foreach (var st in this.States)
         {
-            var i = -1 - index;
-            sb.Append($"{i} [label= \"\", shape=point];");
-            sb.Append($"{i} -> {this.Initial.ElementAt(index)};");
-        }
-
-        foreach (var tr in this.Transitions)
-        {
-            var @in = string.IsNullOrEmpty(tr.In) ? "ε" : tr.In;
-            var @out = string.IsNullOrEmpty(tr.Out) ? "ε" : tr.Out;
-            sb.Append($"{tr.From} -> {tr.To} [label=\"{@in}/{@out}\"]");
+            foreach (var tr in this.Transitions.Where(t => t.From == st))
+            {
+                var @in = string.IsNullOrEmpty(tr.In) ? "ε" : tr.In;
+                var @out = string.IsNullOrEmpty(tr.Out) ? "ε" : tr.Out;
+                sb.Append($"{tr.From} -> {tr.To} [label=\"{@in}/{@out}\"]");
+            }            
         }
 
         sb.Append($"{string.Join(",", this.Final)} [shape = doublecircle]");
+        sb.Append($"{string.Join(",", this.Initial)} [style = filled, fillcolor = lightgrey]");
 
         return sb.Append("}").ToString();
     }
