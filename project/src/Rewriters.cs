@@ -2,6 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+/*
+    "Optional", "obligatory" and "obligatory leftmost-longsest match 
+    rewrite transducers based on "Directed Replacement" by Karttunen (1996)
+*/
 public static class Rewriters
 {
     const char cb = '\0'; // marks the begining of a rewrite occurrence
