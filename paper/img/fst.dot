@@ -1,0 +1,1 @@
+digraph G { rankdir=LR; size="8,5" node [shape=circle] 0 -> 1 [label="a/d"]0 -> 2 [label="b/d"]1 -> 0 [label="b/ε"]2 -> 0 [label="c/ε"]0 [shape = doublecircle]0 [style = filled, fillcolor = lightgrey]}

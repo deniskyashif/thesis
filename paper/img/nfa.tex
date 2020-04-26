@@ -1,0 +1,53 @@
+% Start of code
+% \begin{tikzpicture}[anchor=mid,>=latex',line join=bevel,]
+\begin{tikzpicture}[>=latex',line join=bevel,]
+  \pgfsetlinewidth{1bp}
+%%
+\pgfsetcolor{black}
+  % Edge: 0 -> 1
+  \draw [->] (41.38bp,33.346bp) .. controls (53.024bp,40.533bp) and (68.186bp,49.893bp)  .. (89.207bp,62.868bp);
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (65.5bp,56.0bp) node {b};
+  % Edge: 0 -> 2
+  \draw [->] (44.085bp,23.735bp) .. controls (64.334bp,25.44bp) and (95.778bp,28.188bp)  .. (123.0bp,31.0bp) .. controls (133.76bp,32.112bp) and (145.59bp,33.464bp)  .. (165.94bp,35.889bp);
+  \draw (105.0bp,38.0bp) node {\(\epsilon\)};
+  % Edge: 1 -> 1
+  \draw [->] (98.266bp,89.037bp) .. controls (96.892bp,98.858bp) and (99.137bp,108.0bp)  .. (105.0bp,108.0bp) .. controls (108.66bp,108.0bp) and (110.92bp,104.43bp)  .. (111.73bp,89.037bp);
+  \draw (105.0bp,115.0bp) node {a};
+  % Edge: 1 -> 2
+  \draw [->] (122.93bp,73.777bp) .. controls (130.82bp,73.967bp) and (140.18bp,73.252bp)  .. (148.0bp,70.0bp) .. controls (154.19bp,67.427bp) and (159.98bp,63.257bp)  .. (172.2bp,51.623bp);
+  \draw (144.5bp,79.0bp) node {a};
+  % Edge: 1 -> 2
+  \draw [->] (120.65bp,62.769bp) .. controls (126.79bp,59.127bp) and (134.1bp,55.085bp)  .. (141.0bp,52.0bp) .. controls (145.96bp,49.782bp) and (151.38bp,47.722bp)  .. (166.36bp,42.716bp);
+  \draw (144.5bp,59.0bp) node {b};
+  % Edge: 2 -> 0
+  \draw [->] (168.41bp,28.627bp) .. controls (156.67bp,21.673bp) and (139.47bp,12.77bp)  .. (123.0bp,9.0bp) .. controls (99.748bp,3.6755bp) and (72.92bp,7.7011bp)  .. (43.121bp,15.249bp);
+  \draw (105.0bp,16.0bp) node {a};
+  % Node: 0
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \definecolor{fillcol}{rgb}{0.83,0.83,0.83};
+  \pgfsetfillcolor{fillcol}
+  \filldraw [opacity=1] (22.0bp,22.0bp) ellipse (18.0bp and 18.0bp);
+  \draw (22.0bp,22.0bp) ellipse (22.0bp and 22.0bp);
+  \draw (22.0bp,22.0bp) node {0};
+\end{scope}
+  % Node: 1
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (105.0bp,72.0bp) ellipse (18.0bp and 18.0bp);
+  \draw (105.0bp,72.0bp) node {1};
+\end{scope}
+  % Node: 2
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (184.0bp,38.0bp) ellipse (18.0bp and 18.0bp);
+  \draw (184.0bp,38.0bp) node {2};
+\end{scope}
+%
+\end{tikzpicture}
+% End of code

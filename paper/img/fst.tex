@@ -1,0 +1,47 @@
+% Start of code
+% \begin{tikzpicture}[anchor=mid,>=latex',line join=bevel,]
+\begin{tikzpicture}[>=latex',line join=bevel,]
+  \pgfsetlinewidth{1bp}
+%%
+\pgfsetcolor{black}
+  % Edge: 0 -> 1
+  \draw [->] (36.835bp,66.461bp) .. controls (43.628bp,73.272bp) and (52.411bp,80.407bp)  .. (62.0bp,84.0bp) .. controls (70.197bp,87.071bp) and (79.618bp,87.58bp)  .. (98.159bp,85.873bp);
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (70.945bp,94.0bp) node {a/d};
+  % Edge: 0 -> 2
+  \draw [->] (42.234bp,41.004bp) .. controls (48.469bp,38.253bp) and (55.463bp,35.34bp)  .. (62.0bp,33.0bp) .. controls (70.433bp,29.982bp) and (79.79bp,27.161bp)  .. (98.033bp,22.16bp);
+  \draw (70.945bp,40.0bp) node {b/d};
+  % Edge: 1 -> 0
+  \draw [->] (99.425bp,74.306bp) .. controls (93.413bp,71.481bp) and (86.413bp,68.392bp)  .. (79.89bp,66.0bp) .. controls (71.374bp,62.877bp) and (61.955bp,60.003bp)  .. (43.517bp,54.95bp);
+  \draw (70.945bp,73.0bp) node {b/\(\epsilon\)};
+  % Edge: 2 -> 0
+  \draw [->] (99.067bp,10.797bp) .. controls (88.259bp,6.9443bp) and (73.813bp,3.9331bp)  .. (62.0bp,9.0bp) .. controls (54.255bp,12.322bp) and (47.322bp,18.021bp)  .. (34.816bp,31.943bp);
+  \draw (70.945bp,16.0bp) node {c/\(\epsilon\)};
+  % Node: 0
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \definecolor{fillcol}{rgb}{0.83,0.83,0.83};
+  \pgfsetfillcolor{fillcol}
+  \filldraw [opacity=1] (22.0bp,50.0bp) ellipse (18.0bp and 18.0bp);
+  \draw (22.0bp,50.0bp) ellipse (22.0bp and 22.0bp);
+  \draw (22.0bp,50.0bp) node {0};
+\end{scope}
+  % Node: 1
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (115.89bp,82.0bp) ellipse (18.0bp and 18.0bp);
+  \draw (115.89bp,82.0bp) node {1};
+\end{scope}
+  % Node: 2
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (115.89bp,18.0bp) ellipse (18.0bp and 18.0bp);
+  \draw (115.89bp,18.0bp) node {2};
+\end{scope}
+%
+\end{tikzpicture}
+% End of code

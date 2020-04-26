@@ -1,0 +1,1 @@
+digraph { rankdir=LR; size="8,5" node [shape=circle] 0 -> 1 [label="b"]; 0 -> 2 [label="ε"]; 1 -> 1 [label="a"]; 1 -> 2 [label="a"]; 1 -> 2 [label="b"]; 2 -> 0 [label="a"]; 0 [shape = doublecircle]0 [style = filled, fillcolor = lightgrey]}
