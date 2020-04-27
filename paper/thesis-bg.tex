@@ -74,17 +74,24 @@
 	\end{itemize}
 \end{definition}
 
-\begin{figure}[!htb]
-	\centering
-	\input{img/nfa.tex}
-	\caption{Недетерминиран краен автомат}
-\end{figure}
-
 \begin{definition} 
 	Нека \( \mathcal{A} = \langle \Sigma, Q, I, F, \Delta \rangle \) е краен автомат. \emph{Път} в \( \mathcal{A} \) наричаме крайна редица от преходи с дължина \( k > 0 \) 
 	\[ \pi = q_0 \to^{a_1} q_1 \to^{a_2} \ldots \to^{a_k} q_k \] 
 	където \( \langle q_{i-1}, a_i, q_i \rangle \in \Delta \) за \( i = 1 \ldots k \). Казваме, че \emph{пътят} започва от състояние \( q_0 \) и завършва в състояние \( q_k \). Елементите \( q_0,q_1, \ldots ,q_k \) наричаме \emph{състояния на пътя}, а думата \( w = a_1 a_2 \ldots a_k \) наричаме \emph{етикет на пътя}. \newline \emph{Успешен път} в автомата е \emph{път}, който започва от начално състояние и завършва във финално състояние.
 \end{definition}
+
+\begin{figure}[!htb]
+	\centering
+	\input{img/nfa.tex}
+	\caption{Недетерминиран краен автомат}
+	\label{fig:Nfa}
+\end{figure}
+
+\begin{example}
+	Нека е зададена азбука \( \Sigma = \{ a,b,\epsilon \} \) и автомат \( \mathcal{A} \) над \( \Sigma \) със състояния \( Q = \{ 0, 1, 2 \} \), начални \( I = \{ 0 \} \), финални \( F = \{ 0 \} \) и релация на прехода 
+	\[ \Delta = \{ \langle 0, b, 1 \rangle, \langle 0, \epsilon, 2 \rangle, \langle 1, a, 1 \rangle, \langle 1, a, 2 \rangle \, \langle 1, b, 2 \rangle, \langle 2, a, 0 \rangle \} \]
+	\( \mathcal{A} \) е изобразен на Фигура \ref{fig:Nfa}. \( 0 \to^{b} 1 \to^{a} 1 \to^{b} 2 \to^{a} 0 \) е успешен път, разпознавайки думата \emph{baba}.
+\end{example}
 
 \begin{definition} 
 	Нека \( \mathcal{A} \) е краен автомат. Множеството от етикети на всички успещни пътища в \( \mathcal{A} \) наричаме \emph{език на \( \mathcal{A} \)} и обозначаваме като \( L(\mathcal{A}) \). \[ L(\mathcal{A}) = \{ w \in \Sigma^* \mid \exists i \in I, f \in F : \langle i, w, f \rangle \in \Delta^* \} \]
@@ -93,8 +100,6 @@
 \begin{definition} 
 	Нека \( \mathcal{A}_1 \) и \( \mathcal{A}_2 \) са крайни автомати. Казваме, че \( \mathcal{A}_1 \) е еквивалентен на \( \mathcal{A}_2 \) (\( \mathcal{A}_1 \equiv \mathcal{A}_2 \)), ако езиците им съвпадат (\( L(\mathcal{A}_1) = L(\mathcal{A}_2) \))
 \end{definition}
-
-\subsection{Детерминирани крайни автомати}
 
 \begin{definition}
 	Kраен автомат \( \mathcal{A} = \langle \Sigma, Q, I, F, \Delta \rangle \) е \emph{детерминиран}, ако:
@@ -106,8 +111,14 @@
 
 	\noindent Иначе казано, релацията на прехода може да се представи като частична функция \( \delta: Q \times \Sigma \to Q \) и \emph{детерминираните автомати} можем преставим в следния вид \[ \mathcal{A}_D = \langle \Sigma, Q, q_0, F, \delta \rangle \]
 
-	Предимството на \emph{детерминираните автомати} се изразява в това, че могат да разпознават дали дума \( w \) принадлежи на езика на автомата \( L(\mathcal{A}_D) \) за линейно време спрямо дължината ѝ - \( O(|w|) \).
+	Предимството на \emph{детерминираните автомати} се изразява в това, че могат да разпознават дали дума \( w \) принадлежи на езика на автомата \( L(\mathcal{A}_D) \) за линейно време спрямо дължината ѝ - \( O(|w|) \), но в определени случаи могат да имат експоненциален брой състояния спрямо еквивалентният им недетерминиран автомат.
 \end{definition}
+
+\begin{figure}[!htb]
+	\centering
+	\input{img/dfa.tex}
+	\caption{Детерминиран краен автомат}
+\end{figure}
 
 \begin{definition}
 	Нека \( \mathcal{A}_D = \langle \Sigma, Q, q_0, F, \delta \rangle \) е \emph{детерминиран краен автомат}. \emph{Разширена функция на прехода} \( \delta^*: Q \times \Sigma^* \to Q \) дефинираме индуктивно:
@@ -117,52 +128,64 @@
 		\item \( \delta^*(q, aw) = \delta^*(\delta(q, a), w) \), където \( a \in \Sigma, w \in \Sigma^* \)
 	\end{itemize}
 \end{definition}
-asd
-\begin{figure}[!htb]
-	\centering
-	\input{img/dfa.tex}
-	\caption{Детерминиран краен автомат}
-\end{figure}
 
 \begin{theorem}
-	За всеки краен автомат \(\mathcal{A} = \langle \Sigma, Q, I, F, \Delta \rangle \), съществува еквивалентен на него, детерминиран краен автомат \( \mathcal{A}_D \).
+	За всеки краен автомат \(\mathcal{A} = \langle \Sigma, Q, I, F, \Delta \rangle \), съществува еквивалентен на него, детерминиран краен автомат \( \mathcal{A}_D \), където \( L(\mathcal{A}) = L(\mathcal{A}_D) \).
 	\begin{proof}
-		Строим \emph{детерминиран краен автомат} \( \mathcal{A}_D = \langle \Sigma, 2^Q, I, F_D, \delta \rangle \), където
+		Нека \( \mathcal{A} \) е краен автомат, на който сме премахнали \( \epsilon \)-преходите. Строим \emph{детерминиран краен автомат} \( \mathcal{A}_D = \langle \Sigma, 2^Q, I, F_D, \delta \rangle \), където:
 		\begin{itemize}
 			\item \( F_D = \{ S \in 2^Q \mid S \cap F \neq \emptyset \} \)
-			\item \( \delta(S,a) = \{ q \in Q \mid \exists q_1 \in S : \langle q_1, a, q \rangle \in \Delta \} \)
+			\item \( \delta(S,a) = \{ q \in Q \mid \exists p \in S : \langle p, a, q \rangle \in \Delta \} \)
 		\end{itemize}
+		С индукция по дължината на \( w \), ще покажем, че за произволна дума \( w \in \Sigma^* \) твръденията \( \exists i \in I: \langle i, w, p \rangle \in \Delta^* \) и \( p \in \delta^*(I, w)\) са еквивалентни:
+		\begin{itemize}
+			\item \emph{База}: за \( |w| = 0 \) имаме \( w = \epsilon \). Тогава \( \exists i \in I: \langle  i, \epsilon, i \rangle \in \Delta^* \). Тъй като \( \mathcal{A} \) няма \( \epsilon \)-преходи, то \( \delta^*(I, \epsilon) = I \).
+			
+			\item \emph{Индукция}: \( w = w'a, a \in \Sigma, |w| = |w'| + 1 \). \newline
+			\( (\Rightarrow) \) Нека допуснем, че \( \exists i \in I \), така че \( \langle i, w'a, p \rangle \in \Delta^* \), което значи, че \( \exists p' \in Q: \langle p', a, p \rangle \in \Delta \). По индуктивното предположение знаем, че и \( p' \in \delta^*(I, w') \) и от дефиницията на \( \delta \) следва, че \( p \in \delta(\delta^*(I, w'), a) \). \newline
+			\( (\Leftarrow) \) Нека допуснем, че \( p \in \delta^*(I, w'a) \). Тогава \( \exists p': p' \in \delta^*(I, w') \). От индуктиното предположение знаем, че \( \langle i, w', p' \rangle \in \Delta^* \) и от дефинициите на \( \delta  \) и \( \Delta \) следва, че \( \langle p', a, p \rangle \in \Delta \), от където следва, че \( \exists i \in I: \langle i, w'a, p \rangle \in \Delta^* \).
+		\end{itemize}
+		Така можем да заключим, че за всяка дума \( w \in L(\mathcal{A}) \), \( \exists i \in I, \exists f \in F : \langle i, w, f \rangle \in \Delta^* \) е изпълнено, че \( \delta^*(I, w) \in F_D \), следователно \( w \in L(\mathcal{A}_D) \) и \( L(\mathcal{A}) = L(\mathcal{A}_D) \).
 	\end{proof}
 \end{theorem}
 
 \subsection{Крайни преобразуватели}
 
 \begin{definition}
-	\emph{Краен преобразувател} дефинираме като петорка \( \mathcal{T} = \langle \Sigma \times \Gamma, Q, I, F, \Delta \rangle \), където
+	\emph{Краен преобразувател} дефинираме като петорка \( \mathcal{T} = \langle \Sigma_1^* \times \Sigma_2^*, Q, I, F, \Delta \rangle \), където
 
 	\begin{itemize}
-		\item \( \Sigma, \Gamma \) са \emph{крайни азбуки от символи}
+		\item \( \Sigma_1, \Sigma_2 \) са \emph{крайни азбуки от символи}
 		\item \( Q \) е \emph{крайно множество от състояния}
 		\item \( I \subseteq Q \) е \emph{множество от начални състояния}
 		\item \( F \subseteq Q \) е \emph{множество от финални състояния}
-		\item \( \Delta \subseteq Q \times (\Sigma^* \times \Gamma^*) \times Q \) е \emph{релация на прехода}
+		\item \( \Delta \subseteq Q \times (\Sigma_1^* \times \Sigma_2^*) \times Q \) е \emph{релация на прехода}
 	\end{itemize}
  
 	Тройки от вида \( \langle q_1, \langle w, m \rangle, q_2 \rangle \in \Delta \) наричаме \emph{преходи} и казваме, че започва състояние \( q_1 \), има етикет по горната лента \( w \) и по долната лента \( m \) и завършва в състояние \( q_2 \). Алтернативно, тези преходи обозначаваме като \( q_1 \to^w_m q_2 \).
+\end{definition}
+
+\begin{definition} 
+	Нека \( \mathcal{T} = \langle \Sigma_1^* \times \Sigma_2^*, Q, I, F, \Delta \rangle \) е краен преобразувател. \emph{Път} в \( \mathcal{T} \) наричаме крайна редица от преходи с дължина \( k > 0 \) 
+	\[ \pi = q_0 \to^{w_1}_{m_1} q_1 \to^{w_2}_{m_2} \ldots \to^{w_k}_{m_k}  q_k \] 
+	където \( \langle q_{i-1}, \langle w_i, m_i \rangle, q_i \rangle \in \Delta \) за \( i = 1 \ldots k \). Казваме, че \emph{пътят} започва от състояние \( q_0 \) и завършва в състояние \( q_k \). Елементите \( q_0,q_1, \ldots ,q_k \) наричаме \emph{състояния на пътя}, а думата \( w = w_1 w_2 \ldots w_k \) наричаме \emph{входна дума} на пътя, а \( m = m_1 m_2 \ldots m_k \) е \emph{изходна дума} на пътя. \newline \emph{Успешен път} в преобразувателя започва от начално състояние и завършва във финално състояние.
 \end{definition}
 
 \begin{figure}[!htb]
 	\centering
 	\input{img/fst.tex}
 	\caption{Краен преобразувател}
+	\label{fig:Fst}
 \end{figure}
 
-\begin{definition}
-	TODO: \emph{Път и успешен път в краен преобразувател}
-\end{definition}
+\begin{example}
+	Нека са зададени азбукаи \( \Sigma_1 = \{ a,b,c \}, \Sigma_2 = \{ d,\epsilon \} \) и преобразувател \( \mathcal{T} \) над \( \Sigma_1^* \times \Sigma_2^*\) със състояния \( Q = \{ 0, 1, 2 \} \), начални \( I = \{ 0 \} \), финални \( F = \{ 0 \} \) и релация на прехода \( \Delta = \{ \langle 0, \langle a, d \rangle, 1 \rangle, \langle 1, \langle b, \epsilon \rangle, 0 \rangle, \langle 0, \langle b, d \rangle, 2 \rangle, \langle 2, \langle c, \epsilon \rangle, 0 \rangle \} \). \newline
+	\( \mathcal{T} \) е изобразен на Фигура \ref{fig:Fst}. \newline
+	\( 0 \to^{b}_{d} 2 \to^{c}_{\epsilon} 0 \to^{a}_{d} 1 \to^{b}_{\epsilon} 0 \) е успешен път, превеждайки думата \emph{bcab} в \emph{dd}.
+\end{example}
 
 \begin{definition}
-	TODO: \emph{Подлежащ автомат на краен преобразувател}
+	Нека \( \mathcal{T} = \langle \Sigma_1^* \times \Sigma_2^*, Q, I, F, \Delta \rangle \) е краен преобразувател. \emph{Подлежащ автомат} на \( \mathcal{T} \) дефинираме като \( \mathcal{A} = \langle \Sigma, Q, I, F, \Delta' \rangle \), където \( \Delta' = \{ \langle p, w, q \rangle \mid \langle p, \langle w, m \rangle, q \rangle \in \Delta \}\)
 \end{definition}
 
 \subsection{Регулярни езици и релации}
@@ -172,22 +195,23 @@ asd
 	\begin{itemize}
 		\item \( \emptyset \) е регулярен език.
 		\item ако \( a \in \Sigma \), то \( \{ a \} \) е регулярен език.
-		\item ако \( L_1, L_2 \in \Sigma^* \) са регулярни езици, то 
+		\item ако \( L_1, L_2 \subseteq \Sigma^* \) са регулярни езици, то 
 		\begin{itemize}
 			\item \( L_1 \cup L_2 \) (обедниение)
 			\item \( L_1 \cdot L_2 = \{ a \cdot b \mid a \in L_1, b \in L_2 \} \) (конкатенация)
 			\item \( L_1^* = \bigcup_{i=0}^{\infty}L^i \) (звезда на Клини)
 		\end{itemize}
 		 са също регулярни езици.
-		\item Не съществуват други регулярни езици
+		\item Не съществуват други регулярни езици.
 	\end{itemize}
+	Регулярните езици са също така \emph{затворени} относно операциите \emph{допълнение} (\( \Sigma^* \setminus L_1 \)), \emph{разлика} (\( L_1 \setminus L_2 \)), \emph{обръщане} (\( L_1^{-1} \)) и \emph{сечение} (\( L_1 \cap L_2 \)).
 \end{definition}
 
 \begin{definition} 
-	\emph{Регулярна n-орна стрингова релация} дефинираме индуктивно като множество от n-орки над крайни азбуки \( \Sigma_1, \dots, \Sigma_n \):
+	\emph{Двоична регулярна стрингова релация} дефинираме индуктивно като множество от двойки над крайни азбуки \( \Sigma_1, \Sigma_2 \):
 	\begin{itemize}
 		\item \( \emptyset \) е регулярна релация.
-		\item Ако \( a \in \Sigma_1 \times ... \times \Sigma_n \), то \( \{ a \} \) е регулярна релация.
+		\item Ако \( a \in \Sigma_1 \times \Sigma_2 \), то \( \{ a \} \) е регулярна релация.
 		\item Ако \( R_1, R_2 \) са регулярни релации, то:
 		\begin{itemize}
 			\item \( R_1 \cup R_2 \) (обединение)
@@ -199,50 +223,58 @@ asd
 	\end{itemize}
 \end{definition}
 
+\begin{definition}
+	Нека \( R_1, R_2, \in \Sigma^* \times \Sigma^* \) са \emph{двоични стрингови релации}. \emph{Конкатенацията} на \( R_1 \) и \( R_2 \) дефинираме както следва
+	\[ R_1 \cdot R_2 = \{ \langle u_1 \cdot v_1, u_2 \cdot v_2 \rangle \mid \langle u_1, u_2 \rangle \in R_1, \langle v_1, v_2 \rangle \in R_2 \} \]
+\end{definition}
+
 \begin{definition} 
 	\emph{Регулярен израз} наричаме дума над крайна азбука \( \Sigma \cup \{ (, ), \vert, * \} \)
 	\begin{itemize}
 		\item \( \epsilon \) е регулярен израз.
 		\item Ако \( a \in \Sigma \), то \( a \) е регулярен израз.
-		\item Ако \( E_1, E_2 \) са регулярни изрази, то \( E_1 \mid E_2 \) и \( E_1 E_2 \), \( E_1^* \) също са регулярни изрази.
+		\item Ако \( E_1, E_2 \) са регулярни изрази, то \( E_1 | E_2 \) и \( E_1 E_2 \), \( E_1^* \) също са регулярни изрази.
 		\item Не съществуват други регулярни изрази.
 	\end{itemize}
 	Всеки регулярен израз има сътветстващ регулярен език:
 	\begin{itemize}
 		\item \( L(\epsilon) = \emptyset \)
 		\item \( L(a) = \{ a \}, a \in \Sigma \)
-		\item \( L(E_1 \mid E_2) = L(E_1) \cup L(E_2) \)
+		\item \( L(E_1 | E_2) = L(E_1) \cup L(E_2) \)
 		\item \( L(E_1 E_2) = L(E_1) \cdot L(E_2) \)
-		\item \( L(E^*) = L(E)^* \)
+		\item \( L(E_1^*) = L(E_1)^* \)
 	\end{itemize}
 \end{definition}
 
 \begin{example}
-	TODO: Пример за регулярен израз
+	\verb/(a|b)*c/ е \emph{регулярен израз}, разпознаващ думите \emph{c, ac, bc, aac, abc, abbc, bababbc ...}
 \end{example}
 
-\begin{theorem} {\emph{(Клини)}}
-	За всеки регулярен израз \( E \) съществува краен автомат \( \mathcal{A} \), за който \( L(E) = L(\mathcal{A})\)
+\begin{theorem}{\emph{(Клини)}}
+	За всеки регулярен израз \( E \) съществува краен автомат \( \mathcal{A} \), за който \( L(E) = L(\mathcal{A})\).
 \end{theorem}
 
 \begin{theorem}
-	Всяка двоична регулярни стрингова релациа можемогат да се изрази, чрез класически краен преобразувател.
+	Всяка двоична регулярна стрингова релация може да се представи, чрез класически краен преобразувател.
 \end{theorem}
 
-\begin{definition}
-	Регулярна стрнгова функция наричаме регулярна стрингова релация, която е частична функция. 
-\end{definition}
-
 \begin{example}
-	TODO: Пример за регулярна стрингова релация
+	\( R = \{ \langle ab, d \rangle, \langle bc, d \rangle \}^* \) е \emph{регулярна релация}, която е представена чрез чрез крайния преобразувател \(\mathcal{T}\) на Фигура \ref{fig:Fst}. \newline
+	С \emph{dom(R)} бележим домейна на \(R\), който изразяваме чрез \emph{подлежащия автомат} на \( \mathcal{T} \), \( dom(R) =  \{ ab, bc, abab, abbc, bcab \dots \} \). С \emph{range(R)} обозначаваме кодомейна на релацията \( range(R) =  \{ \epsilon, d, dd, ddd, dddd \dots \} \).
 \end{example}
 
-\subsection{Свойства на регулярните езици и релации}
+\begin{example}
+	Нека \(L\) е \emph{регулярен език}. \( Id(L) = \{ \langle w, w \rangle \mid w \in L \}\) е \emph{регулярна релация}.
+\end{example}
+
+\begin{definition}
+	\emph{Регулярна стрнгова функция} наричаме регулярна стрингова релация, която е частична функция. 
+\end{definition}
 
 \subsection{Бимашини}
 
 \begin{definition}
-	 \emph{Бимашина} дефинираме като тройка \( \mathcal{B} = \langle \mathcal{A}_L, \mathcal{A}_R, \psi \rangle \), където
+	 \emph{Класическа бимашина} дефинираме като тройка \( \mathcal{B} = \langle \mathcal{A}_L, \mathcal{A}_R, \psi \rangle \), където
 
 	\begin{itemize}
 		\item \( \mathcal{A}_L = \langle \Sigma, Q_L, s_L, Q_L, \delta_L \rangle \) и \( \mathcal{A}_R = \langle \Sigma, Q_R, s_R, Q_R, \delta_R \rangle \) са \emph{детерминирани крайни автомати} и ги наричаме съответно \emph{ляв и десен автомат} на бимашината. Всички състояния на тези автомати са финални.
@@ -251,19 +283,15 @@ asd
 \end{definition}
 
 \begin{definition} 
-	Нека \( \mathcal{B} = \langle \mathcal{A}_L, \mathcal{A}_R, \psi \rangle \) е класическа бимашина, \( \Sigma \) е азбуката на на автоматите \( \mathcal{A}_L \) и \( \mathcal{A}_R \) и \( w = a_1a_2 \dots a_k \in \Sigma^* \) \( (k \geq 0) \), дума и \( a_i \in \Sigma \) \( (1 \leq i \leq k) \) са букви. Ако \( \delta_L^*(a_1a_2 \ldots a_k) \) и \( \delta_R^*(a_ka_{k-1} \dots a_1) \) са дефинирани, то можем да получим двата пътя:
+	Нека \( \mathcal{B} = \langle \mathcal{A}_L, \mathcal{A}_R, \psi \rangle \) е класическа бимашина, \( \Sigma \) е азбуката на на автоматите \( \mathcal{A}_L \) и \( \mathcal{A}_R \) и \( w = a_1a_2 \dots a_k \in \Sigma^* \) \( (k \geq 0) \) е дума и \( a_i \in \Sigma \) \( (1 \leq i \leq k) \) са букви. Ако \( \delta_L^*(a_1a_2 \ldots a_k) \) и \( \delta_R^*(a_ka_{k-1} \dots a_1) \) са дефинирани, то можем да получим двата пътя:
 	\[ \pi_L = l_0 \to^{a_1} l_1 \to^{a_2} \ldots l_{k-1} \to^{a_k} l_k \]
 	\[ \pi_R = r_0 \leftarrow^{a_1} r_1 \leftarrow^{a_2} \ldots r_{k-1} \leftarrow^{a_k} r_k \]
 	Където \( \pi_L \) и \( \pi_R \) са пътища в съответно левия и десния автомат и думата \( w \) се разпознава от \( \mathcal{A}_L \) в посока от ляво на дясно, а от \( \mathcal{A}_R \), съответно от дясно на ляво. Ако за всички тройки \( \langle l_{i-1}, a_i, r_i \rangle \), изходната функция \( \psi(l_{i-1}, a_i, r_i) \) е дефинирана, то двойката пътища \( \langle \pi_L, \pi_R \rangle \) наричаме \emph{успешно изпълнение} на \( \mathcal{B} \) с етикет \( w = a_1a_2 \dots a_k \) и \emph{изход}
 	\[ \mathcal{O_B}(w) = \psi(l_0, a_1, r_1) \cdot \psi(l_1, a_2, r_2) \cdot \dots \cdot \psi(l_{k-1}, a_k, r_k) \]
-	\( \mathcal{O_B} \) наричаме \emph{изходна функция на бимашината} и казваме, че бимашината \emph{превежда} \(w\) в \(m\), ако \( \mathcal{O_B}(w) = m \), където \(m\) е резултат от конкатенация на всички \( \psi(l_{i-1}, a_i, r_i) \) \( 1 \leq i \leq k \).
+	\( \mathcal{O_B} \) наричаме \emph{изходна функция на бимашината} и казваме, че бимашината \emph{превежда} \(w\) в \(m\), ако \( \mathcal{O_B}(w) = m \), където \(m\) е резултат от конкатенацията на всички \( \psi(l_{i-1}, a_i, r_i) \) \( (1 \leq i \leq k) \).
 \end{definition}
 
 \noindent Бимашината чете входната дума и за всеки символ извежда дума над азбуката си. На всяка стъпка изведената от изходната функция \( \psi \) дума зависи от входния символ и двете състояния в които биха преминали левият и десният автомат, четейки входа съответно от ляво на дястно и от дясно на ляво. Крайният резултат е конкатенацията на всички така изведени думи.
-
-\begin{example}{\emph{(Бимашина и изпълнение)}}
-	TODO: Пример бимашина
-\end{example}
 
 \begin{definition}
 	Нека \( \mathcal{B} = \langle \mathcal{A}_L, \mathcal{A}_R, \psi \rangle \) е бимашина. \emph{Разширената изходна функция \( \psi^* \)} дефинираме индуктивно:
@@ -274,26 +302,42 @@ asd
 	\end{itemize}
 \end{definition}
 
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[
+		width=12cm,
+		height=6cm,
+		keepaspectratio,
+	  ]{img/bm.png}
+	\caption{Бимашина представяща \( \{ \langle ab, d \rangle, \langle bc, d \rangle \}^* \)}
+	\label{fig:Bm}
+\end{figure}
+
+\begin{example}{\emph{(Бимашина и изпълнение)}}
+	Нека разлгледаме бимашината на Фигура \ref{fig:Bm}. Задаваме входна дума \emph{bcabbc}, което води до следното изпълнение на левия и десния автомат съответно.
+
+	\[ \pi_L = 0 \to^{b} 2 \to^{c} 0 \to^{a} 1 \to^b 0 \to^{b} 2 \to^{c} 0 \]
+	\[ \pi_R = 0 \leftarrow^{b} 2 \leftarrow^{c} 0 \leftarrow^{a} 1 \leftarrow^{b} 0 \leftarrow^{b} 2 \leftarrow^{c} 0 \]
+
+	Изходната функция на бимашината \(\mathcal{O_B} \) прилагаме както следва:
+	\[
+		\psi(0,b,2) \cdot \psi(2,c,0) \cdot \psi(0,a,1) \cdot \psi(1,b,0) \cdot \psi(0,b,2) \cdot \psi(2,c,0) =
+	d \cdot \epsilon \cdot d \cdot \epsilon \cdot d \cdot \epsilon = ddd
+	\]
+
+\end{example}
+
 \begin{definition}
 	Бимашина \( \mathcal{B} = \langle \mathcal{A}_L, \mathcal{A}_R, \psi \rangle \) наричаме \emph{тотална}, ако функциите на прехода \( \delta_L: Q_L \times \Sigma \to Q_L \) и \( \delta_R: Q_R \times \Sigma \to Q_R \) на левия и десния автомат съответно, както и функцията на изхода \( \psi: (Q_L \times \Sigma \times Q_R) \to \Sigma^* \) са \emph{тотални}.
 \end{definition}
 
-\section{Правила за заместване чрез регулярни релации}
+\begin{theorem}
+	Класическите бимашини са еквивалентни по изразителност на регулярните функции.  \cite{Schutzenberger:61}
+\end{theorem}
 
-\begin{definition}
-	Нека \( \Sigma_1, \Sigma_2 \) са крайни азбуки. \emph{Двоична стрингова релация} \( R \subseteq \Sigma_1^* \times \Sigma_2^* \) наричаме множество от двойки \( \langle u, v \rangle \), където \( u \in \Sigma_1^* \) и \( v \in \Sigma_2^* \).
-\end{definition}
+\section{Правила за заместване}
 
-За двоичните стрингови релации можем да си мислим като множество от преводи, като на пример за двойката \( \langle u, v \rangle \in R \) казваме, че думата \( u \) се превежда като \( v \).
-
-\begin{definition}
-	Нека \( R_1, R_2, \in \Sigma^* \times \Sigma^* \) са \emph{двоични стрингови релации}. \emph{Конкатенацията} на \( R_1 \) и \( R_2 \) дефинираме както следва
-	\[ R_1 \cdot R_2 = \{ \langle u_1 \cdot v_1, u_2 \cdot v_2 \rangle \mid \langle u_1, u_2 \rangle \in R_1, \langle v_1, v_2 \rangle \in R_2 \} \]
-\end{definition}
-
-\begin{definition}
-	\emph{Двоична стрингова релация} \( R \subseteq L_1 \times L_2 \) e \emph{регулярна}, ако \(L_1\) и \(L_2\) са регулярни езици.
-\end{definition}
+За двоичните стрингови релации можем да си мислим като множество от преводи, като на пример за двойката \( \langle u, v \rangle \) казваме, че думата \( u \) се превежда като \( v \).
 
 \begin{definition}
 	\emph{Правило за заместване} представяме във вида
@@ -320,14 +364,14 @@ asd
 	\caption{Приложение на правило на заместване}
 \end{figure}
 
-\emph{Правила за заместване} можем да представим като \emph{регулярни стрингови релации}, използвайки единствено алгебрата на регулярните множества и релации. Те могат да се реализират програмно чрез крайни преобразуватели. \cite{Kaplan&Kay94}
+\emph{Правила за заместване} можем да представим като \emph{регулярни стрингови релации}, използвайки единствено алгебрата на регулярните езици и релации. Те се реализират програмно чрез крайни преобразуватели. \cite{Kaplan&Kay:94}
 
 \begin{definition}
-	Нека разгледаме текст \( t \in \Sigma^* \). \emph{Kонтекст на заместване} наричаме тройка \( \langle u,v,w \rangle \), където \( t = uvw \) и \( u, w \in \Sigma^* \). Също така \( u \) и \( w \) наричаме съответно \emph{префикс} и \emph{суфикс} на контекста, докато \( v \) наричаме \emph{фокус}.
+	Нека разгледаме текст \( t \in \Sigma^* \). \emph{Kонтекст на заместване} наричаме тройка \( \langle u,v,w \rangle \), където \( t = uvw \). Също така \( u \) и \( w \) наричаме съответно \emph{префикс} и \emph{суфикс} на контекста, докато \( v \) наричаме \emph{фокус}.
 \end{definition}
 
 \begin{example}
-	Нека разгледаме правилото \( ab|bc \to d \). След приложението му над текста \emph{abb}, ще получим \emph{db}, като \( \langle \epsilon, ab, b \rangle \) е единствения контекст на заместване. Приложението на правилото над \emph{abbacbca} ще доведе до \emph{dbacda} с два контекста на заместване \( \langle \epsilon, ab, bacbca \rangle \) и \( \langle abbac, bc, a \rangle \).
+	Нека разгледаме правилото \( ab|bc \to d \). След приложението му над текста \emph{abb}, ще получим \emph{db}, като \( \langle \epsilon, ab, b \rangle \) е единственият контекст на заместване. Приложението на правилото над \emph{abbacbca} ще доведе до \emph{dbacda} с два контекста на заместване \( \langle \epsilon, ab, bacbca \rangle \) и \( \langle abbac, bc, a \rangle \).
 \end{example}
 
 \subsection{Разрешаване на многозначности}
@@ -355,34 +399,65 @@ asd
 \end{figure}
 
 \begin{example}
-	Друг вид многозначност може да получим, когато фокусите на два контекста имат еднакво начало. Например, ако приложим правилото \(a^+ \to d \) над тескт \( t = aa \), може получим превода \emph{dd}, на който отговарят контекстите \( \langle a, a, \epsilon \rangle \) и \( \langle \epsilon, a, a \rangle \), и \emph{d} с контекст \( \langle \epsilon, aa, \epsilon \rangle \).
+	Друг вид многозначност може да получим, когато фокусите на два контекста имат еднакво начало. Например, ако приложим правилото \(a+ \to d \) над тескт \( t = aa \), може получим превода \emph{dd}, на който отговарят контекстите \( \langle a, a, \epsilon \rangle \) и \( \langle \epsilon, a, a \rangle \), и \emph{d} с контекст \( \langle \epsilon, aa, \epsilon \rangle \).
 \end{example}
-
+%%
 \begin{definition}
-	\emph{Дефинираме следните функции над множества от контексти. OVER, MOST, LONGEST}
+	Въвеждаме следните оператори над множества от контексти:
+\[ AFTER(A, B) = \{ \langle u, v, w \rangle \in A \mid \forall \langle u', v', w' \rangle \in B : u' \cdot v' \leq u \land u' < u  \} \] 
+
+\( AFTER \) избира измежду всички контексти в множеството \(A\) тези, в които фокусът \(v\) започва след всички фокуси в множеството \(B\).
+
+\[ LEFTMOST(A) = \{ \langle u, v, w \rangle \in A \mid \forall \langle u', v', w' \rangle \in A : u \leq u' \} \]
+
+\( LEFTMOST \) избира измежду всички контексти в \(A\), тези с чийто фокус се намира възможно най в ляво. Може да имаме повече от един такъв контекст.
+
+\[ LONGEST(A) = \{ \langle u, v, w \rangle \in A \mid \forall \langle u', v', w' \rangle \in A : u \neq u' \lor v' \leq v \} \]
+
+Измежду контекстите, чиито фокуси започват от една и съща позиция, \( LONGEST \) избира тези, които имат най-дълъг фокус.
 \end{definition}
 
 \begin{definition}
-	\emph{Множество на най-левите и най-дълги контексти} LML(A)
+	Въвеждаме оператора \( LML(A) \) (leftmost-longest), чрез който ще елиминираме многозначностите. По дадено множество от контексти \(A\), \( LML(A) \) избира най-левите, най-дълги измежду тях.
+
+	\[ LML(A) := \bigcup\limits_{i=0}^{\infty} C_{i} \]
+
+	Където междинните множества \( C_i \) строим по индукция:
+
+	\[ C_0 = \emptyset \]
+	\[ C_{i+1} = C_i \cup LONGEST(LEFTMOST(AFTER(A, C_i))) \]
+
+	\noindent \( LML(A) \) е крайно множество, защото \( A \) е крайно, т.е. след дадем момент редицата ще престане да нараства.
 \end{definition}
 
 \begin{proposition}
-	LML(A) съдържа само незастъпващи се контексти.
+	Нека \( t \in \Sigma^* \) е текст и \(A\) е множество от контексти в \(t\). \( LML(A) \) съдържа само незастъпващи се контексти.
 	\begin{proof}
-		...
+		Нека \( LML(A) \) съдържа застъпващите се контексти \( \langle u_1, v_1, w_1 \rangle \) и \( \langle u_2, v_2, w_2 \rangle \) т.е. \( u_1 < u_2 < u_1v_1 \). Също така \( \langle u_1, v_1, w_1 \rangle \in C_{i_1} \) и \( \langle u_2, v_2, w_2 \rangle \in C_{i_2} \). Нека допуснем, че \( i_1 \geq i_2 \). В такъв случай:
+		\[ \langle u_2, v_2, w_2 \rangle \in C_{i_2} = C_{i_2-1} \cup LONGEST(LEFTMOST(AFTER(A, C_{i_2-1}))) \]
+
+		\noindent След като \( \langle u_2, v_2, w_2 \rangle \notin C_{i_2-1} \), то \( \langle u_2, v_2, w_2 \rangle \in LEFTMOST((AFTER(A, C_{i_2-1})) \).
+		От допускането, че \( i_1 \geq i_2 \) следва, че \( \langle u_1, v_1, w_1 \rangle \in AFTER(A,C_{i_2-1}) \), което е в противоречие с дефиницията на \( LEFTMOST \) и следователно \( i_1 < i_2 \).
+
+		\noindentСлед като \( i_1 < i_2 \), то \( \langle u_2, v_2, w_2 \rangle \notin C_i \) за \( i \leq i_1 \). При \( i > i_1 \), \( \langle u_1, v_1, w_1 \rangle \in C_i \), значи \( \langle u_2, v_2, w_2 \rangle \in AFTER(A, C_i) \), което не е възможно спрямо дефиницията на \( AFTER \) т.е. \( \langle u_2, v_2, w_2 \rangle \notin C_{i+1} \). Това противоречи с факта, че \( \langle u_2, v_2, w_2 \rangle \in C_{i_2} \) \( (i_1 < i_2) \), следователно \( LML(A) \) не съдържа застъпващи се контексти.
 	\end{proof}
 \end{proposition}
 
 \begin{definition}
-	\emph{Приложение на правило за заместване над дума в текст под стратегията LML}
+	Нека \( T \subseteq \Sigma^* \times \Sigma^* \) е релация и \( t \in \Sigma^* \) е текст. С \( A_{dom(T)} \) бележим множеството на всички поднизове в \(t\), които са в \(dom(T)\). Нека \[ t = u_1 v_1 x_2 v_2 \dots x_k v_k w_k \] е каноничното представяне на \(t\) за множеството \( LML(A_{dom(T)}) \). Тогава \(t'\) е \emph{заместването} на \(t\) с \(T\) под стратегията най-ляво-най-дълго срещане \[t = u_1 v_1' x_2 v_2' \dots x_k v_k' w_k\] и \( \langle v, v' \rangle \in T \) за \( 1 \leq i \leq k \). С \( R^{LML}(T) \) бележим релацията на заместване под стратегията най-ляво-най-дълго срещане за \(T\). Тя съдържа всички двойки \( \langle t, t' \rangle \in \Sigma^* \times \Sigma^* \), така че \( t' \) е заместване на \( t \) с \(T\) под стратегията най-ляво-най-дълго срещане.
 \end{definition}
 
 \begin{corollary}
-	Ако релацията е функционална, то LML е функция.
+	Нека \( T: \Sigma^+ \to \Sigma^* \) е функция, тогава релацията на заместване \( R^{LML}(T) \) е функционална.
 \end{corollary}
 
-\subsection{Токенизация чрез регулярни релации}
+\begin{example}
+	Нека разгледаме правилото \( ab|bc \to d \) съответстващо на релацията \(T = \{ \langle ab,d \rangle, \langle bc, d \rangle \} \), приложено над текста \( t = aabcbab \). Получаваме контекстите \( \langle a, ab, cbab \rangle \), \( \langle aa, bc, bab \rangle \) и \( \langle aabcb, ab, \epsilon \rangle \). Очевидно първите два се застъпват, но стратегията най-ляво-най-дълго срещане определя първият и третият за валидни. Резултатът от заместането е \( R^{LML}(T)(aabcbab) = adcbd \).
 
+\end{example}
+
+\subsection{Токенизация чрез регулярни релации}
+TODO:
 \emph{Токенизираща релация} за даден език дефинираме като комбинация на \emph{правила за заместване}. Тези правила биват два вида - такива, които \emph{маркират} дадена лексема, или \emph{нормализиращи правила}, които служат за предварителна обработка входния текст, като на пример за премахване на излишни символи.
 
 \begin{example}{\emph{Лексическа граматика на аритметичен израз от естествени числа.}}
@@ -404,10 +479,6 @@ asd
 \[ R(\verb/"2 + 14"/) = \verb/"2 TB + TB 14 TB"/ \]
 \[ R(\verb/"42-15*5"/) = \verb/"42 TB - TB 15 TB * TB 5 TB"/ \]
 
-\begin{theorem}
-	TODO: Еквивалентност на регулярните стрингови функции и бимашините ...
-\end{theorem}
-
 \section{Реализация}
 
 \subsection{Дизайн}
@@ -418,14 +489,24 @@ asd
 \pagebreak
 
 \begin{thebibliography}{9}
-	\bibitem{Kaplan&Kay94} 
+	\bibitem{Kaplan&Kay:94} 
 	Kaplan, Ronald and Kay, Martin. 1994.
 	\textit{Regular models of phonological rule systems.}
 	Computational Linguistics 20(3):331-378
 
-	\bibitem{Karttunen96}
+	\bibitem{Gerdemann&VanNoord:99}
+	Gerdemann, Dale and van Noord, Gertjan. 1999.
+	\textit{Transducers from rewrite rules with backreferences}
+	EACL '99: Proceedings of the ninth conference on European chapter of the Association for Computational Linguistics June 1999 Pages 126–133
+
+	\bibitem{Karttunen:96}
 	Karttunen, Lauri. 1996.
 	\textit{Directed Replacement.}
+
+	\bibitem{Schutzenberger:61} 
+	Schützenberger, M.-P. 1961. 
+	\textit{A remark on finite transducers.} 
+	Information and Control, 4:185–196.
 	
 \end{thebibliography}	
 
