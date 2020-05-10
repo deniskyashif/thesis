@@ -46,6 +46,7 @@ public class Dfsa
         foreach (var st in this.States)
         {
             var trans = this.Transitions.Where(kvp => kvp.Key.From == st);
+
             if (trans.Any())
             {
                 foreach (var tr in trans)
@@ -55,7 +56,11 @@ public class Dfsa
             
         }
 
-        sb.Append($"{string.Join(",", this.Final)} [shape = doublecircle]");
+        if (this.Final.Any())
+        {
+            sb.Append($"{string.Join(",", this.Final)} [shape = doublecircle]");
+        }
+
         sb.Append($"{string.Join(",", this.Initial)} [style = filled, fillcolor = lightgrey]");
 
         return sb.Append("}").ToString();

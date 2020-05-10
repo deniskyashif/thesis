@@ -28,7 +28,7 @@ public static class BimachineOperations
             .ToDictionary(p => p.Key, p => p.Value);
 
         var leftMinDfa = new Dfsa(
-            bm.Forward.States.Select(s => leftEqRel[s]),
+            bm.Forward.States.Select(s => leftEqRel[s]).Distinct(),
             leftEqRel[bm.Forward.Initial],
             Array.Empty<int>(),
             leftMinDfaTrans);
@@ -39,7 +39,7 @@ public static class BimachineOperations
             .ToDictionary(p => p.Key, p => p.Value);
 
         var rightMinDfa = new Dfsa(
-            bm.Reverse.States.Select(s => rightEqRel[s]),
+            bm.Reverse.States.Select(s => rightEqRel[s]).Distinct(),
             rightEqRel[bm.Reverse.Initial],
             Array.Empty<int>(),
             rightMinDfaTrans);

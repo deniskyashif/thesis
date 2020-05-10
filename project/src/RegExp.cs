@@ -162,34 +162,34 @@ public class RegExp
         if (this.Peek() == '[')
         {
             this.Eat('[');
-            Fsa set;
+            Fsa @class;
 
             if (this.Peek() == '^')
             {
                 this.Eat('^');
-                set = alphabetFsa.Difference(this.CharSet());
+                @class = alphabetFsa.Difference(this.CharClass());
             }
-            else set = this.CharSet();
+            else @class = this.CharClass();
 
             this.Eat(']');
 
-            return set;
+            return @class;
         }
 
         return this.Char();
     }
 
-    Fsa CharSet()
+    Fsa CharClass()
     {
-        var setItem = this.CharSetItem();
+        var classItem = this.CharClassItem();
 
         if (this.HasMoreChars() && this.Peek() != ']')
-            return setItem.Union(this.CharSet());
+            return classItem.Union(this.CharClass());
 
-        return setItem;
+        return classItem;
     }
 
-    Fsa CharSetItem()
+    Fsa CharClassItem()
     {
         if (this.Peek() == '\\')
             this.Eat('\\');
