@@ -201,7 +201,7 @@ public class RegExp
         {
             this.Eat('-');
 
-            // if a set ends with a '-' then treat it as a character
+            // if a class ends with a '-' then treat it as a character
             if (this.Peek() == ']')
                 symbols.Add('-');
             else
