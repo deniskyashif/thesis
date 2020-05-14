@@ -450,6 +450,9 @@ public static class FsaOperations
             fst.Transitions.Select(kvp => 
                 (kvp.Key.From, kvp.Key.Label.ToString(), kvp.Key.Label.ToString(), kvp.Value)));
 
+    public static Fsa Minimal(this Fsa automaton) =>
+        automaton.Determinize().Minimal().ToFsa();
+
     public static Dfsa Minimal(this Dfsa automaton)
     {
         int EquivClassCount(Dictionary<int, int> eqRel) => eqRel.Values.Distinct().Count();
