@@ -385,8 +385,8 @@ public static class FstOperations
         var (rtFst, _) = fst.ToRealTime();
 
         // Construct the right Dfa by reversing the transitions
-        // Group the transitions by destination state
-        var fstTransGroupedBy_4to12 = rtFst.Transitions
+        // Group the transitions by destination state (4 to {12})
+        var fstTransGroupedByTarget = rtFst.Transitions
             .GroupBy(tr => tr.To)
             .ToDictionary(g => g.Key, g => g.Select(tr => (In: tr.In, To: tr.From)));
 
@@ -396,12 +396,12 @@ public static class FstOperations
         for (int n = 0; n < rightSStates.Count; n++)
         {
             var symbolToSStates = rightSStates[n]
-                .Where(st => fstTransGroupedBy_4to12.ContainsKey(st))
-                .SelectMany(st => fstTransGroupedBy_4to12[st])
+                .Where(st => fstTransGroupedByTarget.ContainsKey(st))
+                .SelectMany(st => fstTransGroupedByTarget[st])
                 .GroupBy(tr => tr.In, tr => tr.To)
                 .ToDictionary(g => g.Key, g => g.ToHashSet());
 
-            foreach (var subsetState in symbolToSStates.Select(p => p.Value))
+            foreach (var (symbol, subsetState) in symbolToSStates)
                 if (!rightSStates.Any(rs => rs.SetEquals(subsetState)))
                     rightSStates.Add(subsetState);
 
