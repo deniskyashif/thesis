@@ -8,8 +8,8 @@ using System.Text;
 [Serializable]
 public class Lexer
 {
-    const char StartOfToken = '\u0002';
-    const char EndOfToken = '\u0003';
+    const char SoT = '\u0002';
+    const char EoT = '\u0003';
     readonly IList<Rule> grammar;
 
     private Lexer(Bimachine bm, IList<Rule> grammar)
@@ -24,7 +24,7 @@ public class Lexer
 
     public IEnumerable<Token> GetNextToken()
     {
-        var rPath = this.Bm.Reverse.RecognitionPathRToL(this.Input);
+        var rPath = this.Bm.Reverse.ReverseRecognitionPath(this.Input);
 
         if (rPath.Count != this.Input.Size + 1)
             throw new ArgumentException(
@@ -45,15 +45,14 @@ public class Lexer
             if (!this.Bm.Output.ContainsKey(triple))
                 throw new ArgumentException($"Unrecognized token '{token.ToString()+ch}'");
 
-            var outStr = Bm.Output[triple];
-            token.Append(outStr);
+            token.Append(Bm.Output[triple]);
 
-            if (token[token.Length - 1] == EndOfToken)
+            if (token[token.Length - 1] == EoT)
             {
                 token.Remove(token.Length - 1, 1);
 
-                for (var k = 0; k < token.Length && token[k] != StartOfToken; k++)
-                    typeIndex.Append(token[k]);
+                for (var i = 0; token[i] != SoT; i++)
+                    typeIndex.Append(token[i]);
 
                 // keep only the token text
                 token.Remove(0, typeIndex.Length + 1);
@@ -83,24 +82,24 @@ public class Lexer
     {
         var tokenFsts = new List<Fst>();
 
-        for (int index = 0; index < grammar.Count; index++)
+        for (int i = 0; i < grammar.Count; i++)
         {
-            var ruleFsa = new RegExp(grammar[index].Pattern).Automaton.Determinize().Minimal();
+            var ruleFsa = new RegExp(grammar[i].Pattern).Automaton.Determinize().Minimal();
             // {<ε,TypeIndex SOT>} · Id(R) · {<ε,EOT>}
-            var ruleFst = FstBuilder.FromWordPair(string.Empty, $"{index}{StartOfToken}")
+            var ruleFst = FstBuilder.FromWordPair(string.Empty, $"{i}{SoT}")
                 .Concat(ruleFsa.Identity())
-                .Concat(FstBuilder.FromWordPair(string.Empty, $"{EndOfToken}"));
+                .Concat(FstBuilder.FromWordPair(string.Empty, $"{EoT}"));
 
             tokenFsts.Add(ruleFst);
         }
 
-        var combinedTokenFst = tokenFsts.Aggregate((u, f) => u.Union(f)).PseudoMinimal();
-        var alphabet = combinedTokenFst.Transitions
+        var unionTokenFst = tokenFsts.Aggregate((u, f) => u.Union(f)).PseudoMinimal();
+        var alphabet = unionTokenFst.Transitions
             .Where(t => !string.IsNullOrEmpty(t.In))
             .Select(t => t.In.Single())
             .ToHashSet();
 
-        var lml = combinedTokenFst.ToLmlRewriter(alphabet);
+        var lml = unionTokenFst.ToLmlRewriter(alphabet);
         var bm = lml.ToBimachine(alphabet);
 
         return new Lexer(bm, grammar);

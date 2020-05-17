@@ -632,8 +632,6 @@
 \[ R := R^{LML}(R_{Num} \cup R_{Op} \cup R_{Eq}) \]
 \[ R(\emph{42-15*5}) = \verb/"42 ЕоТ - ЕоТ 15 ЕоТ * ЕоТ 5 ЕоТ"/ \]
 
-След като маркерите са коректно поставени, извличането на тоукъните става тривиално.
-
 Работата на лексическият анализатор не се изчерпва с извличането на тоукъните от входния текст. Освен съдържанието му, често се нуждаем от информация и за неговия тип, както и позиция в текста. Типът е необходим при извършването на синтактичният анализ, докато позицията е полезна, когато съобщаваме за грешки във входния текст било то по време на синтактичния, или лексическия анализ. \\
 Нека променим правилото на заместване, така че да включва и типа.
 
@@ -654,7 +652,7 @@
 Релацията за лексически анализ \(R\) получаваме по същия начин, но изходната дума вече съдържа повече информация.
 
 \[ R(\emph{999+1}) = \]
-\[ \verb/"@1 SoT 999 ЕоТ @2 SoT + ЕоТ @1 SoT 1 ЕоТ"/ \]
+\[ \verb/"@1 SoT 999 ЕоТ @2 SoT + ЕоТ @1 SoT 1 ЕоТ @3 SoT = EoT"/ \]
 
 \pagebreak
 \section{Реализация}
@@ -818,7 +816,8 @@
 Нетерминалът \emph{expr} има два извода, като и двата започват с нетерминала \emph{term}. След като приложим правилото \emph{term}, проверяваме дали не сме стигнали до края на входа и в случай, че следващият символ е операторът за обединението, то местим входната дума с една позиция, прилагаме правилото \emph{expr} и връщаме обединението на резултатите.
 
 \begin{lstlisting}[language=csh]
-Fsa Expr() {
+Fsa Expr() 
+{
   var term = Term();
   if (HasMoreChars() && Peek() == '|') {
     Eat('|');
@@ -831,7 +830,8 @@ Fsa Expr() {
 Важно е да уточним, че типът \verb/Fsa/ представлява краен автомат т.е. всеки метод, отговарящ на нетерминал в граматиката връща краен автомат. По този начин финалният автомат, съответстващ на регулярния израз се строи директно по време на получаването на дървото на извод. Нека разгледаме метода за нетерминала \emph{char}, който винаги извежда терминален символ, т.е. сме стигнали до листо на дървото.
 
 \begin{lstlisting}[language=csh]
-Fsa Char() {
+Fsa Char() 
+{
   if (Peek() == '\') {
     Eat('\');
     var ch = Next();
@@ -893,8 +893,7 @@ Bimachine ToBimachine(this Fst fst, ISet<char> alphabet)
     var rightSStates = new List<ISet<int>> { fst.Final.ToHashSet() };
     var rightTrans = new Dictionary<(int From, char Label), int>();
 
-    for (int n = 0; n < rightSStates.Count; n++)
-    {
+    for (int n = 0; n < rightSStates.Count; n++) {
         var symbolToSStates = rightSStates[n]
             .Where(st => fstTransGroupedByTarget.ContainsKey(st))
             .SelectMany(st => fstTransGroupedByTarget[st])
@@ -919,8 +918,164 @@ Bimachine ToBimachine(this Fst fst, ISet<char> alphabet)
 
 \subsection{Лексически анализ чрез бимашина}
 
-\pagebreak
-\section{Алгоритми}
+В тази част ще съединим частите на конструкцията от регулярните изрази до построяването на бимашина, както и ще представим алгоритъм за лексически анализ чрез симулация на бимашина. Крайният резултат е програмен интерфейс, който използваме по следния начин:
+
+\begin{lstlisting}[language=csh,firstnumber=1]
+var lexer = Lexer.Create(new[] {
+    new Rule("[0-9]+\\.?[0-9]*", "NUM"),
+    new Rule("[+*/-]", "OP"),
+    new Rule("=", "EQ"),
+});
+lexer.Input = new InputStream("3.14+1.86=5");
+
+foreach (Token token in lexer.GetNextToken())
+    Console.WriteLine(token);
+\end{lstlisting}
+
+Тази програма ще генерира лексически анализатор, извърши токенизацията на аритметичен израз и изведе следният резултат
+
+\begin{lstlisting}[language=bash]
+[@0,0:3='3.14',<NUM>]
+[@1,4:4='+',<OP>]
+[@2,5:8='1.86',<NUM>]
+[@3,9:9='=',<EQ>]
+[@4,10:10='5',<NUM>]
+\end{lstlisting}
+
+Разглеждаме процедурата по създаване на лексическия анализатор.
+
+\begin{lstlisting}[language=csh]
+const char SoT = '\u0002';
+const char EoT = '\u0003';
+
+static Lexer Create(IList<Rule> grammar)
+{
+    var tokenFsts = new List<Fst>();
+
+    for (int i = 0; i < grammar.Count; i++) {
+        var ruleFsa = new RegExp(grammar[i].Pattern).Automaton;
+        var ruleFst = FstBuilder.FromWordPair("", $"{i}{SoT}")
+            .Concat(ruleFsa.Identity())
+            .Concat(FstBuilder.FromWordPair("", $"{EoT}"));
+        tokenFsts.Add(ruleFst);
+    }
+
+    var unionFst = tokenFsts.Aggregate((u, f) => u.Union(f));
+    var alphabet = unionFst.Transitions
+        .Where(t => !string.IsNullOrEmpty(t.In))
+        .Select(t => t.In.Single())
+        .ToHashSet();
+
+    var lmlFst = unionFst.ToLmlRewriter(alphabet);
+    var bm = lmlFst.ToBimachine(alphabet);
+
+    return new Lexer(bm, grammar);
+}
+\end{lstlisting}
+
+На редове 1-2 декларираме символите, с които ще означаваме началото и края на лексемите. На 6-14 обхождаме правилата в граматиката и по регулярния израз на всяко строим краен автомат. В последствие по този автомат получаваме преобразувател, който за всяка дума в езика му ще изведе думата с прикрепяйки индекса на правилото и маркерите за начало и край. На 16-20 обединяваме тези преобразуватели и определяме азбуката като вземем уникалните символи по горната лента на получения преобразувател. От него на ред 22 строим такъв под стратегията "най-ляво-най-дълго" срещане, който превръщаме в еквивалентна бимашина (ред 23). 
+
+\begin{lstlisting}[language=csh]
+class Dfsa
+{
+    public IList<int> States { get; set; }
+    public int Initial { get; set; }
+    public IList<int> Final { get; set; }
+    public IDictionary<(int From, char Label), int> 
+        Transitions { get; set; }
+}
+\end{lstlisting}
+
+Така представяме детерминиран краен автомат, като функциата на прехода реализираме като двойки ключ-стойност, където ключът е двойка от състояние и символ, а стойността е състоянието, в което попадаме след този преход.
+
+\begin{lstlisting}[language=csh]
+class Bimachine
+{
+    public Dfsa Forward { get; set; }
+    public Dfsa Reverse { get; set; }
+    public IDictionary<(int Lstate, char Symbol, int Rstate), string> 
+        Output { get; private set; }
+}
+\end{lstlisting}
+
+Аналогично за бимашината имаме два автомата. "Forward" отговаря на левия автомат, който сканира текста от ляво на дясно и "Reverse", който сканира текста от дясно на ляво. Функцията на изхода са двойки ключ-стойност, където ключът е тройка, състояща се от състояние на левия автомат, входен символ и състояние на десния автомат, стойността е изведената дума. Вече сме готови да представим метода за токенизация.
+
+\begin{lstlisting}[language=csh]
+class Lexer
+{
+    char SoT = '\u0002';
+    char EoT = '\u0003';
+    IList<Rule> grammar;
+
+    Lexer(Bimachine bm, IList<Rule> grammar)
+    {
+        this.Bm = bm;
+        this.grammar = grammar;
+    }
+
+    public Bimachine Bm { get; set; }
+    public InputStream Input { get; set; }
+\end{lstlisting}
+
+Лексическият анализатор пази референции към граматиката и съответстващата ѝ бимашина. Типът \emph{InputStream} е абстракция на входния текст, който може да се подаде като низ от символи в паметта или зареди от текстов файл.
+
+\begin{lstlisting}[language=csh,firstnumber=15]
+    public IEnumerable<Token> GetNextToken()
+    {
+        var rPath = Bm.Reverse.ReverseRecognitionPath(Input);
+
+        if (rPath.Count != Input.Size + 1)
+            throw new ArgumentException(
+                $"Invalid input symbol. {Input.CharAt(Input.Size - rPath.Count)}");
+
+        var leftState = Bm.Forward.Initial;
+        var token = new StringBuilder();
+        var typeIndex = new StringBuilder();
+        var tokenIndex = 0;
+        var tokenStartPos = 0;
+
+        for (Input.SetToStart(); !Input.IsExhausted; Input.MoveForward())
+        {
+            var ch = Input.Peek();
+            var rightIndex = rPath.Count - 2 - Input.Pos;
+            var triple = (leftState, ch, rPath[rightIndex]);
+
+            if (!Bm.Output.ContainsKey(triple))
+                throw new ArgumentException($"Invalid token '{token.ToString() + ch}'");
+
+            token.Append(Bm.Output[triple]);
+
+            if (token[token.Length - 1] == EoT)
+            {
+                token.Remove(token.Length - 1, 1);
+                for (var i = 0; token[i] != SoT; i++)
+                    typeIndex.Append(token[i]);
+                token.Remove(0, typeIndex.Length + 1);
+
+                yield return new Token
+                {
+                    Index = tokenIndex,
+                    Position = (tokenStartPos, Input.Pos),
+                    Text = token.ToString(),
+                    Type = grammar[int.Parse(typeIndex.ToString())].Name
+                };
+
+                token.Clear();
+                typeIndex.Clear();
+                tokenIndex++;
+                tokenStartPos = Input.Pos + 1;
+            }
+
+            if (!Bm.Forward.Transitions.ContainsKey((leftState, ch)))
+                throw new ArgumentException($"Invalid input. {ch}");
+
+            leftState = Bm.Forward.Transitions[(leftState, ch)];
+        }
+    }
+}
+\end{lstlisting}
+
+На ред 17 извличаме редицата от състояния получена от симулацията на десния авомат, прочитайки входния текст от дясно на ляво. Ако автоматът не е автоматът не е прочел целия текст, то входът е невалиден връщаме грешка (19-21). Започваме симулацията на левия автомат, заедно с извеждането на лексемите. Намираме се в началното му състояние (23), променливата \emph{token} (24) изпозваме, за да съхраняваме текста на прочетената лексема, \emph{typeIndex} (25) съдържа индекса на правилото в граматиката, чрез който определяме какъв тип е изведената лексема, \emph{tokenIndex} (26) определя коя по ред лексема сме извели, а \emph{tokenStartPos} (27) показва на коя позиция в текста започва лексемата. Четем входа от лявно на дясно и на всеки прочетен символ формираме тройката от ляво, дясно състояние и входен символ (29-33). Ако фукнцията на изхода не е дефинирана за тази тройка, връщаме грешка, в противен случай конкатенираме изходната дума към текста, който сме извели до момента (35-38). Ако последният символ на изведената дума е маркер за край на лемсема (end of token) (40), то сме разпознали лексема и преминаваме към извеждането ѝ. В този момент \emph{token} е низ, който съдържа едновременно идекса на лексемата и нейната стойност (\verb/<index> SoT <text> EoT/). Елиминираме маркера за край, прочитаме символите от началото докато стигнем до \verb/SoT/, което представлява индекса на правилото, съхраняваме ги в \emph{tokenIndex} и елиминираме сегмента, така че в \emph{token} да остане само текста на лексемата (42-45), докато \emph{tokenIndex} съдържа идекса на правилото в граматиката.  На редове 47-53 извеждаме обект, който съдържа данните на разпознатата лексема - нейният индекс, позиция, текст и тип. Чрез ключовата дума \verb/yield/ указваме, че при следващото извикване на \emph{GetNextToken()}, методът ще продължи изпълнението си, от където е приключил. Подготвяме променливите за разпознаването на следващата лексема (55-58) и продължаваме с итерацията над входния текст, докато не стигнем неговия край, или пък докато левия автомат не може да продължи (61-64).
 
 \pagebreak
 \begin{thebibliography}{9}

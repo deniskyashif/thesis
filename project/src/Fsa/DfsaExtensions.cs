@@ -3,9 +3,9 @@ using System.Collections.Generic;
 public static class DfsaExtensions
 {
     public static IList<int> RecognitionPathRToL(this Dfsa automaton, string input) =>
-        RecognitionPathRToL(automaton, new InputStream(input));
+        ReverseRecognitionPath(automaton, new InputStream(input));
 
-    public static IList<int> RecognitionPathRToL(this Dfsa automaton, InputStream input)
+    public static IList<int> ReverseRecognitionPath(this Dfsa automaton, InputStream input)
     {
         var current = automaton.Initial;
         var path = new List<int> { current };
