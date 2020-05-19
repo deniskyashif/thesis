@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 public static class FsaBuilder
@@ -22,6 +23,8 @@ public static class FsaBuilder
         return new Fsa(states, initialStates, new int[] { state }, transitions);
     }
 
+    public static Fsa FromSymbol(char symbol) => FromSymbolSet(new[] { symbol });
+
     public static Fsa FromSymbolSet(IEnumerable<char> alphabet)
     {
         var initial = 0;
@@ -40,4 +43,11 @@ public static class FsaBuilder
 
     public static Fsa All(IEnumerable<char> alphabet)
         => FsaBuilder.FromSymbolSet(alphabet).Star();
+
+    public static Fsa Empty =>
+        new Fsa(
+            new [] { 0 },
+            Array.Empty<int>(),
+            Array.Empty<int>(),
+            Array.Empty<(int, string, int)>());
 }

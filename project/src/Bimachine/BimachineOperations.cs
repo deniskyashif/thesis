@@ -18,29 +18,29 @@ public static class BimachineOperations
                 o => (Symbol: o.Key.Symbol, State: o.Key.Lstate, Word: o.Value))
             .ToDictionary(g => g.Key, g => g.ToList());
         
-        var alphabet = bm.Forward.Transitions.Select(t => t.Key.Label).Distinct();
-        var leftEqRel = FindBmDfaEqRel(bm.Forward, leftProfiles, alphabet);
-        var rightEqRel = FindBmDfaEqRel(bm.Reverse, rightProfiles, alphabet);
+        var alphabet = bm.Left.Transitions.Select(t => t.Key.Label).Distinct();
+        var leftEqRel = FindBmDfaEqRel(bm.Left, leftProfiles, alphabet);
+        var rightEqRel = FindBmDfaEqRel(bm.Right, rightProfiles, alphabet);
 
-        var leftMinDfaTrans = bm.Forward.Transitions
+        var leftMinDfaTrans = bm.Left.Transitions
             .Select(t => (Key: (leftEqRel[t.Key.From], t.Key.Label), Value: leftEqRel[t.Value]))
             .Distinct()
             .ToDictionary(p => p.Key, p => p.Value);
 
         var leftMinDfa = new Dfsa(
-            bm.Forward.States.Select(s => leftEqRel[s]).Distinct(),
-            leftEqRel[bm.Forward.Initial],
+            bm.Left.States.Select(s => leftEqRel[s]).Distinct(),
+            leftEqRel[bm.Left.Initial],
             Array.Empty<int>(),
             leftMinDfaTrans);
 
-        var rightMinDfaTrans = bm.Reverse.Transitions
+        var rightMinDfaTrans = bm.Right.Transitions
             .Select(t => (Key: (rightEqRel[t.Key.From], t.Key.Label), Value: rightEqRel[t.Value]))
             .Distinct()
             .ToDictionary(p => p.Key, p => p.Value);
 
         var rightMinDfa = new Dfsa(
-            bm.Reverse.States.Select(s => rightEqRel[s]).Distinct(),
-            rightEqRel[bm.Reverse.Initial],
+            bm.Right.States.Select(s => rightEqRel[s]).Distinct(),
+            rightEqRel[bm.Right.Initial],
             Array.Empty<int>(),
             rightMinDfaTrans);
 

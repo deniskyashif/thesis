@@ -12,14 +12,14 @@ public class Bimachine
         Dfsa reverse,
         IReadOnlyDictionary<(int Lstate, char Symbol, int Rstate), string> output)
     {
-        this.Forward = forward;
-        this.Reverse = reverse;
+        this.Left = forward;
+        this.Right = reverse;
         this.Output = output;
     }
 
-    public Dfsa Forward { get; private set; }
+    public Dfsa Left { get; private set; }
 
-    public Dfsa Reverse { get; private set; }
+    public Dfsa Right { get; private set; }
 
     public IReadOnlyDictionary<(int Lstate, char Symbol, int Rstate), string> Output { get; private set; }
 }

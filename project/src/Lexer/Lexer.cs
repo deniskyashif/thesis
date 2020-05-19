@@ -24,13 +24,13 @@ public class Lexer
 
     public IEnumerable<Token> GetNextToken()
     {
-        var rPath = this.Bm.Reverse.ReverseRecognitionPath(this.Input);
+        var rPath = this.Bm.Right.ReverseRecognitionPath(this.Input);
 
         if (rPath.Count != this.Input.Size + 1)
             throw new ArgumentException(
                 $"Unrecognized input symbol. {this.Input.CharAt(this.Input.Size - rPath.Count)}");
 
-        var leftState = this.Bm.Forward.Initial;
+        var leftState = this.Bm.Left.Initial;
         var token = new StringBuilder();
         var typeIndex = new StringBuilder();
         var tokenIndex = 0;
@@ -71,10 +71,10 @@ public class Lexer
                 tokenStartPos = this.Input.Pos + 1;
             }
 
-            if (!this.Bm.Forward.Transitions.ContainsKey((leftState, ch)))
+            if (!this.Bm.Left.Transitions.ContainsKey((leftState, ch)))
                 throw new ArgumentException($"Unrecognized input. {ch}");
 
-            leftState = this.Bm.Forward.Transitions[(leftState, ch)];
+            leftState = this.Bm.Left.Transitions[(leftState, ch)];
         }
     }
 
@@ -84,23 +84,23 @@ public class Lexer
 
         for (int i = 0; i < grammar.Count; i++)
         {
-            var ruleFsa = new RegExp(grammar[i].Pattern).Automaton.Determinize().Minimal();
+            var ruleFsa = new RegExp(grammar[i].Pattern).Automaton;
             // {<ε,TypeIndex SOT>} · Id(R) · {<ε,EOT>}
-            var ruleFst = FstBuilder.FromWordPair(string.Empty, $"{i}{SoT}")
+            var tokenFst = FstBuilder.FromWordPair(string.Empty, $"{i}{SoT}")
                 .Concat(ruleFsa.Identity())
                 .Concat(FstBuilder.FromWordPair(string.Empty, $"{EoT}"));
 
-            tokenFsts.Add(ruleFst);
+            tokenFsts.Add(tokenFst);
         }
 
-        var unionTokenFst = tokenFsts.Aggregate((u, f) => u.Union(f)).PseudoMinimal();
+        var unionTokenFst = tokenFsts.Aggregate((u, f) => u.Union(f));
         var alphabet = unionTokenFst.Transitions
             .Where(t => !string.IsNullOrEmpty(t.In))
             .Select(t => t.In.Single())
             .ToHashSet();
 
-        var lml = unionTokenFst.ToLmlRewriter(alphabet);
-        var bm = lml.ToBimachine(alphabet);
+        var lmlFst = unionTokenFst.ToLmlRewriter(alphabet);
+        var bm = lmlFst.ToBimachine(alphabet);
 
         return new Lexer(bm, grammar);
     }
