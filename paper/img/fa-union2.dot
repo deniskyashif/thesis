@@ -2,10 +2,9 @@ digraph {
     rankdir=LR; size="8,5" 
     node [shape=circle] 
     0 -> 1 [label="a"];
-    1 -> 2 [label="a"];
     0 -> 3 [label="a"]; 
     3 -> 3 [label="a"]; 
     3 -> 4 [label="b"]; 
-    2,4 [shape = doublecircle]
+    1,4 [shape = doublecircle]
     0 [style = filled, fillcolor = lightgrey]
 }

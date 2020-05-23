@@ -22,6 +22,7 @@ public class Dfsa
     public int Initial { get; private set; }
     public IReadOnlyCollection<int> Final { get; private set; }
     public IReadOnlyDictionary<(int From, char Label), int> Transitions { get; private set; }
+    public ISet<char> Alphabet => this.Transitions.Select(t => t.Key.Label).ToHashSet();
 
     public bool Recognize(string word)
     {

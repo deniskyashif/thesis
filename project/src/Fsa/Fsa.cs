@@ -35,6 +35,7 @@ public class Fsa
     public IReadOnlyCollection<int> Initial { get; private set; }
     public IReadOnlyCollection<int> Final { get; private set; }
     public IReadOnlyCollection<(int From, string Label, int To)> Transitions { get; private set; }
+    public ISet<string> Alphabet => this.Transitions.Select(t => t.Label).ToHashSet();
 
     public bool Recognize(string word)
     {

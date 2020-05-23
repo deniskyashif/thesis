@@ -29,6 +29,8 @@ public class Fst
 
     public IReadOnlyCollection<(int From, string In, string Out, int To)> Transitions { get; private set; }
 
+    public ISet<string> InputAlphabet => this.Transitions.Select(t => t.In).ToHashSet();
+
     public ICollection<string> Process(string word) =>
         this.Process(word.ToCharArray().Select(x => x.ToString()).ToList());
 
