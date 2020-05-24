@@ -303,7 +303,7 @@
 \end{figure}
 
 \begin{example}
-	Нека са зададени азбукаи \( \Sigma_1 = \{ a,b,c \}, \Sigma_2 = \{ d,\epsilon \} \) и преобразувател \( \mathcal{T} \) над \( \Sigma_1^* \times \Sigma_2^*\) със състояния \( Q = \{ 0, 1, 2 \} \), начални \( I = \{ 0 \} \), финални \( F = \{ 0 \} \) и релация на прехода \( \Delta = \{ \langle 0, \langle a, d \rangle, 1 \rangle, \langle 1, \langle b, \epsilon \rangle, 0 \rangle, \langle 0, \langle b, d \rangle, 2 \rangle, \langle 2, \langle c, \epsilon \rangle, 0 \rangle \} \). \newline
+	Нека са зададени азбуки \( \Sigma_1 = \{ a,b,c \}, \Sigma_2 = \{ d,\epsilon \} \) и преобразувател \( \mathcal{T} \) над \( \Sigma_1^* \times \Sigma_2^*\) със състояния \( Q = \{ 0, 1, 2 \} \), начални \( I = \{ 0 \} \), финални \( F = \{ 0 \} \) и релация на прехода \( \Delta = \{ \langle 0, \langle a, d \rangle, 1 \rangle, \langle 1, \langle b, \epsilon \rangle, 0 \rangle, \langle 0, \langle b, d \rangle, 2 \rangle, \langle 2, \langle c, \epsilon \rangle, 0 \rangle \} \). \newline
 	\( \mathcal{T} \) е изобразен на Фигура \ref{fig:Fst}. \newline
 	\( 0 \to^{b}_{d} 2 \to^{c}_{\epsilon} 0 \to^{a}_{d} 1 \to^{b}_{\epsilon} 0 \) е успешен път, превеждайки думата \emph{bcab} в \emph{dd}.
 \end{example}
@@ -582,66 +582,118 @@
 \end{example}
 
 \pagebreak
-\subsection{Конструкция на преобразувател по стратегията най-ляво-най-дълго срещане}
+\subsection{Лексически анализ чрез регулярни релации}
 
-Ще представим формално конструкция на преобразувател под стратегията най-ляво-най-дълго срещане, следвайки алгоритъма на Карттунен (1996) \cite{Karttunen:96}. Целта ни е по зададен краен преобразувател \( T = \langle \Sigma, Q, I, F, \Delta \rangle \), където \( \epsilon \notin dom(T) \) да получим \( R^{LML}(T) \).
+Ще представим формално конструкция на преобразувател под стратегията най-ляво-най-дълго срещане, следвайки алгоритъма на Карттунен (1996) \cite{Karttunen:96}. Целта ни е по зададен краен преобразувател \( T = \langle \Sigma \times \Sigma^*, Q, I, F, \Delta \rangle \), където \( \epsilon \notin dom(T) \) да получим \( R^{LML}(T) \).
 
-Релацията за най-ляво-най-дълго срещане е резултат от композицията на четири релации, които строим независимо една от друга.
+Дефинираме множеството на маркерите, които ще използваме за извършване на заместването - \( \{ cb, lb, rb \} \). Това са произволни символи извън входната азубука на \(T\), \( \Sigma \cap \{ cb, lb, rb \} = \emptyset \). Множеството на всички символи бележим със \( \Sigma_x = \Sigma \cup \{ cb, lb, rb \} \). 
 
-\[ R^{LML}(T) := R^{init}(T) \circ R^{left}(T) \circ R^{long}(T) \circ R^{replace}(T) \]
+\begin{definition}
+	Представяме следните функции над регулярни езици:
+	\[ not(L) = \{ w \mid w \in \Sigma_x^* \land w \notin L \} \]
+	\[ contain(L) = \{ w \mid w_1w_2w_3 = w: w_1, w_3 \in \Sigma_x^* \land w_2 \in L \} \]
+	С \( not(L) \) получаваме допълнението на езика \(L\), \( contain(L) \) връща езика, който се състои от всички думи, които съдържат инфикс в \(L\). Строим функциите по следния начин:
+	\[ not(L) := \Sigma_x^* \setminus L \]
+	\[ contain(L) := \Sigma_x^* \cdot L \cdot \Sigma_x^* \]
+\end{definition}
 
-Дефинираме множеството на маркерите, които ще използваме за извършване на заместването - \( \{ cb, lb, rb \} \). Това са произволни символи извън азубиката на входния преобразувател \(T\), \( \Sigma \cap \{ cb, lb, rb \} = \emptyset \). Множеството на всички символи бележим с \( \Sigma_x = \Sigma \cup \{ cb, lb, rb \} \). Дефинираме следните оператори над регулярни езици:
-
-\[ not(L) := \Sigma_x^* \setminus L \]
-\[ contain(L) := \Sigma_x^* \cdot L \cdot \Sigma_x^* \]
-
-С \( not(L) \) получаваме допълнението на езика \(L\), \( contain(L) \) ни връща езика, който се състои от всички думи, които съдържат инфикс в \(L\). Следва да дефинираме фамилия от оператори \(intro\) представени от Каплан и Кей (1994) \cite{Kaplan&Kay:94}:
-
-\[ intro(S) := (Id(\Sigma_x \setminus S) \cup (\{\epsilon\} \times S))^* \]
-\[ introx(S) := (intro(S) \cdot Id(\Sigma_x \setminus S)) \cup \{\epsilon\} \]
-\[ xintro(S) := (Id(\Sigma_x \setminus S) \cdot intro(S)) \cup \{\epsilon\} \]
-
-\emph{intro(S)} създава релация, която добавя произволно символи от \(S\) в думи, които не съдържат символи от \(S\). На пример, ако имаме азбуката \( \{a,b\} \) и \(S := \{x\}\), то \( \{ \langle b, xb \rangle, \langle ab, axbx \rangle, \langle abba, axxbxbax \rangle \dots \} \in intro(S) \). \emph{introx(S)} и \emph{xintro(S)} са аналогични, като символите от \(S\) не могат да бъдат съответно в края и началото на изходната дума.
-
-Следва да преставим групата от \emph{ignore} оператори \cite{Kaplan&Kay:94}:
-
-\[ ign(L,S) := range(Id(L) \circ intro(S)) \]
-\[ ignx(L,S) := range(Id(L) \circ introx(S)) \]
-\[ xign(L,S) := range(Id(L) \circ xintro(S)) \]
-
-По даден регулярен език \(L\) и множество от символи \(S\), \emph{ign(L,S)} връща регулярен език, който се състои от думите в \(L\), с включени символи от \(S\). \emph{ignx(L,S), xign(L,S)} са аналогични като не включват символи от \(S\) съответно в края и в началото на думите. Нека разгледаме регулярният език съответстващ на израза \( E := \verb/(a|b)+/ \). Този език съдържа всички думи с дължина поне един символ, които съдържат произволен брой \emph{'a'} и \emph{'b'} - \( \{a, b, ba, ab, abababbb \dots \} \). ign(L(E), \{x\}) ще съдържа думите \emph{ab, xa, xab, xxxb, bbb, bxabx \dots }.
-\[ ifSthenP(P,S) = \{ w \mid \forall w_1w_2 = w: w_1 \in P \to w_2 \in S \} \]
-\[ ifSthenP(P,S) = \{ w \mid \forall w_1w_2 = w: w_2 \in S \to w_1 \in P \} \]
-Чрез тези функции строим филтриращи автомати, с които проверяваме дали маркерите са поставени на коректните места \cite{Kaplan&Kay:94}. \emph{ifPthenS(P,S)} строи автомат, който разпознава всички думи, чиито префикси са в езика на \(P\) и суфикси са в \(S\). Аналогично \emph{ifSthenP(P,S)} разпознава думите, за които ако всичките им суфикси са в \(S\), то всичките префикси са в \(P\).
-\[ ifPthenS(P,S) := not(P \cdot not(S)) \]
-\[ ifSthenP(P,S) := not(not(P) \cdot S) \]
-Комбинираме тези оператори, за да представим:
-\[ PiffS(P,S) = \{ w \mid \forall w_1w_2 = w: w_1 \in P \leftrightarrow w_2 \in S \} \]
-\[ LiffR(L,R) = \{ w \mid \forall w_1w_2w_3 = w: \forall w_2'w_2'' = w_2: w_2' \in L \leftrightarrow w_2'' \in R \} \]
-\emph{PiffS(P,S)} разпознава думите, на които префиксите са в \(P\) тогава и само тогава, когато суфиксите им са в \(S\). \emph{LiffR(L,R)} съдържа думите \( w = w_1w_2w_3 \), така че префиксите на \(w_2\) са в \(L\) и суфиксите на \(w_2\) са в \(R\).
-\[ PiffS(P,S) := ifPthenS(P,S) \cap ifSthenP(P,S) \]
-\[ LiffR(L,R) := PiffS((\Sigma_x^* \cdot L), (R \cdot \Sigma_x^*)) \]
-Релацията за задължително заместване \(R^{obl}(T)\) дефинираме както следва:
-\[ R^{obl}(T) := N(T) \cdot (T \cdot N(T))^* \]
-\[ N(T) = Id(\Sigma^* \setminus (\Sigma^* \cdot dom(T) \cdot \Sigma^*)) \cup \{ \langle \epsilon, \epsilon \rangle \} \]
-В случая \(N(T)\) е идентитета на множеството от всички думи, които не съдържат инфикси в \(dom(T)\). Нека разгледаме следният пример:
+\begin{definition}
+	Въвеждаме групата от оператори \(intro\) представени от Каплан и Кей (1994) \cite{Kaplan&Kay:94}:
+	\[ intro(S) := (Id(\Sigma_x \setminus S) \cup (\{\epsilon\} \times S))^* \]
+	\[ introx(S) := (intro(S) \cdot Id(\Sigma_x \setminus S)) \cup \{\epsilon\} \]
+	\[ xintro(S) := (Id(\Sigma_x \setminus S) \cdot intro(S)) \cup \{\epsilon\} \]
+	\emph{intro(S)} създава релация, която добавя произволно символи от \(S\) в думи, които не съдържат символи от \(S\), \emph{introx(S)} и \emph{xintro(S)} са аналогични, като символите от \(S\) не могат да бъдат съответно в края и началото на изходната дума.
+\end{definition}
 
 \begin{example}
+	Имаме регулярният език \( \{a,b\} \), в който \emph{въвеждаме} символите от \(S := \{ x \}\). Тогава релацията \(intro(S)\) ще съдържа двойките \( \langle b, xb \rangle, \langle ab, axbx \rangle, \langle abba, axxbbax \rangle \dots \) и т.н.
 \end{example}
 
-Вече сме готови да дефинираме основните релации. Започваме с тази за първоначално срещане:
+\begin{definition}
+	Преставяме групата от \emph{ignore} оператори \cite{Kaplan&Kay:94} както следва:
+	\[ ign(L,S) := range(Id(L) \circ intro(S)) \]
+	\[ ignx(L,S) := range(Id(L) \circ introx(S)) \]
+	\[ xign(L,S) := range(Id(L) \circ xintro(S)) \]
+	По даден регулярен език \(L\) и множество от символи \(S\), \emph{ign(L,S)} връща регулярен език, който се състои от думите в \(L\), с включени символи от \(S\). \emph{ignx(L,S), xign(L,S)} са аналогични като не включват символи от \(S\) съответно в края и в началото на думите.	
+\end{definition}
 
-\[ R^{init}(T) := intro(\{ cb \}) \circ Id(LiffR(\{ cb \}, xign(dom(T), \{ cb \}))) \]
-\[ R^{left}(T) := (((Id(\Sigma^*) \cdot \{ \langle cb, lb \rangle \} \cdot Id(ignx(dom(T), \{ \langle \epsilon, rb \rangle \})))^*) \cdot Id(\Sigma^*)) \circ R_{obl} (\Sigma_x, \{ \langle cb, \epsilon \rangle \}) \]
-\[ R^{long}(T) := Id(not(contain(\{lb\} \cdot (ignx(dom(T), \{lb, rb\}) \cap contain(\{rb\}))))) \]
-\[ R^{replace}(T) := R_{obl}(\Sigma_x, \{ \langle lb, \epsilon \rangle \} \cdot T \cdot \{ \langle rb, \epsilon \rangle \}) \]
+\begin{example}
+	Нека разгледаме регулярният език съответстващ на израза \( E := \verb/(a|b)+/ \). Този език съдържа всички думи с дължина поне един символ, които съдържат произволен брой \emph{'a'} и \emph{'b'}. \( L(E) = \{a, b, ba, ab, abababbb \dots \} \). \( ign(L(E), \{x\}) \) ще съдържа думите \emph{ab, xa, xab, xabxxb, bbb, bxabx \dots }.	
+\end{example}
 
-\subsection{Формалнo: Релация за лексически анализ}
+\begin{definition}\label{def:defIfPThenS}
+	Въвеждаме следните функции, които строят филтриращи автомати, чрез които проверяваме дали маркерите са поставени на коректните места \cite{Kaplan&Kay:94}:
+	\[ ifPthenS(P,S) = \{ w \mid \forall w_1w_2 = w: w_1 \in P \to w_2 \in S \} \]
+	\[ ifSthenP(P,S) = \{ w \mid \forall w_1w_2 = w: w_2 \in S \to w_1 \in P \} \]
+	\emph{ifPthenS(P,S)} дефинира езика, който включва всички думи, чиито префикси са в \(P\) и суфикси са в \(S\). Аналогично \emph{ifSthenP(P,S)} представя думите, за които ако всичките им суфикси са в \(S\), то префиксите им са в \(P\). Реализираме тези функции както следва:
+	\[ ifPthenS(P,S) := not(P \cdot not(S)) \]
+	\[ ifSthenP(P,S) := not(not(P) \cdot S) \]	
+\end{definition}
 
-\[ G := \{ E_1, E_2 \dots E_n \} \]
-\[ 
-	T := \bigcup_{i=1}^{|G|} \{ \langle \epsilon, i \cdot \verb/SoT/ \rangle \} \cdot Id(L(E_i)) \cdot \{ \langle \epsilon, \verb/EoT/ \rangle \} 
-\]
+\begin{definition}
+	Комбинираме операторите от дефиниция \ref{def:defIfPThenS}, за да представим:
+	\[ PiffS(P,S) = \{ w \mid \forall w_1w_2 = w: w_1 \in P \leftrightarrow w_2 \in S \} \]
+	\[ LiffR(L,R) = \{ w \mid \forall w_1w_2w_3 = w: \forall w_2'w_2'' = w_2: w_2' \in L \leftrightarrow w_2'' \in R \} \]
+	\emph{PiffS(P,S)} строи автомат, разпознаващ думите, чиито префикси са в \(P\) тогава и само тогава, когато суфиксите им са в \(S\). \emph{LiffR(L,R)} съдържа думите \( w = w_1w_2w_3 \), така че префиксите на \(w_2\) са в \(L\) и суфиксите на \(w_2\) са в \(R\). Реализираме тези функции както следва:
+	\[ PiffS(P,S) := ifPthenS(P,S) \cap ifSthenP(P,S) \]
+	\[ LiffR(L,R) := PiffS((\Sigma_x^* \cdot L), (R \cdot \Sigma_x^*)) \]	
+\end{definition}
+
+\begin{definition}\label{def:Robl}
+	Нека \(T \subseteq \Sigma^* \times \Sigma^* \) е регулярна релация. \emph{Релацията на задължително заместване} \(R^{obl}(T)\) дефинираме както следва:
+	\[ R^{obl}(T) := N(T) \cdot (T \cdot N(T))^* \]
+	\[ N(T) = Id(\Sigma^* \setminus (\Sigma^* \cdot dom(T) \cdot \Sigma^*)) \cup \{ \langle \epsilon, \epsilon \rangle \} \]
+	\(N(T)\) е идентитета на множеството от всички думи, които не съдържат инфикси в \(dom(T)\) обединен с двойката \(\langle \epsilon, \epsilon \rangle\), заместваща празната дума с празната дума.
+	Идеята е следната: поддумите от входната дума, които са в домейна на релацията \(T\) се превеждат спрямо \(T\). Тези, които не са в този домейн се превеждат чрез идентитет, т.е. входът там остава непроменен.
+\end{definition}
+
+\begin{proposition}
+	Нека е дадена регулярната релация \(T\) и построената по нея релация на задължително заместване \(R^{obl}(T)\). \(N(T)\) е следва дефиниция \ref{def:Robl}. Нека \(t, t' \in \Sigma^*\) и \( \langle t, t' \rangle \in R^{obl}(T) \), тогава и само тогава, когато съществуват следните декомпозиции:
+	\[ t = u_0 v_1 u_1 \dots v_n u_n \]
+	\[ t' = u_0 v_1' u_1 \dots v_n' u_n \]
+	за които е изпълнено, че \( u_0, u_i \in dom(N(T)), v_i \in dom(T) \) и \( \langle v_i, v_i' \rangle \in T \).
+\end{proposition}
+
+\begin{example}
+	Нека разгледаме следния пример: \(T = \{ \langle ab, d \rangle, \langle bc, d \rangle \} \) и имаме \(R^{obl}(T) \). Входният текст \( t_1 = babacbca \) се декомпозира като:
+	\[ t_1 = b \cdot ab \cdot ac \cdot bc \cdot a \]
+	Сегментите \(\{b, ac, a\} \in dom(N(T))\), докато \(\{ab, bc\} \in dom(T)\). Съответно след заместването получаваме
+	\[ t_1' = b \cdot d \cdot ac \cdot d \cdot a \]
+	За входният текст \( t_2 = abcc \) обаче имаме две валидни композиции:
+	\[ t_2 = ab \cdot cc \]
+	\[ t_2 = a \cdot bc \cdot c\]
+	Това ще доведе до два възможни превода, т.е. \( \langle abcc, dcc \rangle \in R^{obl}(T) \) и \( \langle abcc, adc \rangle \in R^{obl}(T) \).
+\end{example}
+
+Вече сме готови да дефинираме основните релации. Започваме с тази за първоначално срещане.
+
+\begin{definition}\label{def:Rinit} \emph{Релация на първоначално срещане} представяме както следва:
+	\[ R^{init}(T) := intro(\{ cb \}) \circ Id(LiffR(\{ cb \}, xign(dom(T), \{ cb \}))) \]
+\end{definition}
+
+\begin{definition}\label{def:Rleft} \emph{Релация на най-ляво срещане} представяме както следва:
+	\[ R^{left}(T) := (((Id(\Sigma^*) \cdot \{ \langle cb, lb \rangle \} \cdot Id(ignx(dom(T), \{ \langle \epsilon, rb \rangle \})))^*) \cdot Id(\Sigma^*)) \circ R_{obl} (\Sigma_x, \{ \langle cb, \epsilon \rangle \}) \]
+\end{definition}
+
+\begin{definition}\label{def:Rlong} \emph{Релация на най-дълго срещане} представяме както следва:
+	\[ R^{long}(T) := Id(not(contain(\{lb\} \cdot (ignx(dom(T), \{lb, rb\}) \cap contain(\{rb\}))))) \]
+\end{definition}
+
+\begin{definition}\label{def:Rreplace} \emph{Релация на заместване срещане} представяме както следва:
+	\[ R^{replace}(T) := R_{obl}(\Sigma_x, \{ \langle lb, \epsilon \rangle \} \cdot T \cdot \{ \langle rb, \epsilon \rangle \}) \]
+\end{definition}
+
+\begin{definition} \emph{Релация на заместване под стратегията "най-ляво-най-дълго срещане"} получаваме като композираме релациите дефинирани в \ref{def:Rinit}, \ref{def:Rleft}, \ref{def:Rlong}, \ref{def:Rreplace} , които строим независимо една от друга.
+
+\[ R^{LML}(T) = R^{init}(T) \circ R^{left}(T) \circ R^{long}(T) \circ R^{replace}(T) \]
+\end{definition}
+
+\begin{definition} Нека е дадена лексическа граматика
+	\[ G := \{ E_1, E_2 \dots E_n \} \]
+	където \( E_i, i \in [1, n] \) са регулярни изрази. С \emph{SoT, EoT} са символи, с съответно маркираме началото и края на лексемата във входния текст.  \emph{Релация за лексически анализ} \(R^{lex}\) по зададената граматика \(G\) строим както следва:
+	\[ T := \bigcup_{i=1}^{|G|} \{ \langle \epsilon, i \cdot \verb/SoT/ \rangle \} 	\cdot Id(L(E_i)) \cdot \{ \langle \epsilon, \verb/EoT/ \rangle \} \]
+	\[ R^{lex} := R^{LML}(T) \]
+\end{definition}
 
 \subsection{Регулярни релации за лексически анализ}
 
