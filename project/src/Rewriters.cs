@@ -32,6 +32,73 @@ public static class Rewriters
         return notInDomain.Concat(fst.Concat(notInDomain).Star()).Expand().Trim();
     }
 
+    // Convert to an obligatory leftmost-longest match rewrite transducer (Karttunen 1996)
+    public static Fst ToLmlRewriter(this Fst fst, ISet<char> alphabet)
+    {
+        if (alphabet.Intersect(markers).Any())
+            throw new ArgumentException("The alphabet contains invalid symbols.");
+
+        var alphabetStarFsa = FsaBuilder.All(alphabet).Minimal();
+        var allSymbols = alphabet.Concat(markers).ToHashSet();
+        var allSymbolsStarFsa = FsaBuilder.All(allSymbols).Minimal();
+
+        // Automaton recognizing all words that are not in the language of the input automaton (complement)
+        Fsa NotInLang(Fsa lang) => allSymbolsStarFsa.Difference(lang);
+
+        // Automaton recognizing all words that contain an occurrence of a word from the input automaton
+        Fsa ContainsLang(Fsa lang) => allSymbolsStarFsa.Concat(lang, allSymbolsStarFsa);
+
+        // All words w where each prefix of w representing a string in "P" is followed by a suffix which is in "S"
+        Fsa IfPThenS(Fsa p, Fsa s) => NotInLang(p.Concat(NotInLang(s)));
+
+        // All words for which each suffix from "S" is preceeded by a prefix from "P"
+        Fsa IfSThenP(Fsa p, Fsa s) => NotInLang(NotInLang(p).Concat(s));
+        Fsa PiffS(Fsa l, Fsa r) => IfPThenS(l, r).Intersect(IfSThenP(l, r));
+
+        /* Describes the words where every position is preceded by a string with a suffix in "L"
+           if and only if it is followed by a string with a prefix in "R" */
+        Fsa LiffR(Fsa l, Fsa r) => PiffS(allSymbolsStarFsa.Concat(l), r.Concat(allSymbolsStarFsa));
+
+        var fstDomain = fst.Domain();
+
+        var initialMatch = // mark the beginnings of all rewrite occurrences by inserting "cb"
+            Intro(allSymbols, new HashSet<char> { cb })
+                .Compose(
+                    LiffR(
+                        FsaBuilder.FromSymbol(cb),
+                        XIgnore(fstDomain, allSymbols, new HashSet<char> { cb }))
+                    .Identity());
+
+        var leftToRight = // insert boundary markers ("lb", "rb") around the leftmost rewrite occurrences
+            alphabetStarFsa.Identity() // preceeded by arbitrary text that is not matched by the rule
+                .Concat(
+                    FstBuilder.FromWordPair(cb.ToString(), lb.ToString()), // replace intial match marker with the left boundary marker
+                    IgnoreX(fstDomain, allSymbols, new HashSet<char> { cb }).Identity(), // recognize matches with the leftover "cb" symbol inbetween the markers
+                    FstBuilder.FromWordPair(string.Empty, rb.ToString())) // insert right boundary marker at the end of the matched substring
+                .Star() // handle multiple rewrite occurrences
+                .Concat(alphabetStarFsa.Identity()) // succeeded by arbitrary text that is not matched by the rule
+                .Compose(
+                    FstBuilder.FromWordPair(cb.ToString(), string.Empty).ToRewriter(allSymbols)); // delete the remaining initial match markers
+
+        var includesNotLongestMatches =
+            ContainsLang(
+                FsaBuilder.FromSymbol(lb)
+                    .Concat(
+                        IgnoreX(fstDomain, allSymbols, new HashSet<char> { lb, rb })
+                            .Intersect(ContainsLang(FsaBuilder.FromSymbol(rb)))));
+        // amongst occurrences with the same starting point, preserve only the longest ones
+        var longestMatch = NotInLang(includesNotLongestMatches).Identity();
+
+        var replacement = // replace the rewrite occurrence and delete the left and right markers
+            FstBuilder.FromWordPair(lb.ToString(), string.Empty) // delete the left boundary marker
+                .Concat(
+                    fst, // perform the replacement
+                    FstBuilder.FromWordPair(rb.ToString(), string.Empty)) // delete the right boundary marker
+                .ToRewriter(allSymbols);
+
+        return initialMatch.Compose(leftToRight, longestMatch, replacement);
+    }
+
     // Convert to an obligatory leftmost-longest match rewrite transducer (van Noord, Gerdemann 1999)
     public static Fst ToLmlRewriter2(this Fst fst, ISet<char> alphabet)
     {
@@ -158,73 +225,6 @@ public static class Rewriters
             nonMarkersFst.Inverse());
 
         return replace;
-    }
-
-    // Convert to an obligatory leftmost-longest match rewrite transducer (Karttunen 1996)
-    public static Fst ToLmlRewriter(this Fst fst, ISet<char> alphabet)
-    {
-        if (alphabet.Intersect(markers).Any())
-            throw new ArgumentException("The alphabet contains invalid symbols.");
-
-        var alphabetStarFsa = FsaBuilder.All(alphabet).Minimal();
-        var allSymbols = alphabet.Concat(markers).ToHashSet();
-        var allSymbolsStarFsa = FsaBuilder.All(allSymbols).Minimal();
-
-        // Automaton recognizing all words that are not in the language of the input automaton (complement)
-        Fsa NotInLang(Fsa lang) => allSymbolsStarFsa.Difference(lang);
-
-        // Automaton recognizing all words that contain an occurrence of a word from the input automaton
-        Fsa ContainsLang(Fsa lang) => allSymbolsStarFsa.Concat(lang, allSymbolsStarFsa);
-
-        // All words w where each prefix of w representing a string in "P" is followed by a suffix which is in "S"
-        Fsa IfPThenS(Fsa p, Fsa s) => NotInLang(p.Concat(NotInLang(s)));
-
-        // All words for which each suffix from "S" is preceeded by a prefix from "P"
-        Fsa IfSThenP(Fsa p, Fsa s) => NotInLang(NotInLang(p).Concat(s));
-        Fsa PiffS(Fsa l, Fsa r) => IfPThenS(l, r).Intersect(IfSThenP(l, r));
-
-        /* Describes the words where every position is preceded by a string with a suffix in "L"
-           if and only if it is followed by a string with a prefix in "R" */
-        Fsa LiffR(Fsa l, Fsa r) => PiffS(allSymbolsStarFsa.Concat(l), r.Concat(allSymbolsStarFsa));
-
-        var fstDomain = fst.Domain();
-
-        var initialMatch = // mark the beginnings of all rewrite occurrences by inserting "cb"
-            Intro(allSymbols, new HashSet<char> { cb })
-                .Compose(
-                    LiffR(
-                        FsaBuilder.FromWord(cb.ToString()),
-                        XIgnore(fstDomain, allSymbols, new HashSet<char> { cb }))
-                    .Identity());
-
-        var leftToRight = // insert boundary markers ("lb", "rb") around the leftmost rewrite occurrences
-            alphabetStarFsa.Identity() // preceeded by arbitrary text that is not matched by the rule
-                .Concat(
-                    FstBuilder.FromWordPair(cb.ToString(), lb.ToString()), // replace intial match marker with the left boundary marker
-                    IgnoreX(fstDomain, allSymbols, new HashSet<char> { cb }).Identity(), // recognize matches with the leftover "cb" symbol inbetween the markers
-                    FstBuilder.FromWordPair(string.Empty, rb.ToString())) // insert right boundary marker at the end of the matched substring
-                .Star() // handle multiple rewrite occurrences
-                .Concat(alphabetStarFsa.Identity()) // succeeded by arbitrary text that is not matched by the rule
-                .Compose(
-                    FstBuilder.FromWordPair(cb.ToString(), string.Empty).ToRewriter(allSymbols)); // delete the remaining initial match markers
-
-        var intermediate =
-            ContainsLang(
-                FsaBuilder.FromWord(lb.ToString())
-                    .Concat(
-                        IgnoreX(fstDomain, allSymbols, new HashSet<char> { lb, rb })
-                            .Intersect(ContainsLang(FsaBuilder.FromWord(rb.ToString())))));
-        // amongst occurrences with the same starting point, preserve only the longest ones
-        var longestMatch = NotInLang(intermediate).Identity();
-
-        var replacement = // replace the rewrite occurrence and delete the left and right markers
-            FstBuilder.FromWordPair(lb.ToString(), string.Empty) // delete the left boundary marker
-                .Concat(
-                    fst, // perform the replacement
-                    FstBuilder.FromWordPair(rb.ToString(), string.Empty)) // delete the right boundary marker
-                .ToRewriter(allSymbols);
-
-        return initialMatch.Compose(leftToRight, longestMatch, replacement);
     }
 
     // Introduce symbols from a set S into an input string not containing symbols in S
