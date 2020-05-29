@@ -8,13 +8,13 @@ using System.Linq;
 
 public static class FsaOperations
 {
-    static int NewState(IReadOnlyCollection<int> states) => states.Count;
+    static int NewState(ICollection<int> states) => states.Count;
 
-    static IEnumerable<int> KNewStates(int k, IReadOnlyCollection<int> states) =>
+    static IEnumerable<int> KNewStates(int k, ICollection<int> states) =>
         Enumerable.Range(states.Count, k);
 
     // Clones the finite automaton by renaming the states
-    static Fsa Remap(this Fsa automaton, IReadOnlyCollection<int> states)
+    static Fsa Remap(this Fsa automaton, ICollection<int> states)
     {
         var k = states.Count;
 
@@ -25,16 +25,36 @@ public static class FsaOperations
             automaton.Transitions.Select(t => (t.From + k, t.Label, t.To + k)));
     }
 
+    static void MergeAlphabets(Fsa first, Fsa second)
+    {
+        var any = Fsa.AnySymbolOutsideAlphabet.ToString();
+
+        var firstAlphabet = first.Alphabet;
+        var secondAlphabet = second.Alphabet;
+        var n1 = secondAlphabet.Where(s => !firstAlphabet.Contains(s)).ToHashSet();
+        var n2 = firstAlphabet.Where(s => !secondAlphabet.Contains(s)).ToHashSet();
+
+        foreach (var tr in first.Transitions.Where(t => t.Label == any).ToList())
+            foreach (var n in n1)
+                first.Transitions.Add((tr.From, n, tr.To));
+
+        foreach (var tr in second.Transitions.Where(t => t.Label == any).ToList())
+            foreach (var n in n2)
+                second.Transitions.Add((tr.From, n, tr.To));
+    }
+
     public static Fsa Concat(this Fsa first, Fsa second)
     {
-        var firstFinalStates = first.Final;
         second = Remap(second, first.States);
+
+        var firstFinalStates = first.Final;
         var secondInitialStates = second.Initial;
 
         var initialStates = first.Initial.Intersect(first.Final).Any()
             ? first.Initial.Union(second.Initial)
             : first.Initial;
 
+        MergeAlphabets(first, second);
         var transitions = first.Transitions.Union(second.Transitions).ToList();
 
         foreach (var tr in first.Transitions.Where(t => first.Final.Contains(t.To)))
@@ -54,6 +74,7 @@ public static class FsaOperations
     public static Fsa Union(this Fsa first, Fsa second)
     {
         second = Remap(second, first.States);
+        MergeAlphabets(first, second);
 
         return new Fsa(
             states: first.States.Concat(second.States),
@@ -328,10 +349,10 @@ public static class FsaOperations
         return new Fst(states, initial, final, transitions).EpsilonFree().Trim();
     }
 
-    public static (IReadOnlyList<(int, int)> States, IReadOnlyDictionary<(int From, char Label), int> Transitions)
+    public static (IList<(int, int)> States, IDictionary<(int From, char Label), int> Transitions)
         Product(
-            (int Initial, IReadOnlyDictionary<(int From, char Label), int> Transitions) first,
-            (int Initial, IReadOnlyDictionary<(int From, char Label), int> Transitions) second)
+            (int Initial, IDictionary<(int From, char Label), int> Transitions) first,
+            (int Initial, IDictionary<(int From, char Label), int> Transitions) second)
     {
         var stateTransitionMapOfFirst = first.Transitions
             .GroupBy(kvp => kvp.Key.From, kvp => (kvp.Key.Label, kvp.Value))
@@ -425,7 +446,37 @@ public static class FsaOperations
 
         return firstDfsa.Difference(secondDfsa).ToFsa();
     }
-        
+
+    public static Fsa Complement(this Fsa fsa) =>
+        fsa.Determinize().Complement().ToFsa();
+
+    public static Dfsa Complement(this Dfsa automaton)
+    {
+        var dfsa = automaton.Totalize();
+
+        return new Dfsa(
+            dfsa.States,
+            dfsa.Initial,
+            dfsa.States.Where(s => !dfsa.Final.Contains(s)),
+            dfsa.Transitions);
+    }
+
+    public static Dfsa Totalize(this Dfsa dfsa)
+    {
+        var alphabet = dfsa.Alphabet;
+        alphabet.Add(Fsa.AnySymbolOutsideAlphabet);
+        var trans = new Dictionary<(int, char), int>(dfsa.Transitions);
+        var sinkState = NewState(dfsa.States);
+        var states = new List<int>(dfsa.States);
+        states.Add(sinkState);
+
+        foreach (var st in states)
+            foreach (var symbol in alphabet)
+                if (!trans.ContainsKey((st, symbol)))
+                    trans.Add((st, symbol), sinkState);
+
+        return new Dfsa(states, dfsa.Initial, dfsa.Final, trans);
+    }
 
     public static Fsa ToFsa(this Dfsa automaton) =>
         new Fsa(

@@ -37,13 +37,8 @@ using System.Linq;
 
 public class RegExp
 {
-    static readonly ISet<char> alphabet = Enumerable.Range(0, 127)
-        .Select(Convert.ToChar)
-        .Where(c => !char.IsControl(c))
-        .ToHashSet();
-
     static readonly ISet<char> metaChars = new HashSet<char> { '?', '*', '+' };
-    static readonly Fsa alphabetFsa = FsaBuilder.FromSymbolSet(alphabet).Minimal();
+    static readonly Fsa alphabetFsa = FsaBuilder.FromSymbol(Fsa.AnySymbolOutsideAlphabet);
 
     string pattern;
     int pos = 0;
@@ -162,7 +157,7 @@ public class RegExp
             if (this.Peek() == '^')
             {
                 this.Eat('^');
-                @class = alphabetFsa.Difference(this.CharClass());
+                @class = this.CharClass().Complement();
             }
             else @class = this.CharClass();
 
@@ -220,7 +215,7 @@ public class RegExp
             this.Eat('\\');
             var ch = this.Next();
 
-            if (!alphabet.Contains(ch))
+            if (ch == Fsa.AnySymbolOutsideAlphabet)
                 throw new ArgumentException($"Invalid character {ch} for {pattern} at pos {pos}");
 
             return FsaBuilder.FromWord(ch.ToString());

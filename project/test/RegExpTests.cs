@@ -1,3 +1,4 @@
+using System;
 using Xunit;
 
 public class RegExpTests
@@ -120,7 +121,7 @@ public class RegExpTests
         Assert.False(re.Match(string.Empty));
     }
 
-    [Fact(Skip="Until handling of larger char sets is implemented.")]
+    [Fact]
     public void FromPatternShouldMatchCorrectly9()
     {
         var re = new RegExp("(π|©)ю+_¡˚\\*");
@@ -130,7 +131,7 @@ public class RegExpTests
         Assert.False(re.Match("π_¡˚*"));
     }
 
-    [Fact(Skip="Until handling of larger char sets is implemented.")]
+    [Fact]
     public void FromPatternShouldMatchCorrectly10()
     {
         var re = new RegExp("a.*\\.");

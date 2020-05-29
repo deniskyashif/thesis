@@ -8,6 +8,7 @@ using System.Text;
 
 public class Fsa
 {
+    public const char AnySymbolOutsideAlphabet = '\0';
     private readonly Lazy<IDictionary<int, IEnumerable<int>>> epsilonClosureOf;
     private readonly Lazy<IDictionary<(int, string), IEnumerable<int>>> transPerStateAndLabel;
 
@@ -31,11 +32,14 @@ public class Fsa
                 .ToDictionary(g => g.Key, g => g.AsEnumerable()));
     }
 
-    public IReadOnlyCollection<int> States { get; private set; }
-    public IReadOnlyCollection<int> Initial { get; private set; }
-    public IReadOnlyCollection<int> Final { get; private set; }
-    public IReadOnlyCollection<(int From, string Label, int To)> Transitions { get; private set; }
-    public ISet<string> Alphabet => this.Transitions.Select(t => t.Label).ToHashSet();
+    public ICollection<int> States { get; private set; }
+    public ICollection<int> Initial { get; private set; }
+    public ICollection<int> Final { get; private set; }
+    public ICollection<(int From, string Label, int To)> Transitions { get; private set; }
+    public ISet<string> Alphabet => this.Transitions
+        .Where(t => !string.IsNullOrEmpty(t.Label) && t.Label != AnySymbolOutsideAlphabet.ToString())
+        .Select(t => t.Label)
+        .ToHashSet();
 
     public bool Recognize(string word)
     {
@@ -68,13 +72,24 @@ public class Fsa
 
     IEnumerable<int> GetTransitions(int state, string label)
     {
-        if (this.transPerStateAndLabel.Value.ContainsKey((state, label)))
-            return this.transPerStateAndLabel.Value[(state, label)];
-
+        if (this.Alphabet.Contains(label))
+        {
+            if (this.transPerStateAndLabel.Value.ContainsKey((state, label)))
+                return this.transPerStateAndLabel.Value[(state, label)];
+        }
+        else
+        {
+            var next = this.Transitions.Where(tr => 
+                tr.From == state && tr.Label == AnySymbolOutsideAlphabet.ToString());
+            
+            if (next != default)        
+                return next.Select(t => t.To);
+        }
+        
         return Array.Empty<int>();
     }
 
-    IDictionary<int, IEnumerable<int>> PrecomputeEpsilonClosure() => 
+    IDictionary<int, IEnumerable<int>> PrecomputeEpsilonClosure() =>
         this.Transitions
             .Where(t => string.IsNullOrEmpty(t.Label))
             .Select(t => (t.From, t.To))
@@ -83,7 +98,7 @@ public class Fsa
             .Union(this.States.Select(s => (From: s, To: s)))
             .GroupBy(p => p.Item1, p => p.Item2)
             .ToDictionary(g => g.Key, g => g.AsEnumerable());
-    
+
     public string ToGraphViz()
     {
         var sb = new StringBuilder("digraph { rankdir=LR; size=\"8,5\" ");
@@ -95,7 +110,7 @@ public class Fsa
             {
                 var label = string.IsNullOrEmpty(tr.Label) ? "ε" : tr.Label;
                 sb.Append($"{tr.From} -> {tr.To} [label=\"{label}\"]; ");
-            }            
+            }
         }
 
         sb.Append($"{string.Join(",", this.Final)} [shape = doublecircle]");

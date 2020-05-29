@@ -10,18 +10,18 @@ public class Dfsa
         IEnumerable<int> states,
         int initialState,
         IEnumerable<int> finalStates,
-        IReadOnlyDictionary<(int, char), int> transitions)
+        IDictionary<(int, char), int> transitions)
     {
         this.States = states.ToList();
         this.Initial = initialState;
         this.Final = finalStates.ToHashSet();
-        this.Transitions = transitions;
+        this.Transitions = new Dictionary<(int, char), int>(transitions);
     }
 
-    public IReadOnlyCollection<int> States { get; private set; }
+    public ICollection<int> States { get; private set; }
     public int Initial { get; private set; }
-    public IReadOnlyCollection<int> Final { get; private set; }
-    public IReadOnlyDictionary<(int From, char Label), int> Transitions { get; private set; }
+    public ICollection<int> Final { get; private set; }
+    public IDictionary<(int From, char Label), int> Transitions { get; private set; }
     public ISet<char> Alphabet => this.Transitions.Select(t => t.Key.Label).ToHashSet();
 
     public bool Recognize(string word)
