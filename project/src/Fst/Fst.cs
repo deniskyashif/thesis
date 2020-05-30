@@ -9,27 +9,46 @@ using System.Text;
 
 public class Fst
 {
+    public const char IdOutsideAlphabet = '\u0001';
+    public const char AnyOutsideAlphabet = '\u0004';
+
     public Fst(
         IEnumerable<int> states,
         IEnumerable<int> initial,
         IEnumerable<int> final,
-        IEnumerable<(int, string, string, int)> transitions)
+        IEnumerable<(int, string, string, int)> transitions,
+        IEnumerable<string> alphabet)
     {
         this.States = states.ToList();
         this.Initial = initial.ToHashSet();
         this.Final = final.ToHashSet();
         this.Transitions = transitions.ToList();
+        this.Alphabet = alphabet.ToHashSet();
     }
 
-    public IReadOnlyCollection<int> States { get; private set; }
+    public Fst(
+        IEnumerable<int> states,
+        IEnumerable<int> initial,
+        IEnumerable<int> final,
+        IEnumerable<(int, string In, string Out, int)> transitions)
+        : this(states, initial, final, transitions,
+            transitions
+                .Where(t =>
+                    !string.IsNullOrEmpty(t.In) &&
+                    t.In != IdOutsideAlphabet.ToString() &&
+                    t.In != AnyOutsideAlphabet.ToString())
+                // .Where(t => 
+                //     !string.IsNullOrEmpty(t.Out) &&
+                //     t.Out != IdOutsideAlphabet.ToString() && 
+                //     t.Out != AnyOutsideAlphabet.ToString())
+                .Select(t => t.In))
+    { }
 
-    public IReadOnlyCollection<int> Initial { get; private set; }
-
-    public IReadOnlyCollection<int> Final { get; private set; }
-
-    public IReadOnlyCollection<(int From, string In, string Out, int To)> Transitions { get; private set; }
-
-    public ISet<string> InputAlphabet => this.Transitions.Select(t => t.In).ToHashSet();
+    public ICollection<int> States { get; private set; }
+    public ICollection<int> Initial { get; private set; }
+    public ICollection<int> Final { get; private set; }
+    public ICollection<(int From, string In, string Out, int To)> Transitions { get; private set; }
+    public ISet<string> Alphabet { get; private set; }
 
     public ICollection<string> Process(string word) =>
         this.Process(word.ToCharArray().Select(x => x.ToString()).ToList());
@@ -70,11 +89,25 @@ public class Fst
         return successfulPaths;
     }
 
-    IEnumerable<(string Out, int To)> GetTransitions(int state, string input) =>
-        this.Transitions
-            .Where(tr => (state, input) == (tr.From, tr.In))
-            .Select(tr => (tr.Out, tr.To));
-    
+    IEnumerable<(string Out, int To)> GetTransitions(int state, string input)
+    {
+        if (this.Alphabet.Contains(input) || string.IsNullOrEmpty(input))
+        {
+            return this.Transitions
+                .Where(tr => (state, input) == (tr.From, tr.In))
+                .Select(tr => (tr.Out, tr.To));
+        }
+
+        return this.Transitions
+            .Where(tr => tr.From == state &&
+                (tr.In == AnyOutsideAlphabet.ToString() || tr.In == IdOutsideAlphabet.ToString()))
+            .Select(tr =>
+            {
+                var @out = tr.Out == IdOutsideAlphabet.ToString() ? input : tr.Out;
+                return (@out, tr.To);
+            });
+    }
+
     public string ToGraphViz()
     {
         var sb = new StringBuilder("digraph G { rankdir=LR; size=\"8,5\" ");
@@ -88,7 +121,7 @@ public class Fst
                 var @in = string.IsNullOrEmpty(tr.In) ? "ε" : tr.In;
                 var @out = string.IsNullOrEmpty(tr.Out) ? "ε" : tr.Out;
                 sb.Append($"{tr.From} -> {tr.To} [label=\"{@in}/{@out}\"]");
-            }            
+            }
         }
 
         sb.Append($"{string.Join(",", this.Final)} [shape = doublecircle]");

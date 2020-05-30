@@ -7,13 +7,13 @@ using System.Linq;
 
 public static class FstOperations
 {
-    static int NewState(IReadOnlyCollection<int> states) => states.Count;
+    static int NewState(ICollection<int> states) => states.Count;
 
-    static IEnumerable<int> KNewStates(int k, IReadOnlyCollection<int> states) =>
+    static IEnumerable<int> KNewStates(int k, ICollection<int> states) =>
         Enumerable.Range(states.Count, k);
 
     // Clones the finite automaton by renaming the states
-    static Fst Remap(this Fst fst, IReadOnlyCollection<int> states)
+    static Fst Remap(this Fst fst, ICollection<int> states)
     {
         var k = states.Count;
 
@@ -24,9 +24,48 @@ public static class FstOperations
             fst.Transitions.Select(t => (t.From + k, t.In, t.Out, t.To + k)));
     }
 
+    static void MergeAlphabets(Fst first, Fst second)
+    {
+        var id = Fst.IdOutsideAlphabet.ToString();
+        var any = Fst.AnyOutsideAlphabet.ToString();
+        var n1 = second.Alphabet.Where(s => !first.Alphabet.Contains(s)).ToHashSet();
+        var n2 = first.Alphabet.Where(s => !second.Alphabet.Contains(s)).ToHashSet();
+        var fsts = new[] { first, second };
+        var symbols = new[] { n1, n2 };
+
+        for (var i = 0; i < fsts.Length; i++)
+        {
+            foreach (var tr in fsts[i].Transitions.Where(t => t.In == id).ToList()) // @:@
+                foreach (var n in symbols[i])
+                    fsts[i].Transitions.Add((tr.From, n, n, tr.To));
+            
+            foreach (var tr in fsts[i].Transitions.Where(t => t.In != any && t.Out == any).ToList()) // a:?
+                foreach (var n in symbols[i])
+                    fsts[i].Transitions.Add((tr.From, tr.In, n, tr.To));
+            
+            foreach (var tr in fsts[i].Transitions.Where(t => t.In == any && t.Out != any).ToList()) // a:?
+                foreach (var n in symbols[i])
+                    fsts[i].Transitions.Add((tr.From, any, tr.Out, tr.To));
+            
+            foreach (var tr in fsts[i].Transitions.Where(t => t.In == any && t.Out == any).ToList()) // ?:?
+                foreach (var na in symbols[i])
+                {
+                    fsts[i].Transitions.Add((tr.From, any, na, tr.To));
+                    fsts[i].Transitions.Add((tr.From, na, any, tr.To));
+
+                    foreach (var nb in symbols[i])
+                        fsts[i].Transitions.Add((tr.From, na, nb, tr.To));
+                }
+        }
+
+        first.Alphabet.UnionWith(second.Alphabet);
+        second.Alphabet.UnionWith(first.Alphabet);
+    }
+
     public static Fst Union(this Fst first, Fst second)
     {
         second = second.Remap(first.States);
+        MergeAlphabets(first, second);
 
         return new Fst(
             first.States.Concat(second.States),
@@ -41,6 +80,7 @@ public static class FstOperations
     public static Fst Concat(this Fst first, Fst second)
     {
         second = second.Remap(first.States);
+        MergeAlphabets(first, second);
 
         var transitions = first.Transitions
             .Concat(second.Transitions)
@@ -69,7 +109,8 @@ public static class FstOperations
             fst.States.Concat(initial),
             initial,
             fst.Final.Concat(initial),
-            transitions);
+            transitions,
+            fst.Alphabet);
     }
 
     public static Fst Plus(this Fst fst)
@@ -83,7 +124,8 @@ public static class FstOperations
             fst.States.Concat(initial),
             initial,
             fst.Final,
-            transitions);
+            transitions,
+            fst.Alphabet);
     }
 
     public static Fst Optional(this Fst fst)
@@ -94,7 +136,8 @@ public static class FstOperations
             fst.States.Concat(newState),
             fst.Initial.Concat(newState),
             fst.Final.Concat(newState),
-            fst.Transitions);
+            fst.Transitions,
+            fst.Alphabet);
     }
 
     // Removes the epsilon transitions by preserving the transducer's language
@@ -144,7 +187,8 @@ public static class FstOperations
             states.Select(s => states.IndexOf(s)),
             initial.Select(s => states.IndexOf(s)),
             final.Select(s => states.IndexOf(s)),
-            transitions);
+            transitions,
+            fst.Alphabet);
     }
 
     // Infers the underlying finite-state automaton from the upper tape
@@ -153,7 +197,8 @@ public static class FstOperations
             fst.States,
             fst.Initial,
             fst.Final,
-            fst.Transitions.Select(t => (t.From, t.In, t.To)));
+            fst.Transitions.Select(t => (t.From, t.In, t.To)),
+            fst.Alphabet);
 
     // Infers the underlying finite-state automaton from the lower tape
     public static Fsa Range(this Fst fst) =>
@@ -180,10 +225,10 @@ public static class FstOperations
                 ? word[index].ToString()
                 : string.Empty;
 
+        var states = fst.States.ToList();
         var multiWordTransitions = fst.Transitions
             .Where(t => t.In.Length > 1 || t.Out.Length > 1)
             .ToList();
-        var states = fst.States.ToList();
         var transitions = fst.Transitions
             .Where(t => !(t.In.Length > 1 || t.Out.Length > 1))
             .ToList();
@@ -216,8 +261,9 @@ public static class FstOperations
 
     public static Fst Compose(this Fst first, Fst second)
     {
-        first = first.Expand().PseudoMinimal();
-        second = second.Expand().PseudoMinimal();
+        first = first.Expand();//.PseudoMinimal();
+        second = second.Expand();//.PseudoMinimal();
+        MergeAlphabets(first, second);
 
         var firstTransPerState = first.Transitions
             .Concat(first.States.Select(s => (From: s, In: string.Empty, Out: string.Empty, To: s)))
@@ -264,11 +310,9 @@ public static class FstOperations
         }
 
         var prodStateIndices = Enumerable.Range(0, productStates.Count);
-
         var initial = prodStateIndices.Where(s =>
             first.Initial.Contains(productStates[s].Item1) &&
             second.Initial.Contains(productStates[s].Item2));
-
         var final = prodStateIndices.Where(s =>
             first.Final.Contains(productStates[s].Item1) &&
             second.Final.Contains(productStates[s].Item2));

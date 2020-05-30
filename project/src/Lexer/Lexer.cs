@@ -94,9 +94,10 @@ public class Lexer
         }
 
         var unionTokenFst = tokenFsts.Aggregate((u, f) => u.Union(f));
-        var alphabet = unionTokenFst.InputAlphabet
+        var alphabet = unionTokenFst.Alphabet
             .Where(x => !string.IsNullOrEmpty(x))
             .Select(c => c.Single())
+            .Where(c => c != SoT && c != EoT && c != '\0')
             .ToHashSet();
 
         var lmlFst = unionTokenFst.ToLmlRewriter(alphabet);

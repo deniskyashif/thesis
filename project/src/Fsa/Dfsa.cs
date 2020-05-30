@@ -24,7 +24,7 @@ public class Dfsa
         int initialState,
         IEnumerable<int> finalStates,
         IDictionary<(int, char Label), int> transitions)
-        : this(states, initialState, finalStates, transitions, 
+        : this(states, initialState, finalStates, transitions,
             transitions
                 .Where(t => t.Key.Label != Fsa.AnySymbolOutsideAlphabet)
                 .Select(t => t.Key.Label)
@@ -44,10 +44,18 @@ public class Dfsa
 
         foreach (var symbol in word)
         {
-            if (!this.Transitions.ContainsKey((curr, symbol)))
-                return false;
-
-            curr = this.Transitions[(curr, symbol)];
+            if (this.Alphabet.Contains(symbol))
+            {
+                if (!this.Transitions.ContainsKey((curr, symbol)))
+                    return false;
+                curr = this.Transitions[(curr, symbol)];
+            }
+            else
+            {
+                if (!this.Transitions.ContainsKey((curr, Fsa.AnySymbolOutsideAlphabet)))
+                    return false;
+                curr = this.Transitions[(curr, Fsa.AnySymbolOutsideAlphabet)];
+            }
         }
 
         return this.Final.Contains(curr);
@@ -68,7 +76,6 @@ public class Dfsa
                     sb.Append($"{tr.Key.From} -> {tr.Value} [label=\"{tr.Key.Label}\"]; ");
             }
             else sb.Append($"{st};");
-            
         }
 
         if (this.Final.Any())

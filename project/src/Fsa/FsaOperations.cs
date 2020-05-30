@@ -28,7 +28,6 @@ public static class FsaOperations
     static void MergeAlphabets(Fsa first, Fsa second)
     {
         var any = Fsa.AnySymbolOutsideAlphabet.ToString();
-
         var n1 = second.Alphabet.Where(s => !first.Alphabet.Contains(s)).ToHashSet();
         var n2 = first.Alphabet.Where(s => !second.Alphabet.Contains(s)).ToHashSet();
 
@@ -47,7 +46,6 @@ public static class FsaOperations
     static void MergeAlphabets(Dfsa first, Dfsa second)
     {
         var any = Fsa.AnySymbolOutsideAlphabet;
-
         var n1 = second.Alphabet.Where(s => !first.Alphabet.Contains(s)).ToHashSet();
         var n2 = first.Alphabet.Where(s => !second.Alphabet.Contains(s)).ToHashSet();
 
@@ -204,7 +202,8 @@ public static class FsaOperations
             states.Select(s => states.IndexOf(s)),
             newInitial.Select(s => states.IndexOf(s)),
             newFinal.Select(s => states.IndexOf(s)),
-            transitions);
+            transitions,
+            automaton.Alphabet);
     }
 
     // Removes the states that are not on a successful path in the deterministic automaton.
@@ -243,7 +242,8 @@ public static class FsaOperations
             newStates.Select(s => newStates.IndexOf(s)),
             newStates.IndexOf(automaton.Initial),
             automaton.Final.Intersect(newStates).Select(s => newStates.IndexOf(s)),
-            newTransitions);
+            newTransitions,
+            automaton.Alphabet);
     }
 
     // Convert to a classical Fsa where each transition label has length <= 1
@@ -317,6 +317,7 @@ public static class FsaOperations
 
     public static Fst Product(this Fsa first, Fsa second)
     {
+        MergeAlphabets(first, second);
         var firstTransWithEpsilon = first.Transitions.Union(
             first.States.Select(s => (From: s, Label: string.Empty, To: s)));
         var secondTransWithEpsilon = second.Transitions.Union(
@@ -369,29 +370,6 @@ public static class FsaOperations
         return new Fst(states, initial, final, transitions).EpsilonFree().Trim();
     }
 
-    public static void Product2(Dfsa first, Dfsa second)
-    {
-        var u_0 = (first.Initial, second.Initial);
-        var agenda = new Stack<(int, int)>();
-        agenda.Push(u_0);
-        var q3 = new List<(int, int)>() { u_0 };
-        var index = new HashSet<(int, int)>() { u_0 };
-        var transitions = new List<(int, char, int)>();
-
-        while (agenda.Any())
-        {
-            var (p, q) = agenda.Pop();
-            
-            foreach (var pair1 in first.Transitions.Where(t => t.Key.From == p))
-            {
-                foreach (var pair2 in second.Transitions.Where(t => t.Key.From == q))
-                {
-                    // transitions.Add()
-                }
-            }
-        }
-    }
-
     public static (IList<(int, int)> States, IDictionary<(int From, char Label), int> Transitions)
         Product(
             (int Initial, IDictionary<(int From, char Label), int> Transitions) first,
@@ -427,12 +405,14 @@ public static class FsaOperations
 
     public static Dfsa Intersect(this Dfsa first, Dfsa second)
     {
+        first = first.Minimal();
+        second = second.Minimal();
+
         MergeAlphabets(first, second);
 
         var product = Product(
             (first.Initial, first.Transitions),
             (second.Initial, second.Transitions));
-
         var states = Enumerable.Range(0, product.States.Count);
         var final = states
             .Where(s =>
@@ -510,7 +490,8 @@ public static class FsaOperations
             new[] { automaton.Initial },
             automaton.Final,
             automaton.Transitions
-                .Select(p => (p.Key.From, p.Key.Label.ToString(), To: p.Value)));
+                .Select(p => (p.Key.From, p.Key.Label.ToString(), To: p.Value)),
+            automaton.Alphabet.Select(c => c.ToString()).ToHashSet());
 
     public static Fst Identity(this Fsa fst) =>
         new Fst(
@@ -580,6 +561,8 @@ public static class FsaOperations
             states.Select(s => eqRel[s]),
             eqRel[automaton.Initial],
             automaton.Final.Select(s => eqRel[s]),
-            minTransitions).Trim();
+            minTransitions,
+            automaton.Alphabet)
+            .Trim();
     }
 }

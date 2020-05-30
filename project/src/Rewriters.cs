@@ -40,10 +40,13 @@ public static class Rewriters
 
         var alphabetStarFsa = FsaBuilder.All(alphabet).Minimal();
         var allSymbols = alphabet.Concat(markers).ToHashSet();
-        var allSymbolsStarFsa = FsaBuilder.All(allSymbols).Minimal();
+        var allSymbolsStarFsa = FsaBuilder
+            .FromSymbol(Fsa.AnySymbolOutsideAlphabet)
+            .Star()
+            .Minimal();
 
         // Automaton recognizing all words that are not in the language of the input automaton (complement)
-        Fsa NotInLang(Fsa lang) => allSymbolsStarFsa.Difference(lang);
+        Fsa NotInLang(Fsa lang) => lang.Complement();
 
         // Automaton recognizing all words that contain an occurrence of a word from the input automaton
         Fsa ContainsLang(Fsa lang) => allSymbolsStarFsa.Concat(lang, allSymbolsStarFsa);

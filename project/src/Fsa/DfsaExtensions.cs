@@ -14,11 +14,21 @@ public static class DfsaExtensions
         {
             var symbol = input.Peek();
 
-            if (!automaton.Transitions.ContainsKey((current, symbol)))
-                return path;
+            if (automaton.Alphabet.Contains(symbol))
+            {
+                if (!automaton.Transitions.ContainsKey((current, symbol)))
+                    return path;
 
-            current = automaton.Transitions[(current, symbol)];
-            path.Add(current);
+                current = automaton.Transitions[(current, symbol)];
+                path.Add(current);
+            }
+            else
+            {
+                if (!automaton.Transitions.ContainsKey((current, Fsa.AnySymbolOutsideAlphabet)))
+                    return path;
+
+                current = automaton.Transitions[(current, Fsa.AnySymbolOutsideAlphabet)];
+            }
         } 
 
         return path;

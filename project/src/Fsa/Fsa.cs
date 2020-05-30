@@ -8,7 +8,7 @@ using System.Text;
 
 public class Fsa
 {
-    public const char AnySymbolOutsideAlphabet = '\0';
+    public const char AnySymbolOutsideAlphabet = '\u0001';
     private readonly Lazy<IDictionary<int, IEnumerable<int>>> epsilonClosureOf;
     private readonly Lazy<IDictionary<(int, string), IEnumerable<int>>> transPerStateAndLabel;
 
@@ -19,7 +19,9 @@ public class Fsa
         IEnumerable<(int, string Label, int)> transitions)
         : this(states, initial, final, transitions, 
             transitions
-                .Where(t => !string.IsNullOrEmpty(t.Label) && t.Label != AnySymbolOutsideAlphabet.ToString())
+                .Where(t => 
+                    !string.IsNullOrEmpty(t.Label) && 
+                    t.Label != AnySymbolOutsideAlphabet.ToString())
                 .Select(t => t.Label)
                 .ToHashSet())
     { }
