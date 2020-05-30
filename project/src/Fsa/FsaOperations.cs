@@ -29,10 +29,8 @@ public static class FsaOperations
     {
         var any = Fsa.AnySymbolOutsideAlphabet.ToString();
 
-        var firstAlphabet = first.Alphabet;
-        var secondAlphabet = second.Alphabet;
-        var n1 = secondAlphabet.Where(s => !firstAlphabet.Contains(s)).ToHashSet();
-        var n2 = firstAlphabet.Where(s => !secondAlphabet.Contains(s)).ToHashSet();
+        var n1 = second.Alphabet.Where(s => !first.Alphabet.Contains(s)).ToHashSet();
+        var n2 = first.Alphabet.Where(s => !second.Alphabet.Contains(s)).ToHashSet();
 
         foreach (var tr in first.Transitions.Where(t => t.Label == any).ToList())
             foreach (var n in n1)
@@ -41,6 +39,28 @@ public static class FsaOperations
         foreach (var tr in second.Transitions.Where(t => t.Label == any).ToList())
             foreach (var n in n2)
                 second.Transitions.Add((tr.From, n, tr.To));
+        
+        first.Alphabet.UnionWith(second.Alphabet);
+        second.Alphabet.UnionWith(first.Alphabet);
+    }
+
+    static void MergeAlphabets(Dfsa first, Dfsa second)
+    {
+        var any = Fsa.AnySymbolOutsideAlphabet;
+
+        var n1 = second.Alphabet.Where(s => !first.Alphabet.Contains(s)).ToHashSet();
+        var n2 = first.Alphabet.Where(s => !second.Alphabet.Contains(s)).ToHashSet();
+
+        foreach (var tr in first.Transitions.Where(t => t.Key.Label == any).ToList())
+            foreach (var n in n1)
+                first.Transitions.Add((tr.Key.From, n), tr.Value);
+
+        foreach (var tr in second.Transitions.Where(t => t.Key.Label == any).ToList())
+            foreach (var n in n2)
+                second.Transitions.Add((tr.Key.From, n), tr.Value);
+        
+        first.Alphabet.UnionWith(second.Alphabet);
+        second.Alphabet.UnionWith(first.Alphabet);
     }
 
     public static Fsa Concat(this Fsa first, Fsa second)
@@ -349,6 +369,29 @@ public static class FsaOperations
         return new Fst(states, initial, final, transitions).EpsilonFree().Trim();
     }
 
+    public static void Product2(Dfsa first, Dfsa second)
+    {
+        var u_0 = (first.Initial, second.Initial);
+        var agenda = new Stack<(int, int)>();
+        agenda.Push(u_0);
+        var q3 = new List<(int, int)>() { u_0 };
+        var index = new HashSet<(int, int)>() { u_0 };
+        var transitions = new List<(int, char, int)>();
+
+        while (agenda.Any())
+        {
+            var (p, q) = agenda.Pop();
+            
+            foreach (var pair1 in first.Transitions.Where(t => t.Key.From == p))
+            {
+                foreach (var pair2 in second.Transitions.Where(t => t.Key.From == q))
+                {
+                    // transitions.Add()
+                }
+            }
+        }
+    }
+
     public static (IList<(int, int)> States, IDictionary<(int From, char Label), int> Transitions)
         Product(
             (int Initial, IDictionary<(int From, char Label), int> Transitions) first,
@@ -364,14 +407,13 @@ public static class FsaOperations
         for (var n = 0; n < productStates.Count; n++)
         {
             var (p1, p2) = productStates[n];
-
             var departingTransitions = stateTransitionMapOfFirst.ContainsKey(p1)
                 ? stateTransitionMapOfFirst[p1]
                     .Where(pair => second.Transitions.ContainsKey((p2, pair.Label)))
                     .Select(pair => (pair.Label, To: (pair.Value, second.Transitions[(p2, pair.Label)])))
                 : Array.Empty<(char, (int, int))>();
 
-            foreach (var prodState in departingTransitions.Select(pair => pair.Item2))
+            foreach (var (_, prodState) in departingTransitions)
                 if (!productStates.Contains(prodState))
                     productStates.Add(prodState);
 
@@ -385,8 +427,7 @@ public static class FsaOperations
 
     public static Dfsa Intersect(this Dfsa first, Dfsa second)
     {
-        first = first.Minimal();
-        second = second.Minimal();
+        MergeAlphabets(first, second);
 
         var product = Product(
             (first.Initial, first.Transitions),
@@ -408,27 +449,12 @@ public static class FsaOperations
 
     public static Dfsa Difference(this Dfsa first, Dfsa second)
     {
-        first = first.Minimal();
-        second = second.Minimal();
-
-        // The second automaton's transition function needs to be total
-        var combinedAlphabet = first.Transitions.Select(t => t.Key.Label)
-            .Concat(second.Transitions.Select(t => t.Key.Label))
-            .Distinct();
-
-        var secondTransitionsAsTotalFn = new Dictionary<(int, char), int>();
-
-        // Make the function total by adding the missing transitions to the invalid state of "-1"
-        foreach (var state in second.States.Concat(new[] { -1 }))
-            foreach (var symbol in combinedAlphabet)
-                secondTransitionsAsTotalFn[(state, symbol)] =
-                    second.Transitions.ContainsKey((state, symbol))
-                        ? second.Transitions[(state, symbol)]
-                        : -1; // leads to an invalid state
+        MergeAlphabets(first, second);
+        second = second.Totalize();
 
         var product = Product(
             (first.Initial, first.Transitions),
-            (second.Initial, secondTransitionsAsTotalFn));
+            (second.Initial, second.Transitions));
 
         var states = Enumerable.Range(0, product.States.Count);
         var final = states
@@ -436,7 +462,7 @@ public static class FsaOperations
                 first.Final.Contains(product.States[s].Item1) &&
                 !second.Final.Contains(product.States[s].Item2));
 
-        return new Dfsa(states, 0, final, product.Transitions).Trim();
+        return new Dfsa(states, 0, final, product.Transitions);
     }
 
     public static Fsa Difference(this Fsa first, Fsa second)

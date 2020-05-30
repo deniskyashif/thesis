@@ -33,7 +33,6 @@
 */
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 public class RegExp
 {
@@ -157,7 +156,7 @@ public class RegExp
             if (this.Peek() == '^')
             {
                 this.Eat('^');
-                @class = this.CharClass().Complement();
+                @class = alphabetFsa.Difference(this.CharClass());
             }
             else @class = this.CharClass();
 

@@ -8,21 +8,35 @@ public class Dfsa
 {
     public Dfsa(
         IEnumerable<int> states,
-        int initialState,
-        IEnumerable<int> finalStates,
-        IDictionary<(int, char), int> transitions)
+        int initial,
+        IEnumerable<int> final,
+        IDictionary<(int, char), int> transitions,
+        ISet<char> alphabet)
     {
         this.States = states.ToList();
-        this.Initial = initialState;
-        this.Final = finalStates.ToHashSet();
+        this.Initial = initial;
+        this.Final = final.ToHashSet();
         this.Transitions = new Dictionary<(int, char), int>(transitions);
+        this.Alphabet = alphabet;
+    }
+    public Dfsa(
+        IEnumerable<int> states,
+        int initialState,
+        IEnumerable<int> finalStates,
+        IDictionary<(int, char Label), int> transitions)
+        : this(states, initialState, finalStates, transitions, 
+            transitions
+                .Where(t => t.Key.Label != Fsa.AnySymbolOutsideAlphabet)
+                .Select(t => t.Key.Label)
+                .ToHashSet())
+    {
     }
 
     public ICollection<int> States { get; private set; }
     public int Initial { get; private set; }
     public ICollection<int> Final { get; private set; }
     public IDictionary<(int From, char Label), int> Transitions { get; private set; }
-    public ISet<char> Alphabet => this.Transitions.Select(t => t.Key.Label).ToHashSet();
+    public ISet<char> Alphabet { get; set; }
 
     public bool Recognize(string word)
     {

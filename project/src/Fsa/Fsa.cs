@@ -16,16 +16,29 @@ public class Fsa
         IEnumerable<int> states,
         IEnumerable<int> initial,
         IEnumerable<int> final,
-        IEnumerable<(int, string, int)> transitions)
+        IEnumerable<(int, string Label, int)> transitions)
+        : this(states, initial, final, transitions, 
+            transitions
+                .Where(t => !string.IsNullOrEmpty(t.Label) && t.Label != AnySymbolOutsideAlphabet.ToString())
+                .Select(t => t.Label)
+                .ToHashSet())
+    { }
+
+    public Fsa(
+        IEnumerable<int> states,
+        IEnumerable<int> initial,
+        IEnumerable<int> final,
+        IEnumerable<(int, string, int)> transitions,
+        ISet<string> alphabet)
     {
         this.States = states.ToList();
         this.Initial = initial.ToHashSet();
         this.Final = final.ToHashSet();
         this.Transitions = transitions.ToHashSet();
+        this.Alphabet = alphabet;
 
         this.epsilonClosureOf = new Lazy<IDictionary<int, IEnumerable<int>>>(
             () => this.PrecomputeEpsilonClosure());
-
         this.transPerStateAndLabel = new Lazy<IDictionary<(int, string), IEnumerable<int>>>(
             () => this.Transitions
                 .GroupBy(t => (t.From, t.Label), t => t.To)
@@ -36,10 +49,7 @@ public class Fsa
     public ICollection<int> Initial { get; private set; }
     public ICollection<int> Final { get; private set; }
     public ICollection<(int From, string Label, int To)> Transitions { get; private set; }
-    public ISet<string> Alphabet => this.Transitions
-        .Where(t => !string.IsNullOrEmpty(t.Label) && t.Label != AnySymbolOutsideAlphabet.ToString())
-        .Select(t => t.Label)
-        .ToHashSet();
+    public ISet<string> Alphabet { get; set; }
 
     public bool Recognize(string word)
     {
@@ -79,13 +89,13 @@ public class Fsa
         }
         else
         {
-            var next = this.Transitions.Where(tr => 
+            var next = this.Transitions.Where(tr =>
                 tr.From == state && tr.Label == AnySymbolOutsideAlphabet.ToString());
-            
-            if (next != default)        
+
+            if (next != default)
                 return next.Select(t => t.To);
         }
-        
+
         return Array.Empty<int>();
     }
 
@@ -108,7 +118,15 @@ public class Fsa
         {
             foreach (var tr in this.Transitions.Where(t => t.From == st))
             {
-                var label = string.IsNullOrEmpty(tr.Label) ? "ε" : tr.Label;
+                string label;
+
+                if (string.IsNullOrEmpty(tr.Label))
+                    label = "ε";
+                else if (tr.Label == Fsa.AnySymbolOutsideAlphabet.ToString())
+                    label = "@";
+                else
+                    label = tr.Label;
+
                 sb.Append($"{tr.From} -> {tr.To} [label=\"{label}\"]; ");
             }
         }

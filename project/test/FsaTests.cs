@@ -507,7 +507,7 @@ public class FsaTests
                 FsaOperations.Star(
                     FsaBuilder.FromWord("a")),
                 FsaBuilder.FromWord("b"));
-        // ab|b
+        // b
         var second = FsaBuilder.FromWord("b");
 
         Assert.True(new[] { "ab", "b", "aaaaab", "aab" }.All(first.Recognize));
@@ -516,7 +516,7 @@ public class FsaTests
 
         var diff = first.Difference(second);
 
-        Assert.True(new[] { "ab", "aaaaab", "aab" }.All(diff.Recognize));
+        Assert.True(new[] { "aaaaab", "aab", "ab" }.All(diff.Recognize));
         Assert.False(diff.Recognize("b"));
     }
 
