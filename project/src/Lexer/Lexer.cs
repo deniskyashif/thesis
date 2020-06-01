@@ -93,11 +93,10 @@ public class Lexer
             tokenFsts.Add(tokenFst);
         }
 
-        var unionTokenFst = tokenFsts.Aggregate((u, f) => u.Union(f));
-        var alphabet = unionTokenFst.Alphabet
-            .Where(x => !string.IsNullOrEmpty(x))
-            .Select(c => c.Single())
-            .Where(c => c != SoT && c != EoT && c != '\0')
+        var unionTokenFst = tokenFsts.Aggregate((u, f) => u.Union(f)).PseudoMinimal();
+        var alphabet = unionTokenFst.Transitions
+            .Where(t => !string.IsNullOrEmpty(t.In))
+            .Select(c => c.In.Single())
             .ToHashSet();
 
         var lmlFst = unionTokenFst.ToLmlRewriter(alphabet);

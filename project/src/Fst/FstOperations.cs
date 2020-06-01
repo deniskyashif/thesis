@@ -261,8 +261,8 @@ public static class FstOperations
 
     public static Fst Compose(this Fst first, Fst second)
     {
-        first = first.Expand();//.PseudoMinimal();
-        second = second.Expand();//.PseudoMinimal();
+        first = first.Expand().PseudoMinimal();
+        second = second.Expand().PseudoMinimal();
         MergeAlphabets(first, second);
 
         var firstTransPerState = first.Transitions
