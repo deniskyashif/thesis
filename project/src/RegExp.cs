@@ -54,21 +54,16 @@ public class RegExp
         this.Automaton = this.Expr();
     }
 
-    public Fsa Automaton { get; private set; }
-
+    public Fsa Automaton { get; }
     public bool Match(string word) => this.Automaton.Recognize(word);
-
     char Peek() => this.pattern[this.pos];
-
     bool HasMoreChars() => this.pos < this.pattern.Length;
-
     bool IsMetaChar(char ch) => metaChars.Contains(ch);
 
     void Eat(char ch)
     {
         if (this.Peek() != ch)
             throw new ArgumentException($"Expected '{ch}' but got {this.Peek()} instead.");
-
         this.pos++;
     }
 
