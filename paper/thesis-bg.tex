@@ -594,7 +594,7 @@
 \pagebreak
 \subsection{Лексически анализ чрез регулярни релации}
 \label{sec:LexARegRel}
-Регулярните релации намират своето приложение в множество домейни, като лексическият анализ е един от тях. Идеята е да сведем процеса до заместване на думи в текст, като по лексическата граматиката построим релация на заместване под стратегията "най-ляво-най-дълго срещане". Тази релация реализираме програмно чрез краен преобразувател, който поставя маркери преди и след всяка разпозната лексема. В последствие по него строим еквивалентна бимашина следвайки \cite{GerdjikovEtAl:2017}.
+Регулярните релации намират своето приложение в множество домейни, като лексическият анализ е един от тях. Идеята е да сведем процеса до заместване на думи в текст, като по лексическата граматиката построим релация на заместване под стратегията "най-ляво-най-дълго срещане". Тази релация реализираме програмно чрез краен преобразувател, който поставя маркери преди и след всяка разпозната лексема. В последствие по него строим еквивалентна бимашина следвайки \cite{GerdjikovEtAl:2017}, \cite{Mihov:2018-2}.
 
 Ще представим формално конструкция на релация на заместване под стратегията най-ляво-най-дълго срещане, следвайки алгоритъма на Карттунен (1996) \cite{Karttunen:96}. Целта ни е по зададена регулярна релация \(T\), да получим \( R^{LML}(T) \). В последствие ще използваме тази конструкция, за да построим релация за лексически анализ.
 
@@ -747,19 +747,68 @@
 
 \subsection{Конструкция на бимашина}
 
-Крайните преобразуватели са еквивалентни по изразителност на регулярните релации. С тях също така можем да представим и регулярните фунцкии при условие, че преобразувателят е недетерминиран. Детерминираните преобразуватели от своя страна не са достатъчно изразителни, така че да покрият изцяло класа на регулярните функции. За разлика от тях, бимашините могат да моделират регулярните стрингови функции \cite{Schutzenberger:61} като изцяло детерминистичен процес, с което задачите за заместване на думи в текст се решават за линейно време. В тази част ще представим формална конструкция на бимашина по зададен краен преобразувател, следвайки алгоритъма на \cite{GerdjikovEtAl:2017}. 
+Крайните преобразуватели са еквивалентни по изразителност на регулярните релации. С тях също така можем да представим и регулярните фунцкии при условие, че преобразувателят е недетерминиран. Детерминираните преобразуватели от своя страна не са достатъчно изразителни, така че да покрият изцяло класа на регулярните функции. За разлика от тях, бимашините могат да моделират регулярните стрингови функции \cite{Schutzenberger:61} като изцяло детерминистичен процес, с което задачите за заместване на думи в текст се решават за линейно време. В тази част ще представим формална конструкция на бимашина по зададен краен преобразувател, по \cite{GerdjikovEtAl:2017} и \cite{Mihov:2018-2}. 
 
-Нека е даден класически, тримован, краен преобразувател \( \mathcal{T} = \langle \Sigma \times \Sigma^*, Q, I, F, \Delta \rangle \), където \( \langle \epsilon, \epsilon \rangle \in L(\mathcal{T}) \). Целта ни е да построим бимашина \( \mathcal{B} = \langle \mathcal{A}_L, \mathcal{A}_R, \psi \rangle \), така че \( L(\mathcal{T}) = O_\mathcal{B} \).
+Нека е даден функционален, тримован, краен преобразувател \( \mathcal{T} = \langle \Sigma \times \Sigma^*, Q, I, F, \Delta \rangle \), където \( \langle \epsilon, \epsilon \rangle \in L(\mathcal{T}) \). Целта ни е да построим бимашина \( \mathcal{B} = \langle \mathcal{A}_L, \mathcal{A}_R, \psi \rangle \), така че \( L(\mathcal{T}) = O_\mathcal{B} \).
 
-Нека \( \mathcal{A_T} = \langle \Sigma, Q, I, F, \Delta_1 \rangle \) е подлежащият автомат на \( \mathcal{T} \) и \( \mathcal{A_T}^{rev} = \langle \Sigma, Q, F, I, \Delta_1^{rev} \rangle \) е огледален на \( \mathcal{A_T} \). Десният автомат на бимашината, който симулираме по време на сканирането на входния текст от дясно на ляво получаваме като детерминираме \( \mathcal{A_T}^{rev} \) и маркираме всички състояния като финални.
+Нека \( \mathcal{A_T} = \langle \Sigma, Q, I, F, \Delta_1 \rangle \) е подлежащият автомат на \( \mathcal{T} \) и \( \mathcal{A_T}^{rev} = \langle \Sigma, Q, F, I, \Delta_1^{rev} \rangle \) е огледален на \( \mathcal{A_T} \). Десният автомат на бимашината, който симулираме по време на сканирането на входния текст от дясно на ляво получаваме като детерминираме \( \mathcal{A_T}^{rev} \) и определим всички състояния като финални.
 
-\[ \mathcal{A_R} = \langle \Sigma, Q_R, s_R, Q_R, \delta_R \rangle \]
+\[ \mathcal{A_R} = \mathcal{A_T}^{rev}_D = \langle \Sigma, Q_R, s_R, Q_R, \delta_R \rangle \]
 
-където \( Q_R \subseteq 2^Q, s_R = F \) и функцията на преходите дефинираме както следва:
+където \( Q_R \subseteq 2^Q, s_R = F \) и функцията на прехода дефинираме както следва:
 
 \[ \delta_R(R,a) = \{ q \in Q \mid \exists q' \in R, w \in \Sigma^* : \langle q, \langle a, w \rangle, q' \rangle \in \Delta \} \]
 
-За построяването на левият автомат ще добавим допълнителна информация за представянето на състоянията, така че по нея да можем да възстановим успешните пътища в \(\mathcal{T}\).
+За да възстановим успешните пътища в \(\mathcal{T}\), ще обогатим състоянията на левият автомат с допълнителна информация. За целта дефинираме \emph{функцията на избора} \( \phi: Q_R \to Q \), която по дадено състояние \(P \in Q_R \) на десния автомат (което представлява множество от състояния в \(\mathcal{T}\)) избира едно от тези състояния \( \phi(P) = p \text{, където } p \in P \). Дефинираме левият автомат на бимашината както следва:
+
+\[ \mathcal{A_L} = \langle \Sigma, Q_L, s_L, Q_L, \delta_L \rangle \]
+
+където множеството на състоянията \( Q_L \subseteq 2^Q \times 2^{Q_R \times Q} \) са двойки, съставени от множества от състояния на \(\mathcal{T}\) и функция за избор на състояние \(\phi\). Както при \(\mathcal{A_R}\), така и в \(\mathcal{A}_L\) всички състояния са финални. Дефинираме състоянията и функцията на прехода както следва:
+
+\begin{itemize}
+	\item \( s_L := \langle I, \phi_0 \rangle \), \( \phi_0(R) :=  
+	\begin{cases} 
+		\text{произволен елемент от } R \cap I & \text{ако } R \cap I \neq \emptyset \\
+		\text{недефинирано} & \text{в прот. случай} \\
+	\end{cases} \)
+	\item За всяко \( \langle L, \phi \rangle \in Q_L \text{ и } a \in \Sigma \text{, } \delta_L(\langle L, \phi \rangle, a) := \langle L', \phi' \rangle \), където:
+	\begin{itemize}
+		\item \( L' := \{ q' \mid \exists q \in L, w \in \Sigma^* : \langle q, \langle a, m \rangle, q' \rangle \in \Delta \} \)
+		\item \( \phi'(R') := 
+		\begin{cases}
+			\text{произволен елемент от } \\
+			\{ q' \in R' \mid \exists w \in \Sigma^* : \langle q, \langle a, w \rangle, q' \rangle \in \Delta \} & \text{ако } q = \phi(\delta_R(R', a)) \text{ e деф.} \\
+			\text{недефинирано} & \text{в прот. случай}
+		\end{cases} \)
+	\end{itemize}
+\end{itemize}
+
+От дефиницията на функцията на прехода \( \delta_R \) следва, че ако \( q = \phi(\delta_R(R', a)) \) е дефинирано, то множеството \( L' \neq \emptyset \) и \( \phi'(R') \) може да се дефинира по посочения начин.
+
+Дефинираме \emph{функцията на изхода} \(\psi\) на бимашината, която по зададена двойка състояния \(\langle L, \phi \rangle\) и \(R\) съответно на левия и десния автомат и буква \( a \in \Sigma \), нека \( \langle L', \phi' \rangle := \delta_L(\langle L, \phi \rangle, a) \) и \( R := \delta_R(R', a) \). Тогава
+
+\[
+	\psi(\langle L, \phi \rangle, a, R') := 
+	\begin{cases}
+		\text{произволен елемент от} \\
+		\{ m \mid \langle \phi(R), \langle a, w \rangle, \phi'(R') \rangle \in \Delta \} & \text{ако } \phi(R) \text{ е деф.} \\
+		\text{недефинирано} & \text{в прот. случай}
+	\end{cases}
+\]
+
+Ако \( q = \phi(R) \) е дефинирано, тогава \( \{ q' \in R' \mid \exists w \in \Sigma^* : \langle q, \langle a, m \rangle, q' \rangle \in \Delta \} \neq \emptyset \). От дефиницията на \( \phi'(R') \) следва, че \( \{ w \mid \langle \phi(R), \langle a, m \rangle, \phi'(R') \rangle \in \Delta \} \neq \emptyset \) и \( \psi(\langle L, \phi \rangle, a, R') \) може да се дефинира по посочения начин.
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[
+		width=15cm,
+		keepaspectratio
+	  ]{img/fst-bm.png}
+	\caption{Симулация на преобразувател в контекста на еквивалентната му бимашина.}
+	\label{fig:FstBm}
+\end{figure}
+
+Нека разгледаме фигура \ref{fig:FstBm}
 
 \pagebreak
 \section{Реализация}
@@ -1180,35 +1229,41 @@ class Lexer
 
 \pagebreak
 \begin{thebibliography}{9}
+	
+	\bibitem{Schutzenberger:61} 
+	Schützenberger, M.-P. (1961)
+	\textit{A remark on finite transducers.} 
+	Information and Control, 4:185–196.
+
 	\bibitem{Kaplan&Kay:94} 
 	Kaplan, Ronald and Kay, Martin. (1994)
 	\textit{Regular models of phonological rule systems.}
 	Computational Linguistics 20(3):331-378
-
-	\bibitem{Thompson:68} 
-	Thompson, Ken (1968) 
-	\textit{Regular Expression Search Algorithm.} 
-	Association for Computing Machinery
-
-	\bibitem{Mihov:2018}
-	S., Mihov, S., and Schulz, K. U. (2018)
-	\textit{Finite-State Techniques Automata, Transducers and Bimachines}
-	Chapter 11 "Constructing finite-state devices for text rewriting"
 
 	\bibitem{Karttunen:96}
 	Karttunen, Lauri. (1996)
 	\textit{Directed Replacement.}
 	In Joshi, A. and Palmer, M., editors, Proceedings of the 34th Annual Meeting of the As- sociation for Computational Linguistics, pages 108–115, Santa Cruz.
 
+	\bibitem{Mihov:2018}
+	S., Mihov, S., and Schulz, K. U. (2018)
+	\textit{Finite-State Techniques Automata, Transducers and Bimachines}
+	Chapter 11 "Constructing finite-state devices for text rewriting"
+
 	\bibitem{GerdjikovEtAl:2017}
 	Gerdjikov, S., Mihov, S., and Schulz, K. U. (2017)
 	\textit{A simple method for building bimachines from functional finite-state transducers.} 
 	Carayol, A. and Nicaud, C., editors, Implementation and Application of Automata, pages 113–125. Springer International Publishing.
 
-	\bibitem{Schutzenberger:61} 
-	Schützenberger, M.-P. (1961)
-	\textit{A remark on finite transducers.} 
-	Information and Control, 4:185–196.
+	\bibitem{Mihov:2018-2}
+	S., Mihov, S., and Schulz, K. U. (2018)
+	\textit{Finite-State Techniques Automata, Transducers and Bimachines}
+	Chapter 6.2 "Equivalence of regular string funcitons and bimachines."
+
+	\bibitem{Thompson:68} 
+	Thompson, Ken (1968) 
+	\textit{Regular Expression Search Algorithm.} 
+	Association for Computing Machinery
 
 \end{thebibliography}	
 
