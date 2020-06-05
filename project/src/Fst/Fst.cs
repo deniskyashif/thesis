@@ -99,11 +99,10 @@ public class Fst
         }
 
         return this.Transitions
-            .Where(tr => tr.From == state &&
-                (tr.In == AnyOutsideAlphabet.ToString() || tr.In == IdOutsideAlphabet.ToString()))
+            .Where(tr => tr.From == state && tr.In == Fsa.AnySymbolOutsideAlphabet.ToString())
             .Select(tr =>
             {
-                var @out = tr.Out == IdOutsideAlphabet.ToString() ? input : tr.Out;
+                var @out = tr.Out == Fsa.AnySymbolOutsideAlphabet.ToString() ? input : tr.Out;
                 return (@out, tr.To);
             });
     }

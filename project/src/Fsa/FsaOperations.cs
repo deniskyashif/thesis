@@ -22,7 +22,8 @@ public static class FsaOperations
             automaton.States.Select(s => s + k),
             automaton.Initial.Select(s => s + k),
             automaton.Final.Select(s => s + k),
-            automaton.Transitions.Select(t => (t.From + k, t.Label, t.To + k)));
+            automaton.Transitions.Select(t => (t.From + k, t.Label, t.To + k)),
+            automaton.Alphabet);
     }
 
     static void MergeAlphabets(Fsa first, Fsa second)
@@ -493,20 +494,22 @@ public static class FsaOperations
                 .Select(p => (p.Key.From, p.Key.Label.ToString(), To: p.Value)),
             automaton.Alphabet.Select(c => c.ToString()).ToHashSet());
 
-    public static Fst Identity(this Fsa fst) =>
+    public static Fst Identity(this Fsa fsa) =>
         new Fst(
-            fst.States,
-            fst.Initial,
-            fst.Final,
-            fst.Transitions.Select(t => (t.From, t.Label, t.Label, t.To)));
+            fsa.States,
+            fsa.Initial,
+            fsa.Final,
+            fsa.Transitions.Select(t => (t.From, t.Label, t.Label, t.To)),
+            fsa.Alphabet);
 
-    public static Fst Identity(this Dfsa fst) =>
+    public static Fst Identity(this Dfsa fsa) =>
         new Fst(
-            fst.States,
-            new [] { fst.Initial },
-            fst.Final,
-            fst.Transitions.Select(kvp => 
-                (kvp.Key.From, kvp.Key.Label.ToString(), kvp.Key.Label.ToString(), kvp.Value)));
+            fsa.States,
+            new [] { fsa.Initial },
+            fsa.Final,
+            fsa.Transitions.Select(kvp => 
+                (kvp.Key.From, kvp.Key.Label.ToString(), kvp.Key.Label.ToString(), kvp.Value)),
+            fsa.Alphabet.Select(c => c.ToString()));
 
     public static Fsa Minimal(this Fsa automaton) =>
         automaton.Determinize().Minimal().ToFsa();
@@ -517,7 +520,7 @@ public static class FsaOperations
 
         var states = automaton.States;
         var transitions = automaton.Transitions;
-        var alphabet = transitions.Select(t => t.Key.Label).Distinct();
+        var alphabet = automaton.Alphabet;
 
         // The initial two equivalence classes are the final and non-final states
         var eqRel = RelationOperations.Kernel(
@@ -562,7 +565,6 @@ public static class FsaOperations
             eqRel[automaton.Initial],
             automaton.Final.Select(s => eqRel[s]),
             minTransitions,
-            automaton.Alphabet)
-            .Trim();
+            alphabet).Trim();
     }
 }

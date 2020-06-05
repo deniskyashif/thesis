@@ -28,6 +28,7 @@ public static class DfsaExtensions
                     return path;
 
                 current = automaton.Transitions[(current, Fsa.AnySymbolOutsideAlphabet)];
+                path.Add(current);
             }
         } 
 

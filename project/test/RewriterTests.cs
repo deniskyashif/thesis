@@ -24,7 +24,7 @@ public class RewriterTests
     {
         // ab|bc -> d
         var fst = FstBuilder.FromWordPair("ab", "d").Union(FstBuilder.FromWordPair("bc", "d"));
-        var obl = fst.ToRewriter(new HashSet<char> { 'a', 'b', 'c', 'd' });
+        var obl = fst.ToRewriter(FsaBuilder.FromSymbolSet(new [] { 'a', 'b', 'c', 'd' }));
 
         Assert.Equal(string.Empty, obl.Process(string.Empty).Single());
         Assert.Equal("d", obl.Process("ab").Single());

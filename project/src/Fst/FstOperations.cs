@@ -21,7 +21,8 @@ public static class FstOperations
             fst.States.Select(s => s + k),
             fst.Initial.Select(s => s + k),
             fst.Final.Select(s => s + k),
-            fst.Transitions.Select(t => (t.From + k, t.In, t.Out, t.To + k)));
+            fst.Transitions.Select(t => (t.From + k, t.In, t.Out, t.To + k)),
+            fst.Alphabet);
     }
 
     static void MergeAlphabets(Fst first, Fst second)
@@ -71,7 +72,8 @@ public static class FstOperations
             first.States.Concat(second.States),
             first.Initial.Concat(second.Initial),
             first.Final.Concat(second.Final),
-            first.Transitions.Concat(second.Transitions));
+            first.Transitions.Concat(second.Transitions),
+            first.Alphabet.Union(second.Alphabet));
     }
 
     public static Fst Union(this Fst fst, params Fst[] automata) =>
@@ -92,7 +94,8 @@ public static class FstOperations
             first.States.Concat(second.States),
             first.Initial,
             second.Final,
-            transitions);
+            transitions,
+            first.Alphabet.Union(second.Alphabet));
     }
 
     public static Fst Concat(this Fst fst, params Fst[] automata) =>
@@ -427,6 +430,7 @@ public static class FstOperations
     {
         // TODO: Handle epsilon inputs
         var (rtFst, _) = fst.ToRealTime();
+        var alphabet2 = rtFst.Transitions.Select(t => t.In.Single()).Distinct();
 
         // Construct the right Dfa by reversing the transitions
         // Group the transitions by destination state (4 to {12})
@@ -495,7 +499,7 @@ public static class FstOperations
             var targetLStatesPerSymbol =
                 new Dictionary<char, (ISet<int> LeftSState, IDictionary<int, int> Selector)>();
 
-            foreach (var symbol in alphabet)
+            foreach (var symbol in alphabet2)
             {
                 var targetLSState = new HashSet<int>();
                 // Successor (set of states) of L on symbol
@@ -574,9 +578,9 @@ public static class FstOperations
         }
 
         var leftStateIndices = Enumerable.Range(0, leftDfaStates.Count);
-        var leftDfsa = new Dfsa(leftStateIndices, 0, Array.Empty<int>(), leftTransitions);
+        var leftDfsa = new Dfsa(leftStateIndices, 0, Array.Empty<int>(), leftTransitions, alphabet);
         var rightStateIndices = Enumerable.Range(0, rightSStates.Count);
-        var rightDfsa = new Dfsa(rightStateIndices, 0, Array.Empty<int>(), rightTrans);
+        var rightDfsa = new Dfsa(rightStateIndices, 0, Array.Empty<int>(), rightTrans, alphabet);
 
         return new Bimachine(leftDfsa, rightDfsa, bmOutput);
     }
@@ -616,7 +620,12 @@ public static class FstOperations
         var dfstFinal = dfstStates
             .Where(index => subsetStates[index].Intersect(fst.Final).Any());
 
-        return new Fst(dfstStates, new[] { 0 }, dfstFinal, dfstTransitions).Trim();
+        return new Fst(
+            dfstStates, 
+            new[] { 0 }, 
+            dfstFinal, 
+            dfstTransitions,
+            fst.Alphabet).Trim();
     }
 
     public static Fst PseudoMinimal(this Fst fst)
@@ -669,6 +678,8 @@ public static class FstOperations
             fst.States.Select(s => eqRel[s]),
             fst.Initial.Select(s => eqRel[s]),
             fst.Final.Select(s => eqRel[s]),
-            minTransitions).Trim();
+            minTransitions, 
+            fst.Alphabet)
+            .Trim();
     }
 }

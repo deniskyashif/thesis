@@ -18,17 +18,33 @@ public static class BimachineExtensions
         {
             var ch = input[i];
             var rightIndex = rPath.Count - 2 - i;
-            var triple = (leftState, ch, rPath[rightIndex]);
 
-            if (!bm.Output.ContainsKey(triple))
-                throw new ArgumentException($"Unrecognized input. {ch}");
+            if (bm.Left.Alphabet.Contains(ch))
+            {
+                var triple = (leftState, ch, rPath[rightIndex]);
+                if (!bm.Output.ContainsKey(triple))
+                    throw new ArgumentException($"Unrecognized input. {ch}");
 
-            output.Append(bm.Output[triple]);
+                output.Append(bm.Output[triple]);
+                if (!bm.Left.Transitions.ContainsKey((leftState, ch)))
+                    throw new ArgumentException($"Unrecognized input. {ch}");
 
-            if (!bm.Left.Transitions.ContainsKey((leftState, ch)))
-                throw new ArgumentException($"Unrecognized input. {ch}");
+                leftState = bm.Left.Transitions[(leftState, ch)];
+            }
+            else
+            {
+                var triple = (leftState, Fsa.AnySymbolOutsideAlphabet, rPath[rightIndex]);
+                
+                if (!bm.Output.ContainsKey(triple))
+                     throw new ArgumentException($"Unrecognized input. {ch}");
 
-            leftState = bm.Left.Transitions[(leftState, ch)];
+                output.Append(bm.Output[triple].Replace(Fsa.AnySymbolOutsideAlphabet, ch));
+
+                if (!bm.Left.Transitions.ContainsKey((leftState, Fsa.AnySymbolOutsideAlphabet)))
+                    throw new ArgumentException($"Unrecognized input. {ch}");
+
+                leftState = bm.Left.Transitions[(leftState, Fsa.AnySymbolOutsideAlphabet)];
+            }
         }
 
         return output.ToString();

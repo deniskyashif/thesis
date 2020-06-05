@@ -54,7 +54,7 @@ public static class RewriteLexers
 
         var clearLeadingSpace =
             insertLeadingNewLine.Compose(
-                FstBuilder.FromWordPair("\n ", "\n").ToRewriter(alphabet),
+                FstBuilder.FromWordPair("\n ", "\n").ToRewriter(FsaBuilder.FromSymbolSet(alphabet)),
                 insertLeadingNewLine.Inverse());
 
         return clearSpaces.Compose(markTokens, clearLeadingSpace).ToBimachine(alphabet);
