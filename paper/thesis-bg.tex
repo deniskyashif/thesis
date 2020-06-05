@@ -537,7 +537,7 @@
 
 \begin{definition}\label{def:LmlOps}
 	Въвеждаме следните оператори над множества от контексти:
-\[ AFTER(A, B) = \{ \langle u, v, w \rangle \in A \mid \forall \langle u', v', w' \rangle \in B : u' \cdot v' \leq u \land u' < u  \} \] 
+\[ AFTER(A, B) = \{ \langle u, v, w \rangle \in A \mid \forall \langle u', v', w' \rangle \in B : u'v' \leq u \land u' < u  \} \] 
 
 \( AFTER \) избира измежду всички контексти в множеството \(A\) тези, в които фокусът \(v\) започва след всички фокуси в множеството \(B\).
 
@@ -552,11 +552,8 @@
 
 \begin{definition}
 	Използвайки операторите от дефиниция \ref{def:LmlOps}, въвеждаме функцията \( LML(A) \) (leftmost-longest). По зададено множество от контексти \(A\), \( LML(A) \) извежда множество от незастъпващи се контексти, като избира най-левите, най-дълги измежду тях.
-
 	\[ LML(A) := \bigcup\limits_{i=0}^{\infty} C_{i} \]
-
-	Където междинните множества \( C_i \) строим индуктивно:
-
+	където множествата \( C_i \) строим индуктивно
 	\[ C_0 = \emptyset \]
 	\[ C_{i+1} = C_i \cup LONGEST(LEFTMOST(AFTER(A, C_i))) \]
 
@@ -567,13 +564,16 @@
 	Нека \( t \in \Sigma^* \) е текст и \(A\) е множество от контексти в \(t\). \( LML(A) \) съдържа само незастъпващи се контексти.
 
 	\begin{proof}
-		Нека \( LML(A) \) съдържа застъпващите се контексти \( \langle u_1, v_1, w_1 \rangle \) и \( \langle u_2, v_2, w_2 \rangle \) т.е. \( u_1 < u_2 < u_1v_1 \). Също така \( \langle u_1, v_1, w_1 \rangle \in C_{i_1} \) и \( \langle u_2, v_2, w_2 \rangle \in C_{i_2} \). Нека допуснем, че \( i_1 \geq i_2 \). В такъв случай:
-		\[ \langle u_2, v_2, w_2 \rangle \in C_{i_2} = C_{i_2-1} \cup LONGEST(LEFTMOST(AFTER(A, C_{i_2-1}))) \]
+		Нека \( LML(A) \) съдържа застъпващите се контексти \( \langle u_1, v_1, w_1 \rangle \) и \( \langle u_2, v_2, w_2 \rangle \) т.е. \( u_1 < u_2 < u_1v_1 \). Също така \( \langle u_1, v_1, w_1 \rangle \) и \( \langle u_2, v_2, w_2 \rangle C_{i_2} \) са били добавени първоначално в \( C_{i_1} \text{ и } C_{i_2} \) съответно.
+		\begin{enumerate}
+			\item Нека \( i_1 \geq i_2 \), тогава
+			\[ \langle u_2, v_2, w_2 \rangle \in C_{i_2} = C_{i_2-1} \cup LONGEST(LEFTMOST(AFTER(A, C_{i_2-1}))) \]
+			\noindent След като \( \langle u_2, v_2, w_2 \rangle \notin C_{i_2-1} \), то 
+			\[ \langle u_2, v_2, w_2 \rangle \in LONGEST(LEFTMOST(AFTER(A, C_{i_2-1}))) \]
+			От допускането, че \( i_1 \geq i_2 \) следва, че \( \langle u_1, v_1, w_1 \rangle, \langle u_2, v_2, w_2 \rangle \in AFTER(A,C_{i_2-1}) \) и \( \langle u_2, v_2, w_2 \rangle \in LEFTMOST(AFTER(A,C_{i_2-1})) \), което е в противоречие с дефиницията на \( LEFTMOST \), тъй като \( u_1 < u_2 < u_1v_1 \).
 
-		\noindent След като \( \langle u_2, v_2, w_2 \rangle \notin C_{i_2-1} \), то \( \langle u_2, v_2, w_2 \rangle \in LEFTMOST((AFTER(A, C_{i_2-1})) \).
-		От допускането, че \( i_1 \geq i_2 \) следва, че \( \langle u_1, v_1, w_1 \rangle \in AFTER(A,C_{i_2-1}) \), което е в противоречие с дефиницията на \( LEFTMOST \) и следователно \( i_1 < i_2 \).
-
-		\noindentСлед като \( i_1 < i_2 \), то \( \langle u_2, v_2, w_2 \rangle \notin C_i \) за \( i \leq i_1 \). При \( i > i_1 \), \( \langle u_1, v_1, w_1 \rangle \in C_i \), значи \( \langle u_2, v_2, w_2 \rangle \in AFTER(A, C_i) \), което не е възможно спрямо дефиницията на \( AFTER \) т.е. \( \langle u_2, v_2, w_2 \rangle \notin C_{i+1} \). Това противоречи с факта, че \( \langle u_2, v_2, w_2 \rangle \in C_{i_2} \) \( (i_1 < i_2) \), следователно \( LML(A) \) не съдържа застъпващи се контексти.
+			\item Нека \( i_1 < i_2 \), тогава \( \langle u_2, v_2, w_2 \rangle \notin C_i \) за \( i \leq i_1 \). При \( i > i_1 \), \( \langle u_1, v_1, w_1 \rangle \in C_i \), значи \( \langle u_2, v_2, w_2 \rangle \in AFTER(A, C_i) \), което не е възможно спрямо дефиницията на \( AFTER \) (избира контекстите в \(A\), чиито фокуси започват след края на тези в \(C_i\), т.е. без да се застъпват) следователно \( \langle u_2, v_2, w_2 \rangle \notin C_{i+1} \). Това противоречи с факта, че \( \langle u_2, v_2, w_2 \rangle \in C_{i_2} \) и \(i_1 < i_2 \), от където заключваме, че \( LML(A) \) не съдържа застъпващи се контексти.
+		\end{enumerate}
 	\end{proof}
 \end{proposition}
 
