@@ -635,8 +635,8 @@
 
 \begin{definition}\label{def:defIfPThenS}
 	Въвеждаме следните функции, които строят филтриращи автомати по зададени регулярни езици \cite{Kaplan&Kay:94}:
-	\[ ifPthenS(P,S) = \{ w \mid \forall w_1w_2 = w: w_1 \in P \to w_2 \in S \} \]
-	\[ ifSthenP(P,S) = \{ w \mid \forall w_1w_2 = w: w_2 \in S \to w_1 \in P \} \]
+	\[ ifPthenS(P,S) = \{ w \mid \forall w_1w_2 = w: \text{ ако } w_1 \in P \text{ то } w_2 \in S \} \]
+	\[ ifSthenP(P,S) = \{ w \mid \forall w_1w_2 = w: \text{ ако } w_2 \in S \text{ то } w_1 \in P \} \]
 	\emph{ifPthenS(P,S)} дефинира езика, на чиито думи, ако префиксите им са в езика \(P\) то суфиксите са в \(S\). Аналогично \emph{ifSthenP(P,S)} представя думите, за които ако всичките им суфикси са в \(S\), то префиксите им са в \(P\). Реализираме тези функции както следва:
 	\[ ifPthenS(P,S) := not(P \cdot not(S)) \]
 	\[ ifSthenP(P,S) := not(not(P) \cdot S) \]	
@@ -674,12 +674,12 @@
 \begin{definition}\label{def:Rinit} \emph{Релация на първоначално срещане} представяме както следва:
 	\[ R^{init}(T) := intro(\{ cb \}) \circ Id(LiffR(\{ cb \}, xignore(dom(T), \{ cb \}))) \]
 
-	\( R^{init}(T) \) поставя маркерa \verb/cb/ в началото на всяко срещане на поддума (фокус) от входния текст, която е в домейна на \(T\). Тази стъпка отговаря на оператора \(AFTER\) (дефиниция \ref{def:LmlOps}) и идентифицира всички контексти на заместване в текста независимо от това дали се застъпват, или са с възможно най-дълги фокуси. 
+	\( R^{init}(T) \) поставя маркерa \verb/cb/ в началото на всяко срещане на поддума (фокус) от входния текст, която е в домейна на \(T\). Тази стъпка идентифицира началото на фокусите на всички контексти на заместване в текста независимо от това дали се застъпват, или са с възможно най-дълги фокуси. 
 \end{definition}
 
 \begin{definition}\label{def:Rleft} \emph{Релация на най-ляво срещане} представяме както следва:
 	\[ R^{left}(T) := (((Id(\Sigma^*) \cdot \{ \langle cb, lb \rangle \} \cdot Id(ignorex(dom(T), \{ \langle \epsilon, rb \rangle \})))^*) \cdot Id(\Sigma^*)) \circ R_{obl} (\Sigma_x, \{ \langle cb, \epsilon \rangle \}) \]
-	\(R^{left}(T)\) получава текст с маркерите (\verb/cb/) от първатата стъпка (\(R^{init}(T)\)) и поставя в началото и края на всеки контекст маркерите \verb/lb/ и \verb/rb/, като  \verb/cb/ се замества с \verb/lb/. Между маркерите за начало и край, не може да съществуват други маркери. Това може да доведе до повече от един изходен текст. Тази стъпка отговаря на оператора \(LEFTMOST\) (дефиниция \ref{def:LmlOps}) и осигурява, че измежду контекстите със застъпващи се фокуси, ще останат тези, чийто фокус се намира най-ляво спрямо входния текст.
+	\(R^{left}(T)\) получава текст с маркерите (\verb/cb/) от първатата стъпка (\(R^{init}(T)\)) и поставя в началото и края на всеки контекст маркерите \verb/lb/ и \verb/rb/, като  \verb/cb/ се замества с \verb/lb/. Между маркерите за начало и край, не може да съществуват други маркери. Това може да доведе до повече от един изходен текст, като единият от тях маркира коректно контекстите спрямо стратегията "най-ляво-най-дълго срещане". Тази стъпка отговаря на операторите \(AFTER \text{ и } LEFTMOST\) (дефиниция \ref{def:LmlOps}) и осигурява, че измежду контекстите със застъпващи се фокуси, ще останат тези, чийто фокус се намира най-ляво спрямо входния текст.
 \end{definition}
 
 \begin{definition}\label{def:Rlong} \emph{Релация на най-дълго срещане} представяме както следва:
@@ -690,11 +690,6 @@
 \begin{definition}\label{def:Rreplace} \emph{Релация на заместване} представяме както следва:
 	\[ R^{replace}(T) := R^{obl}(\Sigma_x, \{ \langle lb, \epsilon \rangle \} \cdot T \cdot \{ \langle rb, \epsilon \rangle \}) \]
 	В тази стъпка получаваме изходния текст на \(R^{long}\), в който поддумите в домейна на преобразувателя са маркирани с \verb/lb/ и \verb/rb/ под стратегията най-ляво-най-дълго срещане. Този преобразувател извършва заместването на тези поддуми чрез входния преобразувател и премахва помощните маркери (\emph{lb, rb}).
-\end{definition}
-
-\begin{definition} \emph{Релация на заместване под стратегията "най-ляво-най-дълго срещане"} получаваме като композираме релациите дефинирани в \ref{def:Rinit}, \ref{def:Rleft}, \ref{def:Rlong}, \ref{def:Rreplace} , които строим независимо една от друга.
-
-\[ R^{LML}(T) = R^{init}(T) \circ R^{left}(T) \circ R^{long}(T) \circ R^{replace}(T) \]
 \end{definition}
 
 \begin{example}
@@ -712,16 +707,21 @@
 	\end{enumerate}
 \end{example}
 
+\begin{definition} \emph{Релация на заместване под стратегията "най-ляво-най-дълго срещане"} получаваме като композираме релациите дефинирани в \ref{def:Rinit}, \ref{def:Rleft}, \ref{def:Rlong}, \ref{def:Rreplace} , които строим независимо една от друга.
+
+\[ R^{LML}(T) = R^{init}(T) \circ R^{left}(T) \circ R^{long}(T) \circ R^{replace}(T) \]
+\end{definition}
+
 \begin{definition} \label{def:Rlex}
 	Нека е дадена лексическата граматика
-	\[ G := \{ E_1, E_2 \dots E_n \} \]
+	\[ G := \langle E_1, E_2 \dots E_n \rangle \]
 	където \(n = |G|\) и \( E_i, i \in [1, n] \) са регулярни изрази, \emph{SoT, EoT} са символи, с които съответно маркираме началото и края на лексемите във входния текст. \emph{Релацията за лексически анализ} \(R^{lex}\) по зададената граматика \(G\) получаваме както следва:
 	\[ T := \bigcup_{i=1}^{n} \{ \langle \epsilon, i \cdot SoT \rangle \} 	\cdot Id(L(E_i)) \cdot \{ \langle \epsilon, EoT \rangle \} \]
 	\[ R^{lex} := R^{LML}(T) \]
 \end{definition}
 
 \begin{corollary}
-	Ако \(T\) е функция, то \(R^{lex} \) е функция и по нея можем да построим еквивалентна бимашина. Това е изпълнено, ако не съществува дума \( w \in \Sigma^* \) и регулярни изрази \( E_i, E_j \in G \), така че \( w \in L(E_i), w \in L(E_j) \) и \( i \neq j \). Иначе казано, две правила в лексическата граматика не могат да разпознават една и съща дума.
+	Ако \(T\) е функция, то \(R^{lex} \) е функция и по нея можем да построим еквивалентна бимашина. Това е изпълнено, ако не съществува дума \( w \in \Sigma^* \) и регулярни изрази \( E_i, E_j \in G \), така че \( w \in L(E_i)\text{ и } w \in L(E_j) \) и \( i \neq j \). Иначе казано, две правила в лексическата граматика не могат да разпознават една и съща дума.
 \end{corollary}
 
 \begin{figure}[!htb]
@@ -793,7 +793,7 @@
 	\end{cases}
 \]
 
-Ако \( q = \phi(R) \) е дефинирано, тогава \( \{ q' \in R' \mid \exists m \in \Sigma^* : \langle q, \langle a, m \rangle, q' \rangle \in \Delta \} \neq \emptyset \). От дефиницията на \( \phi'(R') \) следва, че \( \{ m \mid \langle \phi(R), \langle a, m \rangle, \phi'(R') \rangle \in \Delta \} \neq \emptyset \) и \( \psi(\langle L, \phi \rangle, a, R') \) може да се дефинира по посочения начин.
+Ако \( q = \phi(R) \) е дефинирано, тогава \( \{ q' \in R' \mid \exists m \in \Sigma^* : \langle q, \langle a, m \rangle, q' \rangle \in \Delta \} \neq \emptyset \). От дефиницията на \( \phi'(R') \) следва, че \( \{ m \mid \langle \phi(R), \langle a, m \rangle, \phi'(R') \rangle \in \Delta \} \neq \emptyset \) и \( \psi(\langle L, \phi \rangle, a, R') \) може да се дефинира по посочения начин. Детайлно доказателство на конструкцията е представено в оригиналната статия \cite{GerdjikovEtAl:2017}, както и в \cite{Mihov:2018-2}.
 
 \begin{figure}[!htb]
 	\centering
@@ -811,6 +811,46 @@
 \]
 на преходите от \(L_i \cap R_i\) към \(L_{i+1} \cap R_{i+1}\) съвпадат.
 
+\begin{figure}[!htb]
+	\begin{center}
+		\begin{tabular}{ |l|l| } 
+		\hline
+		Token & Description \\
+		\hline
+		\( E_1 \) & \verb/а/ \\
+		\( E_2 \) & \verb/a+b/ \\
+		\hline
+		\end{tabular}
+	\end{center}	
+	\caption{Лексическа граматика}
+	\label{fig:Lexgr3}
+\end{figure}
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[
+		width=15cm,
+		keepaspectratio,
+	  ]{img/bmlex.png}
+	\caption{Бимашина за лексически анализ, построена по граматиката на Фигура \ref{fig:Lexgr3}}
+	\label{fig:Bmlex}
+\end{figure}
+
+\begin{example}
+	Нека разгледаме граматиката от Фигура \ref{fig:Lexgr3} и построената по нея бимашина на Фигура \ref{fig:Bmlex} спрямо представената конструкция в тази глава. Представяме маркерите за начало и край на лексемата \emph{SoT, EoT}съответно чрез символите \emph{<, >}.
+	Нека разгледаме входния текст \emph{aabaa}. Симулираме левия и десния автомат на бимашината и получаваме следните пътища:
+	\[ \pi_L = 0 \to^{a} 1 \to^{a} 1 \to^{b} 0 \to^a 1 \to^a 1 \] 
+	\[ \pi_R = 3 \leftarrow^{a} 3 \leftarrow^{a} 1 \leftarrow^{b} 2 \leftarrow^a 2 \leftarrow^a 0 \]
+	Изхода получаваме като конкатенираме резултатите от функцията на изхода за всяка тройка, състояща се от ляво, дясно състояние и входна буква.
+	\begin{equation}
+		\begin{split}
+			\mathcal{O_B}(aabaa) = \psi(0, a, 3) \cdot \psi(1, a, 1) \cdot \psi(1, b, 2) \cdot \psi(0, a, 2) \cdot \psi(1, a, 0)  \\
+		= 1<a \cdot a \cdot b> \cdot 0<a> \cdot 0<a> = 1<aab>0<a>0<a>
+		\end{split}
+	\end{equation}
+	Всяка лексема е обградена от маркери, като преди маркера за начало имаме индекса на правилото в граматиката.
+\end{example}
+
 \pagebreak
 \section{Реализация}
 
@@ -821,7 +861,7 @@
 \begin{enumerate}
 	\item Конструкция на краен автомат по регулярен израз.
 	\item Конструкция на краен преобразувател по стратегията най-ляво-най-дълго срещане.
-	\item Превръщане на функционален преобразувател в бимашина.
+	\item Конструкция на бимашина по зададен функционален преобразувател.
 	\item Алгоритъм за лексически анализ чрез симулация на бимашина.
 \end{enumerate}
 
