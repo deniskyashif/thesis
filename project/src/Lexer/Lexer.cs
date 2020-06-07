@@ -12,14 +12,13 @@ public class Lexer
     const char EoT = '\u0003';
     readonly IList<Rule> grammar;
 
-    private Lexer(Bimachine bm, IList<Rule> grammar)
+    Lexer(Bimachine bm, IList<Rule> grammar)
     {
         this.Bm = bm;
         this.grammar = grammar;
     }
 
     public Bimachine Bm { get; private set; }
-
     public InputStream Input { get; set; }
 
     public IEnumerable<Token> GetNextToken()

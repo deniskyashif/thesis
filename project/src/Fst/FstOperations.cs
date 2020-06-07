@@ -381,7 +381,6 @@ public static class FstOperations
 
     public static Bimachine ToBimachine(this Fst fst, ISet<char> alphabet)
     {
-        // TODO: Handle epsilon inputs
         var (rtFst, _) = fst.ToRealTime();
 
         // Construct the right Dfa by reversing the transitions
@@ -393,8 +392,7 @@ public static class FstOperations
         var rightSStates = new List<ISet<int>> { rtFst.Final.ToHashSet() };
         var rightTrans = new Dictionary<(int From, char Label), int>();
 
-        for (int n = 0; n < rightSStates.Count; n++)
-        {
+        for (int n = 0; n < rightSStates.Count; n++) {
             var symbolToSStates = rightSStates[n]
                 .Where(st => fstTransGroupedByTarget.ContainsKey(st))
                 .SelectMany(st => fstTransGroupedByTarget[st])
@@ -412,22 +410,21 @@ public static class FstOperations
         }
 
         // Group right Dfa's transitions by a destination state
-        var rDfaTransGroupedBy_3to12 = rightTrans
+        var rDfaTransGroupedByTarget = rightTrans // 3 to 12
             .GroupBy(kvp => kvp.Value, kvp => (To: kvp.Key.From, Symbol: kvp.Key.Label))
             .ToDictionary(g => g.Key, g => g);
-        var fstTransGroupedBy_21to43 = new Dictionary<(char In, int From), ISet<(int To, string Out)>>();
+        var fstTransGroupedBySourceAndSymbol = new Dictionary<(char In, int From), ISet<(int To, string Out)>>();
 
-        foreach (var tr in rtFst.Transitions)
-        {
-            if (!fstTransGroupedBy_21to43.ContainsKey((tr.In.Single(), tr.From)))
-                fstTransGroupedBy_21to43[(tr.In.Single(), tr.From)] = new HashSet<(int, string)>();
+        foreach (var tr in rtFst.Transitions) {
+            if (!fstTransGroupedBySourceAndSymbol.ContainsKey((tr.In.Single(), tr.From)))
+                fstTransGroupedBySourceAndSymbol[(tr.In.Single(), tr.From)] = new HashSet<(int, string)>();
 
-            fstTransGroupedBy_21to43[(tr.In.Single(), tr.From)].Add((tr.To, tr.Out));
+            fstTransGroupedBySourceAndSymbol[(tr.In.Single(), tr.From)].Add((tr.To, tr.Out));
         }
 
         // Construct the left Dfa and the bimachine's output function
         var leftDfaStates = new List<(ISet<int> SState, IDictionary<int, int> Selector)>();
-        var leftTransitions = new Dictionary<(int, char), int>();
+        var leftDfaTrans = new Dictionary<(int, char), int>();
         var bmOutput = new Dictionary<(int, char, int), string>();
 
         // Construct left Dfa's initial selector function.
@@ -435,8 +432,7 @@ public static class FstOperations
         // to a state in the input transducer
         var initStateSelector = new Dictionary<int, int>();
 
-        for (int rIndex = 0; rIndex < rightSStates.Count; rIndex++)
-        {
+        for (int rIndex = 0; rIndex < rightSStates.Count; rIndex++) {
             var initStates = rightSStates[rIndex].Intersect(rtFst.Initial);
             if (initStates.Any())
                 initStateSelector.Add(rIndex, initStates.First());
@@ -444,41 +440,37 @@ public static class FstOperations
 
         leftDfaStates.Add((rtFst.Initial.ToHashSet(), initStateSelector));
 
-        for (int k = 0; k < leftDfaStates.Count; k++)
-        {
+        for (int k = 0; k < leftDfaStates.Count; k++) {
             var currLState = leftDfaStates[k];
             // Find target states & their compute selectors on each alphabet symbol
             var targetLStatesPerSymbol =
-                new Dictionary<char, (ISet<int> LeftSState, IDictionary<int, int> Selector)>();
+                new Dictionary<char, (ISet<int> LSState, IDictionary<int, int> Selector)>();
 
-            foreach (var symbol in alphabet)
-            {
+            foreach (var symbol in alphabet) {
                 var targetLSState = new HashSet<int>();
                 // Successor (set of states) of L on symbol
                 foreach (var st in currLState.SState)
-                    if (fstTransGroupedBy_21to43.ContainsKey((symbol, st)))
+                    if (fstTransGroupedBySourceAndSymbol.ContainsKey((symbol, st)))
                         targetLSState.UnionWith(
-                            fstTransGroupedBy_21to43[(symbol, st)].Select(x => x.To));
+                            fstTransGroupedBySourceAndSymbol[(symbol, st)]
+                                .Select(x => x.To));
 
-                if (!targetLSState.Any())
-                    continue;
+                if (!targetLSState.Any()) continue;
 
                 var targetSelector = new Dictionary<int, int>();
 
-                foreach (var (toRIndex, fstState) in currLState.Selector)
-                {
-                    if (!rDfaTransGroupedBy_3to12.ContainsKey(toRIndex))
+                foreach (var (toRIndex, fstState) in currLState.Selector) {
+                    if (!rDfaTransGroupedByTarget.ContainsKey(toRIndex))
                         continue;
                     // toRIndex <--symbol-- fromRIndex
                     foreach (var (fromRIndex, _) in
-                        rDfaTransGroupedBy_3to12[toRIndex].Where(p => p.Symbol == symbol))
-                    {
-                        if (!fstTransGroupedBy_21to43.ContainsKey((symbol, fstState)))
+                        rDfaTransGroupedByTarget[toRIndex].Where(p => p.Symbol == symbol)) {
+                        if (!fstTransGroupedBySourceAndSymbol.ContainsKey((symbol, fstState)))
                             continue;
                         /* Pick any state from the intersection of the target left & source right states.
                             If there is a transition in the source transducer from this state on this symbol
                             but with different outputs - the transducer is not functional & we shoud throw. */
-                        var reachableFstState = fstTransGroupedBy_21to43[(symbol, fstState)]
+                        var reachableFstState = fstTransGroupedBySourceAndSymbol[(symbol, fstState)]
                             .FirstOrDefault(p => rightSStates[fromRIndex].Contains(p.To));
 
                         if (reachableFstState != default)
@@ -486,28 +478,22 @@ public static class FstOperations
                     }
                 }
 
-                if (!targetSelector.Any())
-                    continue;
-
-                targetLStatesPerSymbol.Add(symbol, (targetLSState, targetSelector));
+                if (targetSelector.Any())
+                    targetLStatesPerSymbol.Add(symbol, (targetLSState, targetSelector));
             }
 
-            foreach (var (symbol, (targetLSState, targetSelector)) in targetLStatesPerSymbol)
-            {
+            foreach (var (symbol, (targetLSState, targetSelector)) in targetLStatesPerSymbol) {
                 // Add to the bimachine's output function
-                foreach (var (fromRIndex, fstState) in targetSelector)
-                {
+                foreach (var (fromRIndex, fstState) in targetSelector) {
                     var predecessorOfR = rightTrans[(fromRIndex, symbol)];
                     var state = currLState.Selector[predecessorOfR];
-                    var destinationStates = fstTransGroupedBy_21to43[(symbol, state)]
+                    var destinations = fstTransGroupedBySourceAndSymbol[(symbol, state)]
                         .Where(p => p.To == fstState);
 
-                    foreach (var (toState, word) in destinationStates)
-                    {
+                    foreach (var (toState, word) in destinations) {
                         var outFnPair = (Key: (k, symbol, fromRIndex), Val: word);
 
-                        if (bmOutput.ContainsKey(outFnPair.Key))
-                        {
+                        if (bmOutput.ContainsKey(outFnPair.Key)) {
                             if (bmOutput[outFnPair.Key] != outFnPair.Val)
                                 throw new InvalidOperationException(
                                     $"Cannot have different values for the same key: '{bmOutput[outFnPair.Key]}', '{outFnPair.Val}'");
@@ -523,18 +509,18 @@ public static class FstOperations
                     leftDfaStates.Add(nextLState);
 
                 // Left Dfa's transitions
-                leftTransitions.Add(
+                leftDfaTrans.Add(
                     (k, symbol),
                     leftDfaStates.FindIndex(ls => AreBmLeftStatesEqual(ls, nextLState)));
             }
         }
 
         var leftStateIndices = Enumerable.Range(0, leftDfaStates.Count);
-        var leftDfsa = new Dfsa(leftStateIndices, 0, Array.Empty<int>(), leftTransitions);
+        var leftDfa = new Dfsa(leftStateIndices, 0, Array.Empty<int>(), leftDfaTrans);
         var rightStateIndices = Enumerable.Range(0, rightSStates.Count);
-        var rightDfsa = new Dfsa(rightStateIndices, 0, Array.Empty<int>(), rightTrans);
+        var rightDfa = new Dfsa(rightStateIndices, 0, Array.Empty<int>(), rightTrans);
 
-        return new Bimachine(leftDfsa, rightDfsa, bmOutput);
+        return new Bimachine(leftDfa, rightDfa, bmOutput);
     }
 
     public static Fst PseudoDeterminize(this Fst fst)

@@ -18,10 +18,10 @@ public class Dfsa
         this.Transitions = transitions;
     }
 
-    public IReadOnlyCollection<int> States { get; private set; }
-    public int Initial { get; private set; }
-    public IReadOnlyCollection<int> Final { get; private set; }
-    public IReadOnlyDictionary<(int From, char Label), int> Transitions { get; private set; }
+    public IReadOnlyCollection<int> States { get; }
+    public int Initial { get; }
+    public IReadOnlyCollection<int> Final { get; }
+    public IReadOnlyDictionary<(int From, char Label), int> Transitions { get; }
     public ISet<char> Alphabet => this.Transitions.Select(t => t.Key.Label).ToHashSet();
 
     public bool Recognize(string word)

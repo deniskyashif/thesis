@@ -27,9 +27,9 @@ public static class Rewriters
         var notInDomain = all
             .Difference(all.Concat(fst.Domain()).Concat(all))
             .Identity()
-            .Union(FstBuilder.FromWordPair(string.Empty, string.Empty));
+            .Optional();
 
-        return notInDomain.Concat(fst.Concat(notInDomain).Star()).Expand().Trim();
+        return notInDomain.Concat(fst.Concat(notInDomain).Star());
     }
 
     // Convert to an obligatory leftmost-longest match rewrite transducer (Karttunen 1996)
