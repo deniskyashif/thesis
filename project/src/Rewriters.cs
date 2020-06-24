@@ -139,15 +139,15 @@ public static class Rewriters
         var trueFsa = xSigStarFsa;
         var falseFsa = FsaBuilder.FromEpsilon();
 
-        Fsa CoerceToBoolean(Fsa l) => l.Identity()
-            .Compose(trueFsa.Product(trueFsa)).Range();
+        // Fsa CoerceToBoolean(Fsa l) => l.Identity()
+        //     .Compose(trueFsa.Product(trueFsa)).Range();
 
-        Fst If(Fsa cond, Fst then, Fst @else) =>
-            CoerceToBoolean(cond).Identity().Compose(then)
-                .Union(Not(CoerceToBoolean(cond)).Identity().Compose(@else));
+        // Fst If(Fsa cond, Fst then, Fst @else) =>
+        //     CoerceToBoolean(cond).Identity().Compose(then)
+        //         .Union(Not(CoerceToBoolean(cond)).Identity().Compose(@else));
 
-        var leftCtx = new RegExp("b*").Automaton;
-        var rightCtx = FsaBuilder.FromSymbol('b');
+        var leftCtx = FsaBuilder.FromEpsilon();
+        var rightCtx = FsaBuilder.FromEpsilon();
         var domainT = fst.Domain();
 
         var nonMarkersFst = FsaBuilder.FromSymbolSet(alphabet)
