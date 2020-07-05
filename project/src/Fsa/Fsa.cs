@@ -8,9 +8,6 @@ using System.Text;
 
 public class Fsa
 {
-    private readonly Lazy<IDictionary<int, IEnumerable<int>>> epsilonClosureOf;
-    private readonly Lazy<IDictionary<(int, string), IEnumerable<int>>> transPerStateAndLabel;
-
     public Fsa(
         IEnumerable<int> states,
         IEnumerable<int> initial,
@@ -21,14 +18,6 @@ public class Fsa
         this.Initial = initial.ToHashSet();
         this.Final = final.ToHashSet();
         this.Transitions = transitions.ToHashSet();
-
-        this.epsilonClosureOf = new Lazy<IDictionary<int, IEnumerable<int>>>(
-            () => this.PrecomputeEpsilonClosure());
-
-        this.transPerStateAndLabel = new Lazy<IDictionary<(int, string), IEnumerable<int>>>(
-            () => this.Transitions
-                .GroupBy(t => (t.From, t.Label), t => t.To)
-                .ToDictionary(g => g.Key, g => g.AsEnumerable()));
     }
 
     public IReadOnlyCollection<int> States { get; private set; }
@@ -58,32 +47,21 @@ public class Fsa
             .Any();
     }
 
-    public IEnumerable<int> EpsilonClosure(int state)
-    {
-        if (this.epsilonClosureOf.Value.ContainsKey(state))
-            return this.epsilonClosureOf.Value[state];
-
-        return Array.Empty<int>();
-    }
-
-    IEnumerable<int> GetTransitions(int state, string label)
-    {
-        if (this.transPerStateAndLabel.Value.ContainsKey((state, label)))
-            return this.transPerStateAndLabel.Value[(state, label)];
-
-        return Array.Empty<int>();
-    }
-
-    IDictionary<int, IEnumerable<int>> PrecomputeEpsilonClosure() => 
+    public IEnumerable<int> EpsilonClosure(int state) => 
         this.Transitions
             .Where(t => string.IsNullOrEmpty(t.Label))
             .Select(t => (t.From, t.To))
             .ToHashSet()
             .TransitiveClosure()
-            .Union(this.States.Select(s => (From: s, To: s)))
-            .GroupBy(p => p.Item1, p => p.Item2)
-            .ToDictionary(g => g.Key, g => g.AsEnumerable());
-    
+            .Where(p => p.Item1 == state)
+            .Select(p => p.Item2)
+            .Union(new[] { state });
+
+    IEnumerable<int> GetTransitions(int state, string label) => 
+        this.Transitions
+            .Where(t => t.From == state && t.Label == label)
+            .Select(t => t.To);
+
     public string ToGraphViz()
     {
         var sb = new StringBuilder("digraph { rankdir=LR; size=\"8,5\" ");

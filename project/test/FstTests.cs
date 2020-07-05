@@ -257,7 +257,7 @@ public class FstTests
     [Fact]
     public void ExpandSimpleFstTest()
     {
-        var fst = FstBuilder.FromWordPair("abc", "xy").Expand();
+        var fst = FstBuilder.FromWordPair("abc", "xy");
 
         Assert.Equal(4, fst.States.Count);
         Assert.Equal(3, fst.Transitions.Count);
@@ -269,8 +269,7 @@ public class FstTests
     public void ExpandFstTest()
     {
         var fst = FstBuilder.FromWordPair("abc", "xy")
-            .Union(FstBuilder.FromWordPair("p", "q"))
-            .Expand();
+            .Union(FstBuilder.FromWordPair("p", "q"));
 
         Assert.Equal(6, fst.States.Count);
         Assert.Equal(4, fst.Transitions.Count);
@@ -283,8 +282,7 @@ public class FstTests
     public void ExpandFstTest1()
     {
         var fst = FstBuilder.FromWordPair("abc", "xy")
-            .Union(FstBuilder.FromWordPair("pp", "qq"))
-            .Expand();
+            .Union(FstBuilder.FromWordPair("pp", "qq"));
 
         Assert.Equal(7, fst.States.Count);
         Assert.Equal(5, fst.Transitions.Count);

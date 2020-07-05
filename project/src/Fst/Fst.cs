@@ -22,33 +22,26 @@ public class Fst
     }
 
     public IReadOnlyCollection<int> States { get; private set; }
-
     public IReadOnlyCollection<int> Initial { get; private set; }
-
     public IReadOnlyCollection<int> Final { get; private set; }
-
     public IReadOnlyCollection<(int From, string In, string Out, int To)> Transitions { get; private set; }
-
     public ISet<string> InputAlphabet => this.Transitions.Select(t => t.In).ToHashSet();
 
-    public ICollection<string> Process(string word) =>
-        this.Process(word.ToCharArray().Select(x => x.ToString()).ToList());
-
-    public ISet<string> Process(IList<string> inputs)
+    public ISet<string> Process(string inputs)
     {
         var successfulPaths = new HashSet<string>();
         var path = new Stack<string>();
 
         void TraverseDepthFirst(int state, int index)
         {
-            if (index == inputs.Count)
+            if (index == inputs.Length)
             {
                 if (this.Final.Contains(state))
                     successfulPaths.Add(string.Join(string.Empty, path.Reverse()));
             }
             else
             {
-                foreach (var pair in this.GetTransitions(state, inputs[index]))
+                foreach (var pair in this.GetTransitions(state, inputs[index].ToString()))
                 {
                     path.Push(pair.Out);
                     TraverseDepthFirst(pair.To, index + 1);
@@ -70,11 +63,6 @@ public class Fst
         return successfulPaths;
     }
 
-    IEnumerable<(string Out, int To)> GetTransitions(int state, string input) =>
-        this.Transitions
-            .Where(tr => (state, input) == (tr.From, tr.In))
-            .Select(tr => (tr.Out, tr.To));
-    
     public string ToGraphViz()
     {
         var sb = new StringBuilder("digraph G { rankdir=LR; size=\"8,5\" ");
@@ -96,4 +84,9 @@ public class Fst
 
         return sb.Append("}").ToString();
     }
+
+    IEnumerable<(string Out, int To)> GetTransitions(int state, string input) =>
+        this.Transitions
+            .Where(tr => (state, input) == (tr.From, tr.In))
+            .Select(tr => (tr.Out, tr.To));
 }

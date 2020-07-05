@@ -8,5 +8,6 @@ public static class FstBuilder
             new[] { 0, 1 },
             new[] { 0 },
             new[] { 1 },
-            new[] { (0, input, output, 1) });
+            new[] { (0, input, output, 1) })
+            .Expand();
 }

@@ -37,7 +37,9 @@ using System.Linq;
 
 public class RegExp
 {
-    static readonly ISet<char> alphabet = Enumerable.Range(0, 127)
+    public const int AlphabetMin = 0;
+    public const int AlphabetMax = 127;
+    static readonly ISet<char> alphabet = Enumerable.Range(AlphabetMin, AlphabetMax)
         .Select(Convert.ToChar)
         .Where(c => !char.IsControl(c))
         .ToHashSet();

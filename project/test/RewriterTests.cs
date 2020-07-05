@@ -23,7 +23,7 @@ public class RewriterTests
     public void ObligatoryRewriteRelTest()
     {
         // ab|bc -> d
-        var fst = FstBuilder.FromWordPair("ab", "d").Union(FstBuilder.FromWordPair("bc", "d")).Expand();
+        var fst = FstBuilder.FromWordPair("ab", "d").Union(FstBuilder.FromWordPair("bc", "d"));
         var obl = fst.ToRewriter(new HashSet<char> { 'a', 'b', 'c', 'd' });
 
         Assert.Equal(string.Empty, obl.Process(string.Empty).Single());
@@ -48,8 +48,7 @@ public class RewriterTests
         var alphabet = new HashSet<char> {'a', 'b', 'c', 'd'};
         // ab|bc -> d
         var rule1 = FstBuilder.FromWordPair("ab", "d")
-            .Union(FstBuilder.FromWordPair("bc", "d"))
-            .Expand();
+            .Union(FstBuilder.FromWordPair("bc", "d"));
         // cd -> CD
         var rule2 = FstBuilder.FromWordPair("cd", "CD");
 

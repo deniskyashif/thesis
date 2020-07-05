@@ -41,13 +41,5 @@ public static class FsaBuilder
             transitions);
     }
 
-    public static Fsa All(IEnumerable<char> alphabet)
-        => FsaBuilder.FromSymbolSet(alphabet).Star();
-
-    public static Fsa Empty =>
-        new Fsa(
-            new [] { 0 },
-            Array.Empty<int>(),
-            Array.Empty<int>(),
-            Array.Empty<(int, string, int)>());
+    public static Fsa All(IEnumerable<char> alphabet) => FsaBuilder.FromSymbolSet(alphabet).Star();
 }

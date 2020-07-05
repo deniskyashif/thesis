@@ -9,9 +9,6 @@ public static class SfsaOperations
 {
     static int NewState(IReadOnlyCollection<int> states) => states.Count;
 
-    static IEnumerable<int> KNewStates(int k, IReadOnlyCollection<int> states) =>
-        Enumerable.Range(states.Count, k);
-
     // Clones the finite automaton by renaming the states
     static Sfsa Remap(this Sfsa automaton, IReadOnlyCollection<int> states)
     {
@@ -60,9 +57,6 @@ public static class SfsaOperations
             final: first.Final.Union(second.Final),
             transitions: first.Transitions.Union(second.Transitions));
     }
-
-    public static Sfsa Union(this Sfsa fsa, params Sfsa[] automata) =>
-        automata.Aggregate(fsa, Union);
 
     // Kleene star operation on a finite automaton
     public static Sfsa Star(this Sfsa automaton)

@@ -17,7 +17,7 @@ public static class Rewriters
     public static Fst ToOptionalRewriter(this Fst fst, ISet<char> alphabet)
     {
         var idAll = FsaBuilder.All(alphabet).Identity();
-        return idAll.Concat(fst.Concat(idAll).Star()).Expand();
+        return idAll.Concat(fst.Concat(idAll).Star());
     }
 
     // Convert to an obligatory rewrite transducer
