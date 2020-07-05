@@ -1,11 +1,32 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
 public class TokenizerTests
 {
+    [Fact]
+    public void LexerTest()
+    {
+        var lexer = Lexer.Create(new[]
+        {
+            new Rule("a", "A"),
+            new Rule("a+b", "B"),
+        });
+        lexer.Input = new InputStream("aabaa");
+        var tokens = lexer.GetNextToken().ToList();
+
+        Assert.True(TokensEqual(tokens, new[]
+        {
+            new Token { Type = "B", Text = "aab", Index = 0, Position = (0, 2) },
+            new Token { Type = "A", Text = "a", Index = 1, Position = (3, 3) },
+            new Token { Type = "A", Text = "a", Index = 2, Position = (4, 4) }
+        }));
+
+        lexer.Input = new InputStream("aabba");
+        Assert.Throws<ArgumentException>(() => lexer.GetNextToken().ToList());
+    }
+
     [Fact]
     public void ArithmeticExprLexerTest()
     {
@@ -41,12 +62,12 @@ public class TokenizerTests
         };
 
         Assert.True(TokensEqual(expectedTokens2, tokens2));
-        Assert.Throws<ArgumentException>(() => 
+        Assert.Throws<ArgumentException>(() =>
         {
             lexer.Input = new InputStream("123+x");
             lexer.GetNextToken().ToList();
         });
-        Assert.Throws<ArgumentException>(() => 
+        Assert.Throws<ArgumentException>(() =>
         {
             lexer.Input = new InputStream("_");
             lexer.GetNextToken().ToList();
@@ -100,7 +121,7 @@ public class TokenizerTests
             new Token { Type = "STRING", Text = "\"\"", Index = 15, Position = (30, 31)},
             new Token { Type = "ARR_END", Text = "]", Index = 16, Position = (32, 32)},
         };
-        
+
         Assert.True(TokensEqual(expectedTokens, tokens));
     }
 
@@ -154,7 +175,7 @@ public class TokenizerTests
     private bool TokensEqual(IList<Token> first, IList<Token> second)
     {
         if (first.Count != second.Count) return false;
-        
+
         for (int i = 0; i < first.Count; i++)
         {
             if (first[i].Index != second[i].Index) return false;

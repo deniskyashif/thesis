@@ -8,8 +8,7 @@ using System.Text;
 [Serializable]
 public class Lexer
 {
-    const char SoT = '\u0002';
-    const char EoT = '\u0003';
+    const char SoT = '\0';
     readonly IList<Rule> grammar;
 
     Lexer(Bimachine bm, IList<Rule> grammar)
@@ -31,7 +30,6 @@ public class Lexer
 
         var leftState = this.Bm.Left.Initial;
         var token = new StringBuilder();
-        var typeIndex = new StringBuilder();
         var tokenIndex = 0;
         var tokenStartPos = 0;
 
@@ -42,19 +40,25 @@ public class Lexer
             var triple = (leftState, ch, rPath[rightIndex]);
 
             if (!this.Bm.Output.ContainsKey(triple))
-                throw new ArgumentException($"Unrecognized token '{token.ToString()+ch}'");
+                throw new ArgumentException($"Unrecognized token '{token.ToString() + ch}'");
 
             token.Append(Bm.Output[triple]);
 
-            if (token[token.Length - 1] == EoT)
+            if (token[token.Length - 1] > RegExp.AlphabetMax)
             {
-                token.Remove(token.Length - 1, 1);
+                if (token[0] != SoT)
+                {
+                    var unrecognizedToken = new StringBuilder();
 
-                for (var i = 0; token[i] != SoT; i++)
-                    typeIndex.Append(token[i]);
+                    for (var k = 0; k < token.Length && token[k] != SoT; k++)
+                        unrecognizedToken.Append(token[k]);
 
-                // keep only the token text
-                token.Remove(0, typeIndex.Length + 1);
+                    throw new ArgumentException($"Invalid token \"{unrecognizedToken.ToString()}\"");
+                }    
+
+                var typeIndex = token[token.Length - 1] - RegExp.AlphabetMax - 1;
+                token.Remove(0, 1); // remove the start of token marker
+                token.Remove(token.Length - 1, 1); // remove the end of token marker
 
                 yield return new Token
                 {
@@ -65,7 +69,6 @@ public class Lexer
                 };
 
                 token.Clear();
-                typeIndex.Clear();
                 tokenIndex++;
                 tokenStartPos = this.Input.Pos + 1;
             }
@@ -84,10 +87,12 @@ public class Lexer
         for (int i = 0; i < grammar.Count; i++)
         {
             var ruleFsa = new RegExp(grammar[i].Pattern).Automaton;
-            // {<ε,TypeIndex SOT>} · Id(R) · {<ε,EOT>}
-            var tokenFst = FstBuilder.FromWordPair(string.Empty, $"{i}{SoT}")
+            var eot = (char)(RegExp.AlphabetMax + 1 + i);
+
+            // { <ε,SoT> } · Id(L(R)) · { <ε,EoT_R> }
+            var tokenFst = FstBuilder.FromWordPair(string.Empty, SoT.ToString())
                 .Concat(ruleFsa.Identity())
-                .Concat(FstBuilder.FromWordPair(string.Empty, $"{EoT}"));
+                .Concat(FstBuilder.FromWordPair(string.Empty, eot.ToString()));
 
             tokenFsts.Add(tokenFst);
         }
@@ -111,10 +116,10 @@ public class Lexer
 
         formatter.Serialize(
             stream,
-            new LexerExport 
-            { 
-                grammar = this.grammar, 
-                bm = this.Bm.PseudoMinimal() 
+            new LexerExport
+            {
+                grammar = this.grammar,
+                bm = this.Bm.PseudoMinimal()
             });
         stream.Close();
     }

@@ -120,6 +120,7 @@ public class RegExp2Tests
         Assert.False(re.Match(string.Empty));
     }
 
+    [Fact]
     public void FromPatternShouldMatchCorrectly9()
     {
         var re = new RegExp2("(π|©)ю+_¡˚\\*");
@@ -129,6 +130,7 @@ public class RegExp2Tests
         Assert.False(re.Match("π_¡˚*"));
     }
 
+    [Fact]
     public void FromPatternShouldMatchCorrectly10()
     {
         var re = new RegExp2("a.*\\.");
