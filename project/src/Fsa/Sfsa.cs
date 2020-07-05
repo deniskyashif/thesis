@@ -7,8 +7,6 @@ using System.Linq;
 */
 public class Sfsa
 {
-    private readonly Lazy<IDictionary<int, IEnumerable<int>>> epsilonClosureOf;
-
     public Sfsa(IEnumerable<int> states,
         IEnumerable<int> initial,
         IEnumerable<int> final,
@@ -18,9 +16,6 @@ public class Sfsa
         Initial = initial.ToList();
         Final = final.ToList();
         Transitions = transitions.ToList();
-
-        this.epsilonClosureOf = new Lazy<IDictionary<int, IEnumerable<int>>>(
-            () => this.PrecomputeEpsilonClosure());
     }
 
     public IReadOnlyCollection<int> States { get; private set; }
@@ -49,13 +44,15 @@ public class Sfsa
             .Any();
     }
 
-     public IEnumerable<int> EpsilonClosure(int state)
-    {
-        if (this.epsilonClosureOf.Value.ContainsKey(state))
-            return this.epsilonClosureOf.Value[state];
-
-        return Array.Empty<int>();
-    }
+     public IEnumerable<int> EpsilonClosure(int state) => 
+        this.Transitions
+            .Where(t => t.Label == null)
+            .Select(t => (t.From, t.To))
+            .ToHashSet()
+            .TransitiveClosure()
+            .Where(p => p.Item1 == state)
+            .Select(p => p.Item2)
+            .Union(new[] { state });
 
     IEnumerable<int> GetTransitions(int state, char symbol) => 
         this.Transitions
