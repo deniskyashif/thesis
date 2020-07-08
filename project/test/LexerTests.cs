@@ -25,6 +25,8 @@ public class TokenizerTests
 
         lexer.Input = new InputStream("aabba");
         Assert.Throws<ArgumentException>(() => lexer.GetNextToken().ToList());
+        lexer.Input = new InputStream("aababb");
+        Assert.Throws<ArgumentException>(() => lexer.GetNextToken().ToList());
     }
 
     [Fact]

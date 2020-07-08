@@ -78,6 +78,9 @@ public class Lexer
 
             leftState = this.Bm.Left.Transitions[(leftState, ch)];
         }
+
+        if (token.Length > 0)
+            throw new ArgumentException($"Unrecognized token '{token.ToString()}'");
     }
 
     public static Lexer Create(IList<Rule> grammar)
@@ -88,7 +91,6 @@ public class Lexer
         {
             var ruleFsa = new RegExp(grammar[i].Pattern).Automaton;
             var eot = (char)(RegExp.AlphabetMax + 1 + i);
-
             // { <ε,SoT> } · Id(L(R)) · { <ε,EoT_R> }
             var tokenFst = FstBuilder.FromWordPair(string.Empty, SoT.ToString())
                 .Concat(ruleFsa.Identity())

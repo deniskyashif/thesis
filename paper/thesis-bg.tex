@@ -962,7 +962,7 @@
 	\end{itemize}
 \end{example}
 
-За да построим краен автомат по регулярен израз е нужно първо да дефинираме граматическата му структура. Въвеждаме следната безконтекстна граматика:
+За да построим краен автомат по регулярен израз е нужно първо да дефинираме неговия синтаксис. Въвеждаме следната безконтекстна граматика:
 
 \begin{grammar}
 	<expr> ::= <term>
@@ -1030,7 +1030,7 @@
 	\caption{Дърво на извод за регулярния израз \texttt{(a|b)*[0-9]}, който разпознава думите, започващи с нула или повече на брой символи 'a' и 'b', които завършват с цифра, на пример \emph{ab3, bbbb4, 9, aa1, baab4} и т.н. }
 \end{figure}
 
-Извличането на дърво на извод по зададен регулярен израз реализираме чрез \emph{парсър за рекурсивно спускане (recursive descent parser)}. Той спада към класа на типа парсъри, които строят дървото на извод \emph{"от горе надолу" (top-down)}, т.е. от корена към листата, започвайки от аксиомата на граматиката (в случая аксиомата е нетерминалът \emph{expr}). Граматическите правила се прилагат от ляво на дясно. Регулярен израз е коректно дефиниран, ако по него може да се построи дърво на извод.
+Извличането на дърво на извод по зададен регулярен израз реализираме чрез \emph{парсър за рекурсивно спускане (recursive descent parser)}. Той спада към класа парсъри, които строят дървото \emph{от горе надолу (top-down)}, т.е. от корена към листата, започвайки от аксиомата на граматиката (в случая аксиомата е нетерминалът \emph{expr}). Граматическите правила се прилагат от ляво на дясно. В случаите, в които даден нетерминал има повече от един извод е възможно да се наложи да погледнем с един символ напред във входа, за да направим правилния избор. Такъв е случая с нетерминала \emph{expr}. Тъй като граматиката е от тип LL(1), то е достатъчно да погледнем с един символ напред от входа, за да вземем решение кое правило на извод да приложим. Регулярен израз е коректно дефиниран, ако по него може да се построи дърво на извод.
 
 Особеност на \emph{top-down} парсърите е, че работят с ограничен клас от безконтекстни граматики. Ако граматиката съдържа \emph{лява рекурсия}, то е възможно процедурата да изпадне в безкраен цикъл поради факта, че правилата се прилагат от ляво на дясно. Нека разгледаме следния пример за директна рекурсия:
 
@@ -1045,7 +1045,7 @@
 
 \begin{itemize}
 	\item За всеки нетерминал (\emph{expr, term, factor...}) имплементираме отделен метод.
-	\item Построяването на дървото започва с извикването на аксиомата на граматиката (\emph{Expr()}).
+	\item Построяването на дървото започва с извикването на метода, отговарящ на аксиомата на граматиката (\emph{Expr()}).
 	\item Използваме методите \emph{Peek()}, за да видим следващия непрочетен символ от входа и \emph{Eat(char ch)}, който сравнява следващия следващия символ с \emph{ch} и преминава с една позиция напред във входа. \emph{Next()} преминава към следващата позиция във входната дума без значение от символа, т.е. \emph{Eat(Peek())}.
 \end{itemize}
 
@@ -1408,41 +1408,42 @@ foreach (var token in lexer.GetNextToken())
 [@4,10:10='5',<NUM>]
 \end{minted}
 
-Разглеждаме процедурата по създаване на лексическия анализатор, следвайки Дефиниция \ref{def:Rlex}
+Разглеждаме процедурата по създаване на лексическия анализатор, следвайки директно Дефиниция \ref{def:Rlex}
 
 \begin{minted}{csharp}
-static Lexer Create(IList<Rule> grammar)
+public static Lexer Create(IList<Rule> grammar)
 {
 	var tokenFsts = new List<Fst>();
 
-	for (int i = 0; i < grammar.Count; i++) {
+	for (int i = 0; i < grammar.Count; i++)
+	{
 		var ruleFsa = new RegExp(grammar[i].Pattern).Automaton;
-		var ruleFst = FstBuilder.FromWordPair(string.Empty, $"{i}{SoT}")
+		var eot = (char)(RegExp.AlphabetMax + 1 + i);
+		var tokenFst = FstBuilder.FromWordPair(string.Empty, SoT.ToString())
 			.Concat(ruleFsa.Identity())
-			.Concat(FstBuilder.FromWordPair(string.Empty, $"{EoT}"));
-		tokenFsts.Add(ruleFst);
+			.Concat(FstBuilder.FromWordPair(string.Empty, eot.ToString()));
+		tokenFsts.Add(tokenFst);
 	}
 
-	var unionFst = tokenFsts.Aggregate((u, f) => u.Union(f));
-	var alphabet = unionFst.InputAlphabet
-		.Where(s => !string.IsNullOrEmpty(s))
-		.Select(s => s.Single())
+	var unionTokenFst = tokenFsts.Aggregate((u, f) => u.Union(f));
+	var alphabet = unionTokenFst.InputAlphabet
+		.Where(x => !string.IsNullOrEmpty(x))
+		.Select(c => c.Single())
 		.ToHashSet();
 
-	var lmlFst = unionFst.ToLmlRewriter(alphabet);
+	var lmlFst = unionTokenFst.ToLmlRewriter(alphabet);
 	var bm = lmlFst.ToBimachine(alphabet);
 
 	return new Lexer(bm, grammar);
 }
 \end{minted}
 
- Обхождаме правилата в граматиката и по регулярния израз на всяко строим краен автомат (5-6). В последствие по този автомат получаваме преобразувател, който за всяка дума в езика му ще изведе думата с прикрепяйки индекса на правилото и маркерите за начало и край (7-10). Обединяваме тези преобразуватели и взимаме азбуката по горната лента на получения преобразувател (13-17). От обединението строим преобразувател под стратегията "най-ляво-най-дълго" срещане, който превръщаме в еквивалентната му бимашина (19-20).
+ Обхождаме правилата в граматиката и по регулярния израз на всяко строим краен автомат (5-7). В последствие по този автомат получаваме преобразувател, който за всяка дума в езика му ще изведе думата с маркери за начало и край (8-11). Избираме символите за край да бъдат извън азбуките на автоматите (8). Обединяваме тези преобразуватели и взимаме азбуката по горната лента на получения преобразувател (15-19). От обединението строим преобразувател под стратегията \emph{най-ляво-най-дълго} срещане, който превръщаме в еквивалентната му бимашина (21-22) и връщаме, създаденият по нея лексически анализатор.
 
 \begin{minted}{csharp}
 public class Lexer
 {
-	const char SoT = '\u0002';
-	const char EoT = '\u0003';
+    const char SoT = '\0';
 	readonly IList<Rule> grammar;
 
 	Lexer(Bimachine bm, IList<Rule> grammar) 
@@ -1456,7 +1457,7 @@ public class Lexer
 
 \end{minted}
 
-Лексическият анализатор съдържа списък от правила (лексическата граматика) и бимашина, построена по съответната граматика. Типът \emph{InputStream} е интерфейс на входния текст, който може да се подаде като низ от символи в паметта или зареди от текстов файл.
+Лексическият анализатор съдържа списък от правила (лексическата граматика) и бимашина, построена по съответната граматика. Типът \verb/InputStream/ е интерфейс на входния текст, който може да се подаде като низ от символи в паметта или зареди от текстов файл.
 
 % \begin{minted}{csharp}
 % class Dfsa
@@ -1485,59 +1486,71 @@ public class Lexer
 \begin{minted}[firstnumber=last]{csharp}
     public IEnumerable<Token> GetNextToken()
     {
-        var rPath = Bm.Right.ReverseRecognitionPath(Input);
-
-        if (rPath.Count != Input.Size + 1)
+        var rPath = this.Bm.Right.ReverseRecognitionPath(this.Input);
+        if (rPath.Count != this.Input.Size + 1)
             throw new ArgumentException(
-                $"Invalid input symbol. {Input.CharAt(Input.Size - rPath.Count)}");
+                $"Unrecognized input symbol. {this.Input.CharAt(this.Input.Size - rPath.Count)}");
 
-        var leftState = Bm.Left.Initial;
+        var leftState = this.Bm.Left.Initial;
         var token = new StringBuilder();
-        var typeIndex = new StringBuilder();
         var tokenIndex = 0;
         var tokenStartPos = 0;
 
-        for (Input.SetToStart(); !Input.IsExhausted; Input.MoveForward()) {
-            var ch = Input.Peek();
-            var rightIndex = rPath.Count - 2 - Input.Pos;
+        for (this.Input.SetToStart(); !this.Input.IsExhausted; this.Input.MoveForward())
+        {
+            var ch = this.Input.Peek();
+            var rightIndex = rPath.Count - 2 - this.Input.Pos;
             var triple = (leftState, ch, rPath[rightIndex]);
 
-            if (!Bm.Output.ContainsKey(triple))
-                throw new ArgumentException($"Invalid token '{token.ToString() + ch}'");
+            if (!this.Bm.Output.ContainsKey(triple))
+                throw new ArgumentException($"Unrecognized token '{token.ToString() + ch}'");
 
             token.Append(Bm.Output[triple]);
 
-            if (token[token.Length - 1] == EoT)
+            if (token[token.Length - 1] > RegExp.AlphabetMax)
             {
-                token.Remove(token.Length - 1, 1);
-                for (var i = 0; token[i] != SoT; i++)
-                    typeIndex.Append(token[i]);
-                token.Remove(0, typeIndex.Length + 1);
+                if (token[0] != SoT)
+                {
+                    var unrecognizedToken = new StringBuilder();
+
+                    for (var k = 0; k < token.Length && token[k] != SoT; k++)
+                        unrecognizedToken.Append(token[k]);
+
+                    throw new ArgumentException($"Invalid token \"{unrecognizedToken.ToString()}\"");
+                }    
+
+                var typeIndex = token[token.Length - 1] - RegExp.AlphabetMax - 1;
+                token.Remove(0, 1); // remove the start of token marker
+                token.Remove(token.Length - 1, 1); // remove the end of token marker
 
                 yield return new Token
                 {
                     Index = tokenIndex,
-                    Position = (tokenStartPos, Input.Pos),
+                    Position = (tokenStartPos, this.Input.Pos),
                     Text = token.ToString(),
-                    Type = grammar[int.Parse(typeIndex.ToString())].Name
+                    Type = this.grammar[int.Parse(typeIndex.ToString())].Name
                 };
 
                 token.Clear();
-                typeIndex.Clear();
                 tokenIndex++;
-                tokenStartPos = Input.Pos + 1;
+                tokenStartPos = this.Input.Pos + 1;
             }
 
-            if (!Bm.Left.Transitions.ContainsKey((leftState, ch)))
-                throw new ArgumentException($"Invalid input. {ch}");
+            if (!this.Bm.Left.Transitions.ContainsKey((leftState, ch)))
+                throw new ArgumentException($"Unrecognized input. {ch}");
 
-            leftState = Bm.Left.Transitions[(leftState, ch)];
-        }
+            leftState = this.Bm.Left.Transitions[(leftState, ch)];
+		}
+		
+		if (token.Length > 0)
+			throw new ArgumentException($"Unrecognized token '{token.ToString() + ch}'");
     }
 }
 \end{minted}
 
-Първоначално извличаме редицата от състояния получена от симулацията на десния авомат, прочитайки входния текст от дясно на ляво. Ако автоматът не е прочел целия текст, то входът е невалиден връщаме грешка (17-21). Започваме симулацията на левия автомат, заедно с извеждането на лексемите. Намираме се в началното му състояние (23), променливата \emph{token} (24) изпозваме, за да съхраняваме текста на прочетената лексема, \emph{typeIndex} (25) съдържа индекса на правилото в граматиката, чрез който определяме какъв тип е изведената лексема, \emph{tokenIndex} (26) индикира коя по ред лексема сме извели, а \emph{tokenStartPos} (27) показва на коя позиция в текста започва лексемата. Четем входа от ляво на дясно и на всеки прочетен символ формираме тройката от ляво, дясно състояние и входен символ (30-32). Ако фукнцията на изхода не е дефинирана за тази тройка, връщаме грешка, в противен случай конкатенираме изходната дума към текста, който сме извели до момента (34-37). Ако последният символ на изведената дума е маркер за край на лемсема (end of token), то сме разпознали лексема и преминаваме към извеждането ѝ (39). В този момент \emph{token} е низ, който съдържа едновременно идекса на лексемата и нейната стойност (\verb/<index> SoT <text> EoT/). Елиминираме маркера за край, прочитаме символите от началото докато стигнем до \verb/SoT/, което представлява индекса на правилото, съхраняваме ги в \emph{tokenIndex} и елиминираме сегмента, така че в \emph{token} да остане само текста на лексемата (41-44), докато \emph{tokenIndex} съдържа идекса на правилото в граматиката.  На редове (46-52) извеждаме обект, който съдържа данните на разпознатата лексема - нейният индекс, позиция, текст и тип. Чрез ключовата дума \verb/yield/ указваме, че при следващото извикване на \emph{GetNextToken()}, методът ще продължи изпълнението си, от където е приключил. Подготвяме променливите за разпознаването на следващата лексема (54-57) и продължаваме с итерацията над входния текст, докато не стигнем неговия край, или пък докато левия автомат не може да продължи (60-63), което означава, че текстът съдържа невалидна лексема.
+Първоначално извличаме редицата от състояния получена от симулацията на десния авомат, прочитайки входния текст от дясно на ляво (16). Ако автоматът не е прочел целия текст, то входът е невалиден и завършваме с грешка (17-19). Започваме симулацията на левия автомат, заедно с извеждането на лексемите. Намираме се в началното му състояние (21), променливата \verb/token/ (22) изпозваме, за да съхраняваме текста на прочетената лексема, \verb/tokenIndex/ (23) индикира коя по ред лексема сме извели, а \verb/tokenStartPos/ (24) показва на коя позиция в текста започва лексемата. Четем входа от ляво на дясно и на всеки прочетен символ формираме тройката от ляво, дясно състояние, и входен символ (28-30). Ако фукнцията на изхода не е дефинирана за тази тройка, хвърляме грешка, в противен случай конкатенираме изходната дума към текста, който сме извели до момента (28-33). Ако последният символ на изведената дума е маркер за край на лемсема (end of token), то сме разпознали лексема и преминаваме към извеждането ѝ (37). В този момент \verb/token/ е низ, който съдържа лексемата и маркерите за начало и край. Ако низът не започва с маркер за начало, то сме попаднали на сегмент в текста, който не е разпознат от нито едно от правилата и съответно хвърляме грешка и извеждаме частта, която не е била разпозната (39-47).
+
+Ако имаме коректно разпозната лексема, то елиминираме маркерите от началото и края така че в \verb/token/ да остане само съдържанието на лексемата (50-51), докато \verb/typeIndex/ (49) представлява идекса на съответното правило в граматиката. На редове (53-59) извеждаме обект, който съдържа данните на разпознатата лексема - нейният индекс, позиция, текст и тип. Чрез ключовата дума \verb/yield/ указваме, че при следващото извикване на \verb/GetNextToken()/, методът ще продължи изпълнението си, от където е приключил. Подготвяме променливите за разпознаването на следващата лексема (61-63) и продължаваме с итерацията над символите на входния текст, докато не стигнем неговия край, или пък докато левия автомат не може да продължи (66-69), което означава, че текстът съдържа невалидна лексема. В края на процедурата правим проверка, че входният текст не завършва с неразпознат сегмент (72-73).
 
 \pagebreak
 \begin{thebibliography}{9}
